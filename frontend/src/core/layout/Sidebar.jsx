@@ -1,14 +1,15 @@
 import { NavLink } from "react-router-dom"
-import { CreditCard, Home, LogOut, ShieldCheck } from "lucide-react"
+import { CreditCard, Home, LogOut, ShieldCheck, Users } from "lucide-react"
 import { useAuth } from "@/core/auth/useAuth"
 
-const NAV_ITEMS = [
-  { to: "/dashboard", label: "Dashboard", Icon: Home },
-  { to: "/crud-medios", label: "CRUD Medios de Pago", Icon: CreditCard },
-]
-
 export function Sidebar() {
-  const { user, logout } = useAuth()
+  const { user, logout, hasRole } = useAuth()
+
+  const navItems = [
+    { to: "/dashboard", label: "Dashboard", Icon: Home },
+    ...(hasRole(["admin"]) ? [{ to: "/users", label: "Usuarios", Icon: Users }] : []),
+    { to: "/crud-medios", label: "CRUD Medios de Pago", Icon: CreditCard },
+  ]
 
   return (
     <aside className="flex h-screen w-60 flex-shrink-0 flex-col border-r border-slate-700/60 bg-[#1e293b]">
@@ -25,7 +26,7 @@ export function Sidebar() {
 
       {/* Navegación */}
       <nav className="flex-1 space-y-0.5 px-3 py-4">
-        {NAV_ITEMS.map(({ to, label, Icon }) => (
+        {navItems.map(({ to, label, Icon }) => (
           <NavLink
             key={to}
             to={to}

@@ -3,18 +3,23 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.modules.auth.router import router as auth_router
+from app.modules.users.router import router as users_router
 
 app = FastAPI(title="Plataforma Ops")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://192.168.1.96:5173"],
+    allow_origins=[
+        "http://localhost:5173", "http://192.168.1.96:5173",
+        "http://localhost:5174", "http://192.168.1.96:5174",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 app.include_router(auth_router, prefix="/api")
+app.include_router(users_router, prefix="/api")
 
 
 @app.get("/health")
