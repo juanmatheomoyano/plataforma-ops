@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom"
-import { CreditCard, Home, LogOut, ShieldCheck, Users } from "lucide-react"
+import { CreditCard, Home, LogOut, ShieldCheck, Store, Users } from "lucide-react"
 import { useAuth } from "@/core/auth/useAuth"
 
 export function Sidebar() {
@@ -8,6 +8,7 @@ export function Sidebar() {
   const navItems = [
     { to: "/dashboard", label: "Dashboard", Icon: Home },
     ...(hasRole(["admin"]) ? [{ to: "/users", label: "Usuarios", Icon: Users }] : []),
+    ...(hasRole(["admin"]) ? [{ to: "/sellers", label: "Sellers", Icon: Store }] : []),
     { to: "/crud-medios", label: "CRUD Medios de Pago", Icon: CreditCard },
   ]
 

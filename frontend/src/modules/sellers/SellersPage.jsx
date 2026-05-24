@@ -1,0 +1,310 @@
+import { useEffect, useRef, useState } from "react"
+import {
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table"
+import { Pencil, Plug, Upload, UserX } from "lucide-react"
+import { toast } from "sonner"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { useAuth } from "@/core/auth/useAuth"
+import client from "@/core/api/client"
+import { SellerFormModal } from "./SellerFormModal"
+import { ImportResultModal } from "./ImportResultModal"
+
+const ESTADO_BADGE = {
+  activo: "border-emerald-700 bg-emerald-900/40 text-emerald-400",
+  inactivo: "border-slate-600 bg-slate-800 text-slate-500",
+  vencido: "border-orange-700 bg-orange-900/40 text-orange-400",
+}
+
+export default function SellersPage() {
+  const { hasRole } = useAuth()
+  const isAdmin = hasRole(["admin"])
+
+  const [sellers, setSellers] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  const [formOpen, setFormOpen] = useState(false)
+  const [editSeller, setEditSeller] = useState(null)
+
+  const [importResult, setImportResult] = useState(null)
+  const [importOpen, setImportOpen] = useState(false)
+  const [importing, setImporting] = useState(false)
+
+  const fileInputRef = useRef(null)
+
+  async function fetchSellers() {
+    try {
+      const { data } = await client.get("/sellers")
+      setSellers(data)
+    } catch {
+      toast.error("Error al cargar sellers")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { fetchSellers() }, [])
+
+  function onSaved(saved) {
+    setSellers((prev) => {
+      const idx = prev.findIndex((s) => s.id === saved.id)
+      if (idx >= 0) {
+        const next = [...prev]
+        next[idx] = saved
+        return next
+      }
+      return [saved, ...prev]
+    })
+  }
+
+  async function handleDeactivate(seller) {
+    try {
+      const { data } = await client.post(`/sellers/${seller.id}/deactivate`)
+      onSaved(data)
+      toast.success(`${seller.seller_name} desactivado`)
+    } catch (err) {
+      toast.error(err.response?.data?.detail ?? "Error al desactivar")
+    }
+  }
+
+  async function handleTestConnection(seller) {
+    const toastId = toast.loading(`Probando conexión con ${seller.seller_id}…`)
+    try {
+      const { data } = await client.post(`/sellers/${seller.id}/test-connection`)
+      toast.dismiss(toastId)
+      if (data.ok) {
+        toast.success(`Conexión OK — ${seller.seller_id}`)
+      } else {
+        toast.error(`Conexión fallida: ${data.error}`)
+      }
+    } catch (err) {
+      toast.dismiss(toastId)
+      toast.error("Error al probar conexión")
+    }
+  }
+
+  async function handleFileChange(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ""
+    setImporting(true)
+    const form = new FormData()
+    form.append("file", file)
+    try {
+      const { data } = await client.post("/sellers/import", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      setImportResult(data)
+      setImportOpen(true)
+      if (data.exitosos > 0) fetchSellers()
+    } catch (err) {
+      toast.error(err.response?.data?.detail ?? "Error al importar")
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  const columns = [
+    {
+      accessorKey: "id_ecommerce",
+      header: "Id Ecommerce",
+      cell: ({ getValue }) => (
+        <span className="font-mono text-xs text-slate-300">{getValue()}</span>
+      ),
+    },
+    {
+      accessorKey: "seller_name",
+      header: "Nombre",
+      cell: ({ getValue }) => (
+        <span className="font-medium text-slate-200">{getValue()}</span>
+      ),
+    },
+    { accessorKey: "seller_id", header: "Seller ID" },
+    {
+      accessorKey: "analista",
+      header: "Analista",
+      cell: ({ getValue }) => getValue() ?? <span className="text-slate-500">—</span>,
+    },
+    {
+      accessorKey: "estado_keys",
+      header: "Estado Keys",
+      cell: ({ getValue }) => {
+        const v = getValue()
+        return (
+          <span
+            className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium capitalize ${ESTADO_BADGE[v] ?? ESTADO_BADGE.inactivo}`}
+          >
+            {v}
+          </span>
+        )
+      },
+    },
+    {
+      accessorKey: "vendiendo",
+      header: "Vendiendo",
+      cell: ({ getValue }) =>
+        getValue() ? (
+          <Badge className="border-blue-700 bg-blue-900/40 text-blue-400">Sí</Badge>
+        ) : (
+          <Badge className="border-slate-600 bg-slate-800 text-slate-500">No</Badge>
+        ),
+    },
+    {
+      accessorKey: "is_active",
+      header: "Estado",
+      cell: ({ getValue }) =>
+        getValue() ? (
+          <Badge className="border-emerald-700 bg-emerald-900/40 text-emerald-400">Activo</Badge>
+        ) : (
+          <Badge className="border-slate-600 bg-slate-800 text-slate-500">Inactivo</Badge>
+        ),
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => {
+        const s = row.original
+        return (
+          <div className="flex items-center justify-end gap-1">
+            {isAdmin && (
+              <Button
+                size="icon" variant="ghost" title="Editar"
+                className="h-8 w-8 text-slate-400 hover:text-slate-100"
+                onClick={() => { setEditSeller(s); setFormOpen(true) }}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            )}
+            {isAdmin && (
+              <Button
+                size="icon" variant="ghost" title="Probar conexión"
+                className="h-8 w-8 text-slate-400 hover:text-blue-400"
+                onClick={() => handleTestConnection(s)}
+              >
+                <Plug className="h-4 w-4" />
+              </Button>
+            )}
+            {isAdmin && (
+              <Button
+                size="icon" variant="ghost" title="Desactivar"
+                disabled={!s.is_active}
+                className="h-8 w-8 text-slate-400 hover:text-red-400 disabled:opacity-30"
+                onClick={() => handleDeactivate(s)}
+              >
+                <UserX className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        )
+      },
+    },
+  ]
+
+  const table = useReactTable({
+    data: sellers,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  })
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-100">Sellers</h1>
+          <p className="text-sm text-slate-400">Gestión de sellers y credenciales VTEX</p>
+        </div>
+        {isAdmin && (
+          <div className="flex gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            <Button
+              variant="outline"
+              disabled={importing}
+              onClick={() => fileInputRef.current?.click()}
+              className="border-slate-600 bg-transparent text-slate-300 hover:bg-slate-700 hover:text-slate-100"
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              {importing ? "Importando…" : "Importar Excel"}
+            </Button>
+            <Button
+              className="bg-slate-100 text-slate-900 hover:bg-slate-200"
+              onClick={() => { setEditSeller(null); setFormOpen(true) }}
+            >
+              + Nuevo seller
+            </Button>
+          </div>
+        )}
+      </div>
+
+      <Card className="border-slate-700 bg-[#1e293b] overflow-hidden p-0">
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-600 border-t-slate-200" />
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-slate-300">
+              <thead>
+                {table.getHeaderGroups().map((hg) => (
+                  <tr key={hg.id} className="border-b border-slate-700">
+                    {hg.headers.map((h) => (
+                      <th
+                        key={h.id}
+                        className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500"
+                      >
+                        {flexRender(h.column.columnDef.header, h.getContext())}
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              <tbody>
+                {table.getRowModel().rows.map((row) => (
+                  <tr
+                    key={row.id}
+                    className="border-b border-slate-700/50 transition-colors hover:bg-slate-700/20"
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id} className="px-4 py-3">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+                {sellers.length === 0 && (
+                  <tr>
+                    <td colSpan={columns.length} className="py-12 text-center text-slate-500">
+                      No hay sellers registrados
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
+      <SellerFormModal
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        seller={editSeller}
+        onSaved={onSaved}
+      />
+
+      <ImportResultModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        result={importResult}
+      />
+    </div>
+  )
+}

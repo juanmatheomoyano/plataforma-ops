@@ -7,6 +7,7 @@ import { Shell } from "@/core/layout/Shell"
 import Dashboard from "@/pages/Dashboard"
 import Login from "@/pages/Login"
 import UsersPage from "@/modules/users/UsersPage"
+import SellersPage from "@/modules/sellers/SellersPage"
 import "./index.css"
 
 function RoleRoute({ roles, children }) {
@@ -45,6 +46,14 @@ export default function App() {
               element={
                 <RoleRoute roles={["admin"]}>
                   <UsersPage />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="sellers"
+              element={
+                <RoleRoute roles={["admin"]}>
+                  <SellersPage />
                 </RoleRoute>
               }
             />
