@@ -1,11 +1,15 @@
 import { useEffect } from "react"
-import { check } from "@tauri-apps/plugin-updater"
-import { relaunch } from "@tauri-apps/plugin-process"
 
 export function useAutoUpdate() {
   useEffect(() => {
     async function checkForUpdates() {
       try {
+        // Solo correr en Tauri, no en browser
+        if (!window.__TAURI_INTERNALS__) return
+
+        const { check } = await import("@tauri-apps/plugin-updater")
+        const { relaunch } = await import("@tauri-apps/plugin-process")
+
         const update = await check()
         if (update?.available) {
           const userConfirmed = window.confirm(
@@ -17,11 +21,10 @@ export function useAutoUpdate() {
           }
         }
       } catch (e) {
-        // Silencioso — no interrumpir al usuario si falla el check
-        console.log("Update check:", e)
+        console.log("Auto-update check failed (silencioso):", e)
       }
     }
-    const timer = setTimeout(checkForUpdates, 3000)
+    const timer = setTimeout(checkForUpdates, 5000)
     return () => clearTimeout(timer)
   }, [])
 }
