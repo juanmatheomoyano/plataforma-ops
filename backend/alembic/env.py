@@ -18,7 +18,7 @@ import app.modules.sellers.models  # noqa: F401
 import app.modules.crud_medios.models  # noqa: F401
 
 config = context.config
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+config.set_main_option("sqlalchemy.url", settings.async_database_url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
