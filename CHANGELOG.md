@@ -5,6 +5,21 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [1.1.1] — 2026-05-25 — Correcciones post-release
+
+### CRUD Medios de Pago
+- Corregido: exportar Excel ahora abre diálogo nativo del sistema para elegir dónde guardar
+- Corregido: tabla de resultados con scroll interno fijo (no requiere bajar al final de la página)
+
+### Sellers
+- Corregido: tabla con scroll interno fijo vertical y horizontal — funciona correctamente con 400+ sellers
+- Corregido: scroll lateral accesible sin bajar hasta el final de la lista
+
+### Usuarios
+- Corregido: tabla con scroll interno fijo por consistencia
+
+---
+
 ## [1.1.0] — 2026-05-25 — Mejoras backlog v1
 
 ### CRUD Medios de Pago
