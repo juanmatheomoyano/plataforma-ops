@@ -118,8 +118,8 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
           estado_keys: form.estado_keys,
           integracion: form.integracion || undefined,
           vendiendo: form.vendiendo,
-          analista: form.analista || undefined,
-          notas: form.notas || undefined,
+          analista: form.analista || null,
+          notas: form.notas || null,
           is_active: form.is_active,
           ...(form.app_key ? { app_key: form.app_key } : {}),
           ...(form.app_token ? { app_token: form.app_token } : {}),
@@ -139,8 +139,8 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
           estado_keys: form.estado_keys,
           integracion: form.integracion || undefined,
           vendiendo: form.vendiendo,
-          analista: form.analista || undefined,
-          notas: form.notas || undefined,
+          analista: form.analista || null,
+          notas: form.notas || null,
         })
         onSaved(data)
         toast.success("Seller creado")

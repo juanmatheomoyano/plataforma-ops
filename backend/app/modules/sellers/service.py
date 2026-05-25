@@ -109,7 +109,8 @@ async def update_seller(
 ) -> Seller:
     seller = await get_seller_by_id(seller_id, db)
 
-    update_data = data.model_dump(exclude_none=True)
+    # exclude_unset=True: solo los campos presentes en el body; permite setear null explícito
+    update_data = data.model_dump(exclude_unset=True)
 
     if "app_key" in update_data:
         seller.app_key_enc = encrypt(update_data.pop("app_key"))
