@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { api } from "@/core/api/client"
+import client from "@/core/api/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -31,7 +31,7 @@ export function ChangePasswordModal({ onClose }) {
     }
     setLoading(true)
     try {
-      await api.post("/users/me/change-password", form)
+      await client.post("/users/me/change-password", form)
       setSuccess(true)
       setTimeout(onClose, 1500)
     } catch (err) {
