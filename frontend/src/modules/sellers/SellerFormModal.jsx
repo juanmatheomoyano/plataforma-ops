@@ -202,6 +202,7 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
         const payload = {
           id_ecommerce: form.id_ecommerce || undefined,
           seller_name: form.seller_name || undefined,
+          seller_id: form.seller_id || undefined,
           creado_por: form.creado_por || undefined,
           fecha_creacion: form.fecha_creacion || undefined,
           estado_keys: form.estado_keys,
@@ -275,16 +276,16 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
             </Field>
           </div>
 
-          <Field label={isEdit ? "Seller ID" : "Seller ID *"}>
+          <Field label="Seller ID *">
             <Input
               value={form.seller_id}
               onChange={(e) => set("seller_id", e.target.value)}
-              required={!isEdit}
-              disabled={loading || isEdit}
-              className="border-slate-600 bg-slate-800 text-slate-100 disabled:opacity-60"
+              required
+              disabled={loading}
+              className="border-slate-600 bg-slate-800 text-slate-100"
             />
             {isEdit && (
-              <p className="text-xs text-slate-500 mt-1">El Seller ID no puede modificarse</p>
+              <p className="text-xs text-amber-500/80 mt-1">Cambiar el Seller ID puede afectar la conexión con VTEX</p>
             )}
           </Field>
 

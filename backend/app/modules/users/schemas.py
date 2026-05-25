@@ -42,3 +42,17 @@ class SelfChangePassword(BaseModel):
     current_password: str
     new_password: str
     confirm_password: str
+
+
+class UserImportError(BaseModel):
+    fila: int
+    username: str | None
+    motivo: str
+
+
+class UserImportUpdateResult(BaseModel):
+    total: int
+    actualizados: int
+    creados: int
+    errores: int
+    detalle_errores: list[UserImportError]

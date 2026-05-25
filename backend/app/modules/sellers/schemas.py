@@ -25,6 +25,7 @@ class SellerCreate(BaseModel):
 class SellerUpdate(BaseModel):
     id_ecommerce: str | None = None
     seller_name: str | None = None
+    seller_id: str | None = None
     app_key: str | None = None
     app_token: str | None = None
     creado_por: str | None = None
@@ -91,5 +92,13 @@ class ImportError(BaseModel):
 class SellerImportResult(BaseModel):
     total: int
     exitosos: int
+    errores: int
+    detalle_errores: list[ImportError]
+
+
+class SellerImportUpdateResult(BaseModel):
+    total: int
+    actualizados: int
+    creados: int
     errores: int
     detalle_errores: list[ImportError]

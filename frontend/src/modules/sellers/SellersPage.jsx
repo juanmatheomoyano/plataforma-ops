@@ -4,7 +4,9 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { Pencil, Plug, Search, Upload, UserX } from "lucide-react"
+import { Download, Pencil, Plug, Search, Upload, UserX } from "lucide-react"
+import { save } from "@tauri-apps/plugin-dialog"
+import { writeFile } from "@tauri-apps/plugin-fs"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
@@ -24,6 +26,7 @@ const ESTADO_BADGE = {
 export default function SellersPage() {
   const { hasRole } = useAuth()
   const isAdmin = hasRole(["admin"])
+  const canExport = hasRole(["admin", "analista_senior"])
 
   const [sellers, setSellers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -102,16 +105,32 @@ export default function SellersPage() {
     const form = new FormData()
     form.append("file", file)
     try {
-      const { data } = await client.post("/sellers/import", form, {
+      const { data } = await client.post("/sellers/import-update", form, {
         headers: { "Content-Type": "multipart/form-data" },
       })
       setImportResult(data)
       setImportOpen(true)
-      if (data.exitosos > 0) fetchSellers()
+      if ((data.actualizados ?? 0) + (data.creados ?? 0) > 0) fetchSellers()
     } catch (err) {
       toast.error(err.response?.data?.detail ?? "Error al importar")
     } finally {
       setImporting(false)
+    }
+  }
+
+  async function handleExport() {
+    try {
+      const { data } = await client.get("/sellers/export", { responseType: "arraybuffer" })
+      const filePath = await save({
+        filters: [{ name: "Excel", extensions: ["xlsx"] }],
+        defaultPath: `sellers_${new Date().toISOString().slice(0, 10)}.xlsx`,
+      })
+      if (filePath) {
+        await writeFile(filePath, new Uint8Array(data))
+        toast.success("Exportación guardada")
+      }
+    } catch (err) {
+      toast.error("Error al exportar sellers")
     }
   }
 
@@ -254,15 +273,25 @@ export default function SellersPage() {
           <h1 className="text-2xl font-semibold text-slate-100">Sellers</h1>
           <p className="text-sm text-slate-400">Gestión de sellers y credenciales VTEX</p>
         </div>
-        {isAdmin && (
-          <div className="flex gap-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx"
-              className="hidden"
-              onChange={handleFileChange}
-            />
+        <div className="flex gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+          {canExport && (
+            <Button
+              variant="outline"
+              onClick={handleExport}
+              className="border-slate-600 bg-transparent text-slate-300 hover:bg-slate-700 hover:text-slate-100"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Exportar Excel
+            </Button>
+          )}
+          {isAdmin && (
             <Button
               variant="outline"
               disabled={importing}
@@ -272,14 +301,16 @@ export default function SellersPage() {
               <Upload className="mr-2 h-4 w-4" />
               {importing ? "Importando…" : "Importar Excel"}
             </Button>
+          )}
+          {isAdmin && (
             <Button
               className="bg-slate-100 text-slate-900 hover:bg-slate-200"
               onClick={() => { setEditSeller(null); setFormOpen(true) }}
             >
               + Nuevo seller
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Search + filters */}

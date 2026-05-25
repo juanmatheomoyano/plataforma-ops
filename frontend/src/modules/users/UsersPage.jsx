@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { KeyRound, Pencil, UserX } from "lucide-react"
+import { Download, KeyRound, Pencil, Upload, UserX } from "lucide-react"
+import { save } from "@tauri-apps/plugin-dialog"
+import { writeFile } from "@tauri-apps/plugin-fs"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -13,6 +15,7 @@ import { useAuth } from "@/core/auth/useAuth"
 import client from "@/core/api/client"
 import { UserFormModal } from "./UserFormModal"
 import { ResetPasswordModal } from "./ResetPasswordModal"
+import { ImportResultModal } from "@/modules/sellers/ImportResultModal"
 
 const ROLE_BADGE = {
   admin: "bg-violet-900/60 text-violet-300 border-violet-700",
@@ -57,6 +60,11 @@ export default function UsersPage() {
   const [resetOpen, setResetOpen] = useState(false)
   const [resetUser, setResetUser] = useState(null)
 
+  const [importResult, setImportResult] = useState(null)
+  const [importOpen, setImportOpen] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const fileInputRef = useRef(null)
+
   async function fetchUsers() {
     try {
       const { data } = await client.get("/users")
@@ -80,6 +88,43 @@ export default function UsersPage() {
       }
       return [...prev, savedUser]
     })
+  }
+
+  async function handleExport() {
+    try {
+      const { data } = await client.get("/users/export", { responseType: "arraybuffer" })
+      const filePath = await save({
+        filters: [{ name: "Excel", extensions: ["xlsx"] }],
+        defaultPath: `usuarios_${new Date().toISOString().slice(0, 10)}.xlsx`,
+      })
+      if (filePath) {
+        await writeFile(filePath, new Uint8Array(data))
+        toast.success("Exportación guardada")
+      }
+    } catch {
+      toast.error("Error al exportar usuarios")
+    }
+  }
+
+  async function handleImportFile(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ""
+    setImporting(true)
+    const form = new FormData()
+    form.append("file", file)
+    try {
+      const { data } = await client.post("/users/import-update", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      setImportResult(data)
+      setImportOpen(true)
+      if ((data.actualizados ?? 0) + (data.creados ?? 0) > 0) fetchUsers()
+    } catch (err) {
+      toast.error(err.response?.data?.detail ?? "Error al importar")
+    } finally {
+      setImporting(false)
+    }
   }
 
   async function handleDeactivate(row) {
@@ -188,12 +233,38 @@ export default function UsersPage() {
           <h1 className="text-2xl font-semibold text-slate-100">Usuarios</h1>
           <p className="text-sm text-slate-400">Gestión de accesos — solo admins</p>
         </div>
-        <Button
-          className="bg-slate-100 text-slate-900 hover:bg-slate-200"
-          onClick={() => { setEditUser(null); setFormOpen(true) }}
-        >
-          + Nuevo usuario
-        </Button>
+        <div className="flex gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx"
+            className="hidden"
+            onChange={handleImportFile}
+          />
+          <Button
+            variant="outline"
+            onClick={handleExport}
+            className="border-slate-600 bg-transparent text-slate-300 hover:bg-slate-700 hover:text-slate-100"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Exportar Excel
+          </Button>
+          <Button
+            variant="outline"
+            disabled={importing}
+            onClick={() => fileInputRef.current?.click()}
+            className="border-slate-600 bg-transparent text-slate-300 hover:bg-slate-700 hover:text-slate-100"
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            {importing ? "Importando…" : "Importar Excel"}
+          </Button>
+          <Button
+            className="bg-slate-100 text-slate-900 hover:bg-slate-200"
+            onClick={() => { setEditUser(null); setFormOpen(true) }}
+          >
+            + Nuevo usuario
+          </Button>
+        </div>
       </div>
 
       <Card className="border-slate-700 bg-[#1e293b] overflow-hidden p-0">
@@ -258,6 +329,12 @@ export default function UsersPage() {
         open={resetOpen}
         onClose={() => setResetOpen(false)}
         user={resetUser}
+      />
+
+      <ImportResultModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        result={importResult}
       />
     </div>
   )

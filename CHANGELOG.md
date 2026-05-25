@@ -5,6 +5,19 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [1.3.0] — 2026-05-25 — Exportar/Importar Sellers y Usuarios
+
+### Sellers
+- Nuevo: Exportar tabla completa a Excel (sin credenciales) — disponible para admin y analista_senior
+- Nuevo: Importar Excel para actualizaciones masivas (actualiza existentes, crea nuevos con credenciales vacías)
+- Nuevo: Seller ID editable en formulario de edición
+
+### Usuarios
+- Nuevo: Exportar lista de usuarios a Excel (sin contraseñas)
+- Nuevo: Importar usuarios desde Excel (actualiza existentes, crea nuevos con contraseña Provincia.2026)
+
+---
+
 ## [1.2.1] — 2026-05-25 — Cambio de contraseña propio + filtros CRUD + limpieza historial
 
 ### Usuarios

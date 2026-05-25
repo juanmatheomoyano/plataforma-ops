@@ -1,3 +1,4 @@
+import io
 import uuid
 from datetime import datetime, timezone
 
@@ -11,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import decrypt, encrypt
 
 from .models import EstadoKeys, Seller
-from .schemas import ImportError, SellerCreate, SellerImportResult, SellerUpdate
+from .schemas import ImportError, SellerCreate, SellerImportResult, SellerImportUpdateResult, SellerUpdate
 
 # Excel column → model field mapping (lower-stripped keys for fuzzy match)
 _COL_MAP = {
@@ -236,6 +237,140 @@ async def import_sellers_from_file(
     return SellerImportResult(
         total=total,
         exitosos=exitosos,
+        errores=len(errors),
+        detalle_errores=errors,
+    )
+
+
+_EXPORT_COLS = [
+    "id_ecommerce", "seller_name", "seller_id", "analista", "estado_keys",
+    "integracion", "integracion_spec", "vendiendo", "creado_por", "fecha_creacion",
+    "notas", "is_active",
+]
+
+
+def _map_col_update(header: str) -> str | None:
+    h = header.strip().lower()
+    if h in _EXPORT_COLS:
+        return h
+    return _COL_MAP.get(h)
+
+
+def _parse_active(val) -> bool:
+    if isinstance(val, bool):
+        return val
+    return str(val).strip().lower() in {"activo", "active", "true", "1", "sí", "si", "s"}
+
+
+async def export_sellers_xlsx(db: AsyncSession) -> bytes:
+    sellers = await get_all_sellers(db, limit=10000)
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Sellers"
+    ws.append(_EXPORT_COLS)
+    for s in sellers:
+        ws.append([
+            s.id_ecommerce,
+            s.seller_name,
+            s.seller_id,
+            s.analista,
+            s.estado_keys.value if s.estado_keys else "",
+            s.integracion,
+            s.integracion_spec,
+            "Sí" if s.vendiendo else "No",
+            s.creado_por,
+            s.fecha_creacion,
+            s.notas,
+            "activo" if s.is_active else "inactivo",
+        ])
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+
+async def import_update_sellers(
+    file: UploadFile, db: AsyncSession
+) -> SellerImportUpdateResult:
+    content = await file.read()
+    wb = openpyxl.load_workbook(io.BytesIO(content), data_only=True)
+    ws = wb.active
+
+    rows = list(ws.iter_rows(values_only=True))
+    if not rows:
+        return SellerImportUpdateResult(total=0, actualizados=0, creados=0, errores=0, detalle_errores=[])
+
+    raw_headers = [str(h).strip() if h is not None else "" for h in rows[0]]
+    col_idx_map = {i: _map_col_update(h) for i, h in enumerate(raw_headers) if _map_col_update(h)}
+
+    actualizados = creados = 0
+    errors: list[ImportError] = []
+
+    for row_idx, raw_row in enumerate(rows[1:], start=2):
+        row_dict: dict = {col_idx_map[i]: raw_row[i] for i in col_idx_map if i < len(raw_row)}
+        sid = str(row_dict.get("seller_id") or "").strip()
+        if not sid:
+            continue
+
+        try:
+            result = await db.execute(select(Seller).where(Seller.seller_id == sid))
+            existing = result.scalar_one_or_none()
+
+            if existing:
+                for field in ("id_ecommerce", "seller_name", "analista", "integracion",
+                              "integracion_spec", "creado_por", "fecha_creacion", "notas"):
+                    val = row_dict.get(field)
+                    if val is not None:
+                        setattr(existing, field, str(val).strip() or None if field not in ("id_ecommerce", "seller_name") else str(val).strip())
+                if "estado_keys" in row_dict:
+                    existing.estado_keys = _parse_estado(row_dict["estado_keys"])
+                if "vendiendo" in row_dict:
+                    existing.vendiendo = _parse_bool(row_dict["vendiendo"])
+                if "is_active" in row_dict:
+                    existing.is_active = _parse_active(row_dict["is_active"])
+                existing.updated_at = datetime.now(timezone.utc)
+                await db.commit()
+                await db.refresh(existing)
+                actualizados += 1
+            else:
+                id_ecommerce = str(row_dict.get("id_ecommerce") or "").strip()
+                seller_name = str(row_dict.get("seller_name") or "").strip()
+                if not id_ecommerce or not seller_name:
+                    errors.append(ImportError(fila=row_idx, seller_id=sid, motivo="id_ecommerce y seller_name son requeridos para crear"))
+                    continue
+                new_seller = Seller(
+                    id_ecommerce=id_ecommerce,
+                    seller_name=seller_name,
+                    seller_id=sid,
+                    app_key_enc=None,
+                    app_token_enc=None,
+                    analista=str(row_dict.get("analista") or "").strip() or None,
+                    estado_keys=_parse_estado(row_dict.get("estado_keys")),
+                    integracion=str(row_dict.get("integracion") or "").strip() or None,
+                    integracion_spec=str(row_dict.get("integracion_spec") or "").strip() or None,
+                    vendiendo=_parse_bool(row_dict.get("vendiendo")),
+                    creado_por=str(row_dict.get("creado_por") or "").strip() or None,
+                    fecha_creacion=str(row_dict.get("fecha_creacion") or "").strip() or None,
+                    notas=str(row_dict.get("notas") or "").strip() or None,
+                    is_active=_parse_active(row_dict.get("is_active", True)),
+                )
+                db.add(new_seller)
+                try:
+                    await db.commit()
+                    await db.refresh(new_seller)
+                    creados += 1
+                except IntegrityError:
+                    await db.rollback()
+                    errors.append(ImportError(fila=row_idx, seller_id=sid, motivo="id_ecommerce o seller_id ya existe"))
+
+        except Exception as e:
+            await db.rollback()
+            errors.append(ImportError(fila=row_idx, seller_id=sid, motivo=str(e)))
+
+    total = len(rows) - 1
+    return SellerImportUpdateResult(
+        total=total,
+        actualizados=actualizados,
+        creados=creados,
         errores=len(errors),
         detalle_errores=errors,
     )
