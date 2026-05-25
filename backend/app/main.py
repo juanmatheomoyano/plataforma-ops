@@ -5,6 +5,7 @@ from app.core.config import settings
 from app.modules.auth.router import router as auth_router
 from app.modules.users.router import router as users_router
 from app.modules.sellers.router import router as sellers_router
+from app.modules.crud_medios.router import router as crud_medios_router
 
 app = FastAPI(title="Plataforma Ops")
 
@@ -22,6 +23,7 @@ app.add_middleware(
 app.include_router(auth_router, prefix="/api")
 app.include_router(users_router, prefix="/api")
 app.include_router(sellers_router, prefix="/api")
+app.include_router(crud_medios_router, prefix="/api")
 
 
 @app.get("/health")
