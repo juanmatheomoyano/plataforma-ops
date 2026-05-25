@@ -1,6 +1,6 @@
 import { useEffect } from "react"
 import { check } from "@tauri-apps/plugin-updater"
-import { relaunch } from "@tauri-apps/plugin-process"
+import { restart } from "@tauri-apps/plugin-process"
 
 export function useAutoUpdate() {
   useEffect(() => {
@@ -13,7 +13,7 @@ export function useAutoUpdate() {
           )
           if (userConfirmed) {
             await update.downloadAndInstall()
-            await relaunch()
+            await restart()
           }
         }
       } catch (e) {
