@@ -87,6 +87,7 @@ async def create_seller(data: SellerCreate, db: AsyncSession) -> Seller:
         fecha_creacion=data.fecha_creacion,
         estado_keys=data.estado_keys,
         integracion=data.integracion,
+        integracion_spec=data.integracion_spec,
         vendiendo=data.vendiendo,
         analista=data.analista,
         notas=data.notas,

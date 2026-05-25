@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Eye, EyeOff, Loader2 } from "lucide-react"
+import { Eye, EyeOff, Loader2, Plus } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
@@ -31,11 +31,14 @@ const EMPTY = {
   fecha_creacion: "",
   estado_keys: "activo",
   integracion: "",
+  integracion_spec: "",
   vendiendo: false,
   analista: "",
   notas: "",
   is_active: true,
 }
+
+const SPECS_VISIBLE_FOR = ["Manual", "Propia"]
 
 function PasswordField({ label, value, onChange, disabled, placeholder, required }) {
   const [show, setShow] = useState(false)
@@ -74,12 +77,70 @@ function Field({ label, children }) {
   )
 }
 
+// Inline "nueva opción" input dentro de un select
+function NewOptionInput({ placeholder, onConfirm, onCancel }) {
+  const [value, setValue] = useState("")
+  return (
+    <div className="flex items-center gap-1 px-2 py-1">
+      <Input
+        autoFocus
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder={placeholder}
+        className="h-7 border-slate-600 bg-slate-900 text-xs text-slate-100"
+        onKeyDown={(e) => {
+          if (e.key === "Enter") { e.preventDefault(); if (value.trim()) onConfirm(value.trim()) }
+          if (e.key === "Escape") onCancel()
+        }}
+      />
+      <Button
+        type="button" size="sm"
+        className="h-7 px-2 text-xs bg-slate-600 hover:bg-slate-500"
+        onClick={() => value.trim() && onConfirm(value.trim())}
+      >
+        <Plus className="h-3 w-3" />
+      </Button>
+    </div>
+  )
+}
+
 export function SellerFormModal({ open, onClose, seller, onSaved }) {
   const isEdit = !!seller
   const [form, setForm] = useState(EMPTY)
   const [loading, setLoading] = useState(false)
 
+  const [analistas, setAnalistas] = useState([])
+  const [integraciones, setIntegraciones] = useState([])
+  const [specs, setSpecs] = useState([])
+  const [loadingSpecs, setLoadingSpecs] = useState(false)
+
+  const [showNewIntegracion, setShowNewIntegracion] = useState(false)
+  const [showNewSpec, setShowNewSpec] = useState(false)
+
+  // Fetch analistas e integraciones al abrir
   useEffect(() => {
+    if (!open) return
+    client.get("/sellers/analistas").then(({ data }) => setAnalistas(data)).catch(() => {})
+    client.get("/sellers/integraciones").then(({ data }) => setIntegraciones(data)).catch(() => {})
+  }, [open])
+
+  // Fetch specs cuando cambia la integración seleccionada
+  useEffect(() => {
+    const integracion = form.integracion
+    if (!integracion || !SPECS_VISIBLE_FOR.includes(integracion)) {
+      setSpecs([])
+      return
+    }
+    setLoadingSpecs(true)
+    client.get(`/sellers/integraciones/${encodeURIComponent(integracion)}/specs`)
+      .then(({ data }) => setSpecs(data))
+      .catch(() => setSpecs([]))
+      .finally(() => setLoadingSpecs(false))
+  }, [form.integracion])
+
+  useEffect(() => {
+    setShowNewIntegracion(false)
+    setShowNewSpec(false)
     setForm(
       isEdit
         ? {
@@ -92,6 +153,7 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
             fecha_creacion: seller.fecha_creacion ?? "",
             estado_keys: seller.estado_keys ?? "activo",
             integracion: seller.integracion ?? "",
+            integracion_spec: seller.integracion_spec ?? "",
             vendiendo: seller.vendiendo ?? false,
             analista: seller.analista ?? "",
             notas: seller.notas ?? "",
@@ -105,6 +167,33 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
     setForm((f) => ({ ...f, [field]: value }))
   }
 
+  function handleIntegracionChange(value) {
+    set("integracion", value)
+    set("integracion_spec", "")
+  }
+
+  async function handleNewSpec(specName) {
+    try {
+      const { data } = await client.post("/sellers/integraciones/specs", {
+        integracion: form.integracion,
+        spec: specName,
+      })
+      setSpecs((prev) => [...prev, data].sort((a, b) => a.spec.localeCompare(b.spec)))
+      set("integracion_spec", specName)
+      setShowNewSpec(false)
+    } catch (err) {
+      toast.error(err.response?.data?.detail ?? "Error al crear especificación")
+    }
+  }
+
+  function handleNewIntegracion(nombre) {
+    if (!integraciones.includes(nombre)) {
+      setIntegraciones((prev) => [...prev, nombre].sort())
+    }
+    handleIntegracionChange(nombre)
+    setShowNewIntegracion(false)
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     setLoading(true)
@@ -116,7 +205,8 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
           creado_por: form.creado_por || undefined,
           fecha_creacion: form.fecha_creacion || undefined,
           estado_keys: form.estado_keys,
-          integracion: form.integracion || undefined,
+          integracion: form.integracion || null,
+          integracion_spec: form.integracion_spec || null,
           vendiendo: form.vendiendo,
           analista: form.analista || null,
           notas: form.notas || null,
@@ -137,7 +227,8 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
           creado_por: form.creado_por || undefined,
           fecha_creacion: form.fecha_creacion || undefined,
           estado_keys: form.estado_keys,
-          integracion: form.integracion || undefined,
+          integracion: form.integracion || null,
+          integracion_spec: form.integracion_spec || null,
           vendiendo: form.vendiendo,
           analista: form.analista || null,
           notas: form.notas || null,
@@ -152,6 +243,8 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
       setLoading(false)
     }
   }
+
+  const showSpecs = SPECS_VISIBLE_FOR.includes(form.integracion)
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -218,21 +311,35 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
           </p>
 
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Creado por">
-              <Input
-                value={form.creado_por}
-                onChange={(e) => set("creado_por", e.target.value)}
+            {/* Analista — select */}
+            <Field label="Analista">
+              <Select
+                value={form.analista}
+                onValueChange={(v) => set("analista", v === "__none__" ? "" : v)}
                 disabled={loading}
-                className="border-slate-600 bg-slate-800 text-slate-100"
-              />
+              >
+                <SelectTrigger className="border-slate-600 bg-slate-800 text-slate-100">
+                  <SelectValue placeholder="Sin asignar" />
+                </SelectTrigger>
+                <SelectContent className="border-slate-700 bg-slate-800 text-slate-100">
+                  <SelectItem value="__none__" className="focus:bg-slate-700 text-slate-400">Sin asignar</SelectItem>
+                  {analistas.map((a) => (
+                    <SelectItem key={a.username} value={a.username} className="focus:bg-slate-700">
+                      {a.full_name || a.username}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
+
+            {/* Fecha de creación — date picker nativo */}
             <Field label="Fecha de creación">
-              <Input
+              <input
+                type="date"
                 value={form.fecha_creacion}
                 onChange={(e) => set("fecha_creacion", e.target.value)}
                 disabled={loading}
-                placeholder="ej. 2024-01-15"
-                className="border-slate-600 bg-slate-800 text-slate-100"
+                className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-slate-500 disabled:opacity-60"
               />
             </Field>
           </div>
@@ -254,6 +361,7 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
                 </SelectContent>
               </Select>
             </Field>
+
             <Field label="Vendiendo">
               <Select
                 value={form.vendiendo ? "si" : "no"}
@@ -269,36 +377,96 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Integración">
+
+            {/* Creado por */}
+            <Field label="Creado por">
               <Input
-                value={form.integracion}
-                onChange={(e) => set("integracion", e.target.value)}
+                value={form.creado_por}
+                onChange={(e) => set("creado_por", e.target.value)}
                 disabled={loading}
                 className="border-slate-600 bg-slate-800 text-slate-100"
               />
             </Field>
           </div>
 
+          {/* Integración */}
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Analista">
-              <Input
-                value={form.analista}
-                onChange={(e) => set("analista", e.target.value)}
-                disabled={loading}
-                className="border-slate-600 bg-slate-800 text-slate-100"
-              />
-            </Field>
-            {isEdit && (
-              <div className="flex items-center justify-between pt-6">
-                <Label className="text-slate-300">Activo</Label>
-                <Switch
-                  checked={form.is_active}
-                  onCheckedChange={(v) => set("is_active", v)}
-                  disabled={loading}
+            <Field label="Integración">
+              {showNewIntegracion ? (
+                <NewOptionInput
+                  placeholder="Nombre de la integración"
+                  onConfirm={handleNewIntegracion}
+                  onCancel={() => setShowNewIntegracion(false)}
                 />
-              </div>
+              ) : (
+                <Select
+                  value={form.integracion}
+                  onValueChange={(v) => {
+                    if (v === "__nueva__") { setShowNewIntegracion(true); return }
+                    handleIntegracionChange(v)
+                  }}
+                  disabled={loading}
+                >
+                  <SelectTrigger className="border-slate-600 bg-slate-800 text-slate-100">
+                    <SelectValue placeholder="Seleccionar..." />
+                  </SelectTrigger>
+                  <SelectContent className="border-slate-700 bg-slate-800 text-slate-100 max-h-56">
+                    {integraciones.map((i) => (
+                      <SelectItem key={i} value={i} className="focus:bg-slate-700">{i}</SelectItem>
+                    ))}
+                    <SelectItem value="__nueva__" className="focus:bg-slate-700 text-blue-400">
+                      + Nueva integración...
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </Field>
+
+            {/* Especificación — solo para Manual o Propia */}
+            {showSpecs && (
+              <Field label="Especificación">
+                {showNewSpec ? (
+                  <NewOptionInput
+                    placeholder="Nombre de la especificación"
+                    onConfirm={handleNewSpec}
+                    onCancel={() => setShowNewSpec(false)}
+                  />
+                ) : (
+                  <Select
+                    value={form.integracion_spec}
+                    onValueChange={(v) => {
+                      if (v === "__nueva__") { setShowNewSpec(true); return }
+                      set("integracion_spec", v)
+                    }}
+                    disabled={loading || loadingSpecs}
+                  >
+                    <SelectTrigger className="border-slate-600 bg-slate-800 text-slate-100">
+                      <SelectValue placeholder={loadingSpecs ? "Cargando..." : "Seleccionar..."} />
+                    </SelectTrigger>
+                    <SelectContent className="border-slate-700 bg-slate-800 text-slate-100">
+                      {specs.map((s) => (
+                        <SelectItem key={s.id} value={s.spec} className="focus:bg-slate-700">{s.spec}</SelectItem>
+                      ))}
+                      <SelectItem value="__nueva__" className="focus:bg-slate-700 text-blue-400">
+                        + Nueva especificación...
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </Field>
             )}
           </div>
+
+          {isEdit && (
+            <div className="flex items-center justify-between pt-1">
+              <Label className="text-slate-300">Activo</Label>
+              <Switch
+                checked={form.is_active}
+                onCheckedChange={(v) => set("is_active", v)}
+                disabled={loading}
+              />
+            </div>
+          )}
 
           <Field label="Notas">
             <Textarea

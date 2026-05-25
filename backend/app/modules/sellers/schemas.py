@@ -16,6 +16,7 @@ class SellerCreate(BaseModel):
     fecha_creacion: str | None = None
     estado_keys: EstadoKeys = EstadoKeys.activo
     integracion: str | None = None
+    integracion_spec: str | None = None
     vendiendo: bool = False
     analista: str | None = None
     notas: str | None = None
@@ -30,6 +31,7 @@ class SellerUpdate(BaseModel):
     fecha_creacion: str | None = None
     estado_keys: EstadoKeys | None = None
     integracion: str | None = None
+    integracion_spec: str | None = None
     vendiendo: bool | None = None
     analista: str | None = None
     notas: str | None = None
@@ -45,12 +47,33 @@ class SellerOut(BaseModel):
     fecha_creacion: str | None
     estado_keys: EstadoKeys
     integracion: str | None
+    integracion_spec: str | None
     vendiendo: bool
     analista: str | None
     notas: str | None
     is_active: bool
     created_at: datetime
     updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class IntegracionSpecCreate(BaseModel):
+    integracion: str
+    spec: str
+
+
+class IntegracionSpecOut(BaseModel):
+    id: uuid.UUID
+    integracion: str
+    spec: str
+
+    model_config = {"from_attributes": True}
+
+
+class AnalistaOut(BaseModel):
+    username: str
+    full_name: str | None
 
     model_config = {"from_attributes": True}
 

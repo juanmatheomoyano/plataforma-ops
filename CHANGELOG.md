@@ -5,6 +5,17 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [1.2.0] — 2026-05-25 — Mejoras formulario Sellers
+
+### Sellers
+- Nuevo: Campo Analista como select de usuarios activos de la plataforma
+- Nuevo: Campo Fecha de creación con DatePicker y calendario
+- Nuevo: Campo Integración como select con lista predefinida + opción crear nueva
+- Nuevo: Campo Especificación de integración (solo para Manual/Propia) con opciones dinámicas + crear nueva
+- Nuevo: Tabla integracion_specs en BD para almacenar especificaciones personalizadas
+
+---
+
 ## [1.1.1] — 2026-05-25 — Correcciones post-release
 
 ### CRUD Medios de Pago

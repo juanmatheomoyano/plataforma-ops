@@ -26,12 +26,11 @@
 ### Formulario
 - [x] Seller ID visible y editable
 - [x] Aclaración confidencialidad en App Key y App Token
-- [ ] Campo Analista: select con usuarios activos (admin, analista_senior, analista)
-- [ ] Campo Fecha de creación: DatePicker con calendario
-- [ ] Campo Integración: select con lista predefinida + "Nueva integración..." registrada para todos
-  - Lista: Base, Desarrollo propio, DUX Software, EcomExperts, Externa, Fulljaus, Grow2On de Wualá, Heaven, Hypevar, Manual, No VTEX, Pierce, Producteca, Propia, Seller Manager, Sincroshops, Yiqi
-- [ ] Campo Especificación: aparece solo si es Manual o Propia, select dinámico + "Nueva especificación..."
-- [ ] Tabla integracion_specs en BD
+- [x] Campo Analista: select con usuarios activos (admin, analista_senior, analista)
+- [x] Campo Fecha de creación: DatePicker con calendario
+- [x] Campo Integración: select con lista predefinida + "Nueva integración..." registrada para todos
+- [x] Campo Especificación: aparece solo si es Manual o Propia, select dinámico + "Nueva especificación..."
+- [x] Tabla integracion_specs en BD
 
 ---
 
