@@ -54,14 +54,44 @@ async function exportXLSX(rows) {
   }
 }
 
+const BRANDS = ["Visa", "Mastercard", "American Express", "Electron", "Maestro", "Naranja", "Cabal", "Diners", "Amex"]
+const ESTADOS = ["activo", "inactivo"]
+const RESULTADOS = [
+  { value: "", label: "Todos" },
+  { value: "matched", label: "OK" },
+  { value: "dry_run", label: "DRY RUN" },
+  { value: "creado", label: "CREADA" },
+  { value: "actualizado", label: "ACTUALIZADA" },
+  { value: "eliminado", label: "ELIMINADA" },
+  { value: "error", label: "ERROR" },
+]
+
 export function ResultsTable({ rows, onFilterErrors }) {
   const [globalFilter, setGlobalFilter] = useState("")
   const [showOnlyErrors, setShowOnlyErrors] = useState(false)
+  const [colFilters, setColFilters] = useState({ seller: "", brand: "", level: "", estado: "", resultado: "" })
 
-  const displayRows = useMemo(
-    () => (showOnlyErrors ? rows.filter((r) => r.detalle?.toLowerCase().startsWith("error")) : rows),
-    [rows, showOnlyErrors]
-  )
+  function setCol(field, value) {
+    setColFilters((f) => ({ ...f, [field]: value }))
+  }
+
+  function clearFilters() {
+    setColFilters({ seller: "", brand: "", level: "", estado: "", resultado: "" })
+    setShowOnlyErrors(false)
+    setGlobalFilter("")
+  }
+
+  const hasActiveFilters = Object.values(colFilters).some(Boolean) || showOnlyErrors || globalFilter
+
+  const displayRows = useMemo(() => {
+    let result = showOnlyErrors ? rows.filter((r) => r.detalle?.toLowerCase().startsWith("error")) : rows
+    if (colFilters.seller) result = result.filter((r) => r.seller_id?.toLowerCase().includes(colFilters.seller.toLowerCase()))
+    if (colFilters.brand) result = result.filter((r) => r.brand?.toLowerCase().includes(colFilters.brand.toLowerCase()))
+    if (colFilters.level) result = result.filter((r) => r.level?.toLowerCase().includes(colFilters.level.toLowerCase()))
+    if (colFilters.estado) result = result.filter((r) => r.estado === colFilters.estado)
+    if (colFilters.resultado) result = result.filter((r) => r.detalle?.toLowerCase().startsWith(colFilters.resultado))
+    return result
+  }, [rows, showOnlyErrors, colFilters])
 
   const columns = useMemo(
     () => [
@@ -175,6 +205,14 @@ export function ResultsTable({ rows, onFilterErrors }) {
               {errorCount} error{errorCount !== 1 ? "es" : ""}
             </button>
           )}
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="rounded-full border border-slate-600 px-3 py-1 text-xs text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition-colors"
+            >
+              Limpiar filtros
+            </button>
+          )}
           <Button
             size="sm"
             variant="outline"
@@ -185,6 +223,45 @@ export function ResultsTable({ rows, onFilterErrors }) {
             Excel
           </Button>
         </div>
+      </div>
+
+      {/* Column filters */}
+      <div className="flex gap-2 flex-wrap">
+        <Input
+          value={colFilters.seller}
+          onChange={(e) => setCol("seller", e.target.value)}
+          placeholder="Seller..."
+          className="border-slate-600 bg-slate-800/60 text-slate-100 placeholder:text-slate-600 h-7 text-xs w-40"
+        />
+        <select
+          value={colFilters.brand}
+          onChange={(e) => setCol("brand", e.target.value)}
+          className="h-7 rounded-md border border-slate-600 bg-slate-800/60 px-2 text-xs text-slate-300 focus:outline-none"
+        >
+          <option value="">Brand: Todos</option>
+          {BRANDS.map((b) => <option key={b} value={b}>{b}</option>)}
+        </select>
+        <Input
+          value={colFilters.level}
+          onChange={(e) => setCol("level", e.target.value)}
+          placeholder="Level..."
+          className="border-slate-600 bg-slate-800/60 text-slate-100 placeholder:text-slate-600 h-7 text-xs w-28"
+        />
+        <select
+          value={colFilters.estado}
+          onChange={(e) => setCol("estado", e.target.value)}
+          className="h-7 rounded-md border border-slate-600 bg-slate-800/60 px-2 text-xs text-slate-300 focus:outline-none"
+        >
+          <option value="">Estado: Todos</option>
+          {ESTADOS.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <select
+          value={colFilters.resultado}
+          onChange={(e) => setCol("resultado", e.target.value)}
+          className="h-7 rounded-md border border-slate-600 bg-slate-800/60 px-2 text-xs text-slate-300 focus:outline-none"
+        >
+          {RESULTADOS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+        </select>
       </div>
 
       <div

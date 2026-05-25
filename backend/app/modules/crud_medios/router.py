@@ -7,13 +7,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_user, require_role
 from app.modules.auth.models import User
 from app.modules.sellers.models import EstadoKeys, Seller
 
 from .models import CrudOperation
 from .schemas import CrudRequest, CrudResponse, OperationSummary, SellerScopeOut
-from .service import get_active_sellers, run_crud_operation
+from .service import cleanup_old_operations, get_active_sellers, run_crud_operation
 
 router = APIRouter(prefix="/crud-medios", tags=["crud-medios"])
 
@@ -170,3 +170,12 @@ async def get_stats(
         "total_usuarios_activos": total_usuarios_activos,
         "ultimo_operador": ultimo_operador,
     }
+
+
+@router.post("/cleanup")
+async def cleanup_history(
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_role(["admin"])),
+):
+    deleted = await cleanup_old_operations(db)
+    return {"deleted": deleted}

@@ -36,3 +36,9 @@ class UserOut(BaseModel):
 
 class ChangePassword(BaseModel):
     new_password: str
+
+
+class SelfChangePassword(BaseModel):
+    current_password: str
+    new_password: str
+    confirm_password: str

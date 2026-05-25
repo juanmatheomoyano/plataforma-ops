@@ -1,9 +1,12 @@
+import { useState } from "react"
 import { NavLink } from "react-router-dom"
-import { CreditCard, Home, LogOut, ShieldCheck, Store, Users } from "lucide-react"
+import { CreditCard, Home, KeyRound, LogOut, ShieldCheck, Store, Users } from "lucide-react"
 import { useAuth } from "@/core/auth/useAuth"
+import { ChangePasswordModal } from "@/core/components/ChangePasswordModal"
 
 export function Sidebar() {
   const { user, logout, hasRole } = useAuth()
+  const [showChangePassword, setShowChangePassword] = useState(false)
 
   const navItems = [
     { to: "/dashboard", label: "Dashboard", Icon: Home },
@@ -55,6 +58,13 @@ export function Sidebar() {
           <p className="text-xs text-slate-500 truncate">{user?.email}</p>
         </div>
         <button
+          onClick={() => setShowChangePassword(true)}
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-400 transition-colors hover:bg-slate-700/50 hover:text-slate-200"
+        >
+          <KeyRound className="h-4 w-4" />
+          Cambiar contraseña
+        </button>
+        <button
           onClick={logout}
           className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-400 transition-colors hover:bg-red-950/40 hover:text-red-400"
         >
@@ -62,6 +72,10 @@ export function Sidebar() {
           Cerrar sesión
         </button>
       </div>
+
+      {showChangePassword && (
+        <ChangePasswordModal onClose={() => setShowChangePassword(false)} />
+      )}
     </aside>
   )
 }

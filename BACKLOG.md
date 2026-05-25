@@ -43,10 +43,11 @@
 ### Tabla de resultados
 - [x] Exportar Excel (.xlsx) con diálogo nativo de guardado
 - [x] Scroll interno fijo en tabla
-- [ ] Filtros por columna en tabla de resultados
+- [x] Filtros por columna en tabla de resultados
 
 ---
 
 ## General
 - [x] Auto-update de Tauri 2
-- [ ] Limpieza automática de historial: borrar operaciones con más de 90 días
+- [x] Limpieza automática de historial: borrar operaciones con más de 90 días
+- [x] Cambio de contraseña propio (sidebar, cualquier rol)

@@ -7,7 +7,7 @@ from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_role
 
 from . import service
-from .schemas import ChangePassword, UserCreate, UserOut, UserUpdate
+from .schemas import ChangePassword, SelfChangePassword, UserCreate, UserOut, UserUpdate
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -17,6 +17,15 @@ _admin = Depends(require_role(["admin"]))
 @router.get("", response_model=list[UserOut], dependencies=[_admin])
 async def list_users(db: AsyncSession = Depends(get_db)):
     return await service.get_all_users(db)
+
+
+@router.post("/me/change-password", status_code=204)
+async def change_own_password(
+    data: SelfChangePassword,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await service.change_own_password(current_user, data, db)
 
 
 @router.get("/{user_id}", response_model=UserOut, dependencies=[_admin])

@@ -614,3 +614,17 @@ async def run_crud_operation(
         duration_secs=round(duration, 3),
         rows=rows,
     )
+
+
+async def cleanup_old_operations(db: AsyncSession) -> int:
+    cutoff = datetime.now(timezone.utc) - timedelta(days=90)
+    result = await db.execute(
+        select(CrudOperation).where(CrudOperation.started_at < cutoff)
+    )
+    ops = list(result.scalars().all())
+    for op in ops:
+        await db.delete(op)
+    if ops:
+        await db.commit()
+    logger.info("Cleanup: eliminadas %d operaciones con más de 90 días", len(ops))
+    return len(ops)

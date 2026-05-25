@@ -5,6 +5,23 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [1.2.1] — 2026-05-25 — Cambio de contraseña propio + filtros CRUD + limpieza historial
+
+### Usuarios
+- Nuevo: Botón "Cambiar contraseña" en el sidebar (disponible para todos los roles)
+- Nuevo: Modal con validación de contraseña actual, nueva y confirmación
+
+### CRUD Medios de Pago
+- Nuevo: Filtros por columna en tabla de resultados (Seller, Brand, Level, Estado, Resultado)
+- Nuevo: Botón "Limpiar filtros" cuando hay filtros activos
+
+### Backend
+- Nuevo: Endpoint POST /api/users/me/change-password (autenticado, cualquier rol)
+- Nuevo: Limpieza automática de historial al iniciar el servidor (operaciones con más de 90 días)
+- Nuevo: Endpoint POST /api/crud-medios/cleanup (solo admin)
+
+---
+
 ## [1.2.0] — 2026-05-25 — Mejoras formulario Sellers
 
 ### Sellers

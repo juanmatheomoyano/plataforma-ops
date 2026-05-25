@@ -6,10 +6,10 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import hash_password
+from app.core.security import hash_password, verify_password
 from app.modules.auth.models import User
 
-from .schemas import ChangePassword, UserCreate, UserUpdate
+from .schemas import ChangePassword, SelfChangePassword, UserCreate, UserUpdate
 
 
 async def get_all_users(db: AsyncSession) -> list[User]:
@@ -86,3 +86,14 @@ async def reset_password(
     await db.commit()
     await db.refresh(user)
     return user
+
+
+async def change_own_password(
+    user: User, data: SelfChangePassword, db: AsyncSession
+) -> None:
+    if data.new_password != data.confirm_password:
+        raise HTTPException(status_code=400, detail="Las contraseñas no coinciden")
+    if not verify_password(data.current_password, user.hashed_password):
+        raise HTTPException(status_code=400, detail="Contraseña actual incorrecta")
+    user.hashed_password = hash_password(data.new_password)
+    await db.commit()

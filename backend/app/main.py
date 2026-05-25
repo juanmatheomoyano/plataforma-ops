@@ -1,14 +1,26 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+from app.core.database import AsyncSessionLocal
 from app.modules.auth.router import router as auth_router
-from app.modules.users.router import router as users_router
-from app.modules.sellers.router import router as sellers_router
 from app.modules.crud_medios.router import router as crud_medios_router
+from app.modules.crud_medios.service import cleanup_old_operations
+from app.modules.sellers.router import router as sellers_router
 from app.modules.updates.router import router as updates_router
+from app.modules.users.router import router as users_router
 
-app = FastAPI(title="Plataforma Ops")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with AsyncSessionLocal() as db:
+        await cleanup_old_operations(db)
+    yield
+
+
+app = FastAPI(title="Plataforma Ops", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
