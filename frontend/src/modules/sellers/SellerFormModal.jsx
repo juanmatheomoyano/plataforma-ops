@@ -182,16 +182,18 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
             </Field>
           </div>
 
-          {!isEdit && (
-            <Field label="Seller ID *">
-              <Input
-                value={form.seller_id}
-                onChange={(e) => set("seller_id", e.target.value)}
-                required disabled={loading}
-                className="border-slate-600 bg-slate-800 text-slate-100"
-              />
-            </Field>
-          )}
+          <Field label={isEdit ? "Seller ID" : "Seller ID *"}>
+            <Input
+              value={form.seller_id}
+              onChange={(e) => set("seller_id", e.target.value)}
+              required={!isEdit}
+              disabled={loading || isEdit}
+              className="border-slate-600 bg-slate-800 text-slate-100 disabled:opacity-60"
+            />
+            {isEdit && (
+              <p className="text-xs text-slate-500 mt-1">El Seller ID no puede modificarse</p>
+            )}
+          </Field>
 
           <div className="grid grid-cols-2 gap-4">
             <PasswordField
@@ -211,6 +213,9 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
               required={!isEdit}
             />
           </div>
+          <p className="text-xs text-amber-500/80">
+            Una vez guardado no podrás ver este valor nuevamente
+          </p>
 
           <div className="grid grid-cols-2 gap-4">
             <Field label="Creado por">

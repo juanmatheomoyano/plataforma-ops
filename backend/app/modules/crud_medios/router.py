@@ -1,13 +1,15 @@
 import uuid
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.modules.auth.models import User
+from app.modules.sellers.models import EstadoKeys, Seller
 
 from .models import CrudOperation
 from .schemas import CrudRequest, CrudResponse, OperationSummary, SellerScopeOut
@@ -120,3 +122,51 @@ async def list_sellers_scope(
 ):
     sellers = await get_active_sellers(db)
     return sellers
+
+
+@router.get("/stats")
+async def get_stats(
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    total_activos = await db.scalar(
+        select(func.count()).select_from(Seller).where(Seller.is_active.is_(True))
+    )
+    total_inactivos = await db.scalar(
+        select(func.count()).select_from(Seller).where(Seller.is_active.is_(False))
+    )
+    total_vencidas = await db.scalar(
+        select(func.count()).select_from(Seller).where(
+            Seller.estado_keys == EstadoKeys.vencido,
+            Seller.is_active.is_(True),
+        )
+    )
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    total_ops_hoy = await db.scalar(
+        select(func.count()).select_from(CrudOperation).where(
+            CrudOperation.started_at >= today_start
+        )
+    )
+
+    total_usuarios_activos = None
+    ultimo_operador = None
+    if current_user.role.value == "admin":
+        total_usuarios_activos = await db.scalar(
+            select(func.count()).select_from(User).where(User.is_active.is_(True))
+        )
+        row = await db.execute(
+            select(User.username)
+            .join(CrudOperation, CrudOperation.user_id == User.id)
+            .order_by(CrudOperation.started_at.desc())
+            .limit(1)
+        )
+        ultimo_operador = row.scalar_one_or_none()
+
+    return {
+        "total_sellers_activos": total_activos,
+        "total_sellers_inactivos": total_inactivos,
+        "total_sellers_keys_vencidas": total_vencidas,
+        "total_operaciones_hoy": total_ops_hoy,
+        "total_usuarios_activos": total_usuarios_activos,
+        "ultimo_operador": ultimo_operador,
+    }

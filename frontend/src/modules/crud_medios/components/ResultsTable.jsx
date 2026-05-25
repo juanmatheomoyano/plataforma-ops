@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import * as XLSX from "xlsx"
 import {
   flexRender,
   getCoreRowModel,
@@ -31,24 +32,21 @@ function getDetalleBadge(detalle) {
   return DETALLE_BADGE.dry_run
 }
 
-function exportCSV(rows) {
+function exportXLSX(rows) {
   const headers = ["seller_id", "rule_id", "rule_name", "brand", "level", "estado", "detalle"]
-  const csv = [
-    headers.join(","),
-    ...rows.map((r) =>
-      headers
-        .map((h) => {
-          const v = r[h] ?? ""
-          return `"${String(v).replace(/"/g, '""')}"`
-        })
-        .join(",")
-    ),
-  ].join("\n")
-  const blob = new Blob([csv], { type: "text/csv" })
+  const data = [
+    headers,
+    ...rows.map((r) => headers.map((h) => r[h] ?? "")),
+  ]
+  const ws = XLSX.utils.aoa_to_sheet(data)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, "Resultados")
+  const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" })
+  const blob = new Blob([buf], { type: "application/octet-stream" })
   const url = URL.createObjectURL(blob)
   const a = document.createElement("a")
   a.href = url
-  a.download = `crud_medios_${new Date().toISOString().slice(0, 19)}.csv`
+  a.download = `crud_medios_${new Date().toISOString().slice(0, 19)}.xlsx`
   a.click()
   URL.revokeObjectURL(url)
 }
@@ -177,11 +175,11 @@ export function ResultsTable({ rows, onFilterErrors }) {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => exportCSV(rows)}
+            onClick={() => exportXLSX(rows)}
             className="h-8 border-slate-600 bg-transparent text-xs text-slate-400 hover:bg-slate-700 hover:text-slate-100"
           >
             <Download className="mr-1.5 h-3.5 w-3.5" />
-            CSV
+            Excel
           </Button>
         </div>
       </div>

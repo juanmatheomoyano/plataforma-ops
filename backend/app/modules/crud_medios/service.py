@@ -241,7 +241,26 @@ async def fetch_all_sellers_parallel(
 
 def _rule_brands(rule: dict) -> str:
     brands = rule.get("brands") or []
-    return ", ".join(str(b) for b in brands) if brands else ""
+    if brands:
+        return ", ".join(str(b) for b in brands)
+    ps = rule.get("paymentSystem")
+    if isinstance(ps, dict):
+        return ps.get("name") or ""
+    if isinstance(ps, str) and ps:
+        return ps
+    return ""
+
+
+def _rule_level(rule: dict) -> str:
+    level = rule.get("level") or rule.get("paymentSystemLevel")
+    if level is not None:
+        return str(level)
+    card_level = rule.get("cardLevel")
+    if isinstance(card_level, dict):
+        return card_level.get("name") or ""
+    if isinstance(card_level, str) and card_level:
+        return card_level
+    return ""
 
 
 def _rule_estado(rule: dict) -> str:
@@ -276,7 +295,7 @@ def execute_read(matched: list[dict]) -> list[CrudRowOut]:
             rule_id=str(r.get("id", "")),
             rule_name=r.get("name"),
             brand=_rule_brands(r),
-            level=str(r.get("level", "")),
+            level=_rule_level(r),
             estado=_rule_estado(r),
             detalle="matched",
         ))
@@ -369,7 +388,7 @@ async def execute_update(
                 rule_id=str(rule_id),
                 rule_name=rule.get("name"),
                 brand=_rule_brands(rule),
-                level=str(rule.get("level", "")),
+                level=_rule_level(rule),
                 estado=_rule_estado(rule),
                 detalle=f"dry_run — cambios: {patch}",
             ))
@@ -389,7 +408,7 @@ async def execute_update(
                     rule_id=str(rule_id),
                     rule_name=rule.get("name"),
                     brand=_rule_brands(rule),
-                    level=str(rule.get("level", "")),
+                    level=_rule_level(rule),
                     estado=_rule_estado(rule),
                     detalle=f"actualizado: {list(patch.keys())}",
                 ))
@@ -421,7 +440,7 @@ async def execute_delete(matched: list[dict], dry_run: bool) -> list[CrudRowOut]
                 rule_id=str(rule_id),
                 rule_name=rule.get("name"),
                 brand=_rule_brands(rule),
-                level=str(rule.get("level", "")),
+                level=_rule_level(rule),
                 estado=_rule_estado(rule),
                 detalle="dry_run — no eliminado",
             ))
@@ -436,7 +455,7 @@ async def execute_delete(matched: list[dict], dry_run: bool) -> list[CrudRowOut]
                     rule_id=str(rule_id),
                     rule_name=rule.get("name"),
                     brand=_rule_brands(rule),
-                    level=str(rule.get("level", "")),
+                    level=_rule_level(rule),
                     estado="eliminado",
                     detalle="eliminado",
                 ))

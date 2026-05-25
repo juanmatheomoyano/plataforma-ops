@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { Pencil, Plug, Upload, UserX } from "lucide-react"
+import { Pencil, Plug, Search, Upload, UserX } from "lucide-react"
+import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -33,6 +34,12 @@ export default function SellersPage() {
   const [importResult, setImportResult] = useState(null)
   const [importOpen, setImportOpen] = useState(false)
   const [importing, setImporting] = useState(false)
+
+  const [search, setSearch] = useState("")
+  const [filterEstadoKeys, setFilterEstadoKeys] = useState("todos")
+  const [filterVendiendo, setFilterVendiendo] = useState("todos")
+  const [filterEstado, setFilterEstado] = useState("todos")
+  const [filterAnalista, setFilterAnalista] = useState("todos")
 
   const fileInputRef = useRef(null)
 
@@ -107,6 +114,36 @@ export default function SellersPage() {
       setImporting(false)
     }
   }
+
+  const analistasUnicos = useMemo(() => {
+    const set = new Set(sellers.map((s) => s.analista).filter(Boolean))
+    return Array.from(set).sort()
+  }, [sellers])
+
+  const filteredSellers = useMemo(() => {
+    return sellers.filter((s) => {
+      if (search) {
+        const q = search.toLowerCase()
+        const match =
+          (s.seller_name ?? "").toLowerCase().includes(q) ||
+          (s.seller_id ?? "").toLowerCase().includes(q) ||
+          (s.id_ecommerce ?? "").toLowerCase().includes(q) ||
+          (s.analista ?? "").toLowerCase().includes(q)
+        if (!match) return false
+      }
+      if (filterEstadoKeys !== "todos" && s.estado_keys !== filterEstadoKeys) return false
+      if (filterVendiendo !== "todos") {
+        if (filterVendiendo === "si" && !s.vendiendo) return false
+        if (filterVendiendo === "no" && s.vendiendo) return false
+      }
+      if (filterEstado !== "todos") {
+        if (filterEstado === "activo" && !s.is_active) return false
+        if (filterEstado === "inactivo" && s.is_active) return false
+      }
+      if (filterAnalista !== "todos" && s.analista !== filterAnalista) return false
+      return true
+    })
+  }, [sellers, search, filterEstadoKeys, filterVendiendo, filterEstado, filterAnalista])
 
   const columns = [
     {
@@ -205,7 +242,7 @@ export default function SellersPage() {
   ]
 
   const table = useReactTable({
-    data: sellers,
+    data: filteredSellers,
     columns,
     getCoreRowModel: getCoreRowModel(),
   })
@@ -242,6 +279,60 @@ export default function SellersPage() {
               + Nuevo seller
             </Button>
           </div>
+        )}
+      </div>
+
+      {/* Search + filters */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Search className="pointer-events-none absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-500" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por nombre, seller ID, id ecommerce, analista..."
+            className="border-slate-600 bg-slate-800 pl-9 text-slate-100 placeholder:text-slate-500 h-8 text-xs"
+          />
+        </div>
+        <select
+          value={filterEstadoKeys}
+          onChange={(e) => setFilterEstadoKeys(e.target.value)}
+          className="rounded-md border border-slate-600 bg-slate-800 px-2 py-1.5 text-xs text-slate-300 focus:outline-none"
+        >
+          <option value="todos">Estado Keys: todos</option>
+          <option value="activo">Activo</option>
+          <option value="inactivo">Inactivo</option>
+          <option value="vencido">Vencido</option>
+        </select>
+        <select
+          value={filterVendiendo}
+          onChange={(e) => setFilterVendiendo(e.target.value)}
+          className="rounded-md border border-slate-600 bg-slate-800 px-2 py-1.5 text-xs text-slate-300 focus:outline-none"
+        >
+          <option value="todos">Vendiendo: todos</option>
+          <option value="si">Sí</option>
+          <option value="no">No</option>
+        </select>
+        <select
+          value={filterEstado}
+          onChange={(e) => setFilterEstado(e.target.value)}
+          className="rounded-md border border-slate-600 bg-slate-800 px-2 py-1.5 text-xs text-slate-300 focus:outline-none"
+        >
+          <option value="todos">Estado: todos</option>
+          <option value="activo">Activo</option>
+          <option value="inactivo">Inactivo</option>
+        </select>
+        <select
+          value={filterAnalista}
+          onChange={(e) => setFilterAnalista(e.target.value)}
+          className="rounded-md border border-slate-600 bg-slate-800 px-2 py-1.5 text-xs text-slate-300 focus:outline-none"
+        >
+          <option value="todos">Analista: todos</option>
+          {analistasUnicos.map((a) => (
+            <option key={a} value={a}>{a}</option>
+          ))}
+        </select>
+        {filteredSellers.length !== sellers.length && (
+          <span className="text-xs text-slate-500">{filteredSellers.length} de {sellers.length}</span>
         )}
       </div>
 

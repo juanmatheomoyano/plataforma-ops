@@ -5,6 +5,29 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [1.1.0] — 2026-05-25 — Mejoras backlog v1
+
+### CRUD Medios de Pago
+- Corregido: Brand y Level ahora se muestran correctamente en tabla de resultados
+- Corregido: Exportar ahora genera Excel (.xlsx) y descarga directamente
+- Mejorado: Toggle Dry Run se oculta cuando la operación es Read
+
+### Sellers
+- Nuevo: Buscador global en tabla de sellers
+- Nuevo: Filtros por columna (Estado Keys, Vendiendo, Estado, Analista)
+- Nuevo: Scroll horizontal visible en tabla
+- Nuevo: Campo Seller ID visible y editable en formulario
+- Mejorado: Aclaración de confidencialidad en campos App Key y App Token
+
+### Dashboard
+- Nuevo: Métricas de sellers (activos, inactivos, keys vencidas) para admin y analista senior
+- Nuevo: Total de operaciones del día para admin y analista senior
+- Nuevo: Total de usuarios activos para admin
+- Nuevo: Últimas 5 operaciones del usuario logueado
+- Nuevo: Accesos rápidos a módulos según rol
+
+---
+
 ## [1.0.0] — 2026-05-25 — Release inicial
 
 ### Infraestructura

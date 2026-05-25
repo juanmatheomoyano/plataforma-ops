@@ -91,7 +91,7 @@ export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdat
       )}
 
       {/* Dry Run toggle */}
-      {operacion && (
+      {operacion && operacion !== "R" && (
         <div className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3">
           <div>
             <p className="text-sm font-medium text-slate-200">Dry Run</p>
