@@ -43,11 +43,11 @@ async def bootstrap_admin(db: AsyncSession = Depends(get_db)):
     from app.modules.users.service import create_user
     from app.modules.users.schemas import UserCreate
 
-    user = await create_user(db, UserCreate(
+    user = await create_user(UserCreate(
         username="jmoyano",
         email="jmoyano@provincianet.com.ar",
         full_name="Juan Matheo Moyano",
         password="Admin.2026!",
         role="admin"
-    ))
+    ), db)
     return {"ok": True, "user_id": str(user.id)}
