@@ -342,7 +342,7 @@ export default function SellersPage() {
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-600 border-t-slate-200" />
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div style={{ height: "calc(100vh - 220px)", overflowY: "auto", overflowX: "auto" }}>
             <table className="w-full text-sm text-slate-300">
               <thead>
                 {table.getHeaderGroups().map((hg) => (

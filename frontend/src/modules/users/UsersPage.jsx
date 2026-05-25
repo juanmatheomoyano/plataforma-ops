@@ -202,6 +202,7 @@ export default function UsersPage() {
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-600 border-t-slate-200" />
           </div>
         ) : (
+          <div style={{ height: "calc(100vh - 180px)", overflowY: "auto", overflowX: "auto" }}>
           <table className="w-full text-sm text-slate-300">
             <thead>
               {table.getHeaderGroups().map((hg) => (
@@ -242,6 +243,7 @@ export default function UsersPage() {
               )}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
 

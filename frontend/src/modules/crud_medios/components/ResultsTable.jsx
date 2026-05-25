@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react"
 import * as XLSX from "xlsx"
+import { save } from "@tauri-apps/plugin-dialog"
+import { writeFile } from "@tauri-apps/plugin-fs"
 import {
   flexRender,
   getCoreRowModel,
@@ -32,7 +34,7 @@ function getDetalleBadge(detalle) {
   return DETALLE_BADGE.dry_run
 }
 
-function exportXLSX(rows) {
+async function exportXLSX(rows) {
   const headers = ["seller_id", "rule_id", "rule_name", "brand", "level", "estado", "detalle"]
   const data = [
     headers,
@@ -42,13 +44,14 @@ function exportXLSX(rows) {
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, "Resultados")
   const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" })
-  const blob = new Blob([buf], { type: "application/octet-stream" })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = `crud_medios_${new Date().toISOString().slice(0, 19)}.xlsx`
-  a.click()
-  URL.revokeObjectURL(url)
+
+  const filePath = await save({
+    filters: [{ name: "Excel", extensions: ["xlsx"] }],
+    defaultPath: `crud_medios_${new Date().toISOString().slice(0, 10)}.xlsx`,
+  })
+  if (filePath) {
+    await writeFile(filePath, new Uint8Array(buf))
+  }
 }
 
 export function ResultsTable({ rows, onFilterErrors }) {
@@ -184,7 +187,10 @@ export function ResultsTable({ rows, onFilterErrors }) {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-700">
+      <div
+        className="rounded-lg border border-slate-700"
+        style={{ height: "calc(100vh - 420px)", overflowY: "auto", overflowX: "auto" }}
+      >
         <table className="w-full text-sm">
           <thead>
             {table.getHeaderGroups().map((hg) => (

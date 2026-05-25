@@ -26,6 +26,11 @@ Formato: [versión] — fecha — descripción
 - Nuevo: Últimas 5 operaciones del usuario logueado
 - Nuevo: Accesos rápidos a módulos según rol
 
+### Correcciones post-release
+- Exportar Excel: ahora abre diálogo nativo para elegir dónde guardar (requiere rebuild del EXE)
+- Sellers: tabla con scroll interno fijo — no requiere bajar hasta el final de la lista para el scroll lateral
+- Usuarios y CRUD resultados: misma mejora de tabla fija aplicada por consistencia
+
 ---
 
 ## [1.0.0] — 2026-05-25 — Release inicial
