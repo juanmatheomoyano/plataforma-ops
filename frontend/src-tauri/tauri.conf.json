@@ -24,6 +24,12 @@
       "csp": null
     }
   },
+  "plugins": {
+    "updater": {
+      "endpoints": ["https://plataforma-ops-production.up.railway.app/api/updates/latest"],
+      "dangerousInsecureTransportProtocol": false
+    }
+  },
   "bundle": {
     "active": true,
     "targets": "all",

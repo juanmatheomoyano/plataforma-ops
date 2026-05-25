@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 import { Toaster } from "sonner"
+import { useAutoUpdate } from "./core/hooks/useAutoUpdate"
 import { AuthProvider } from "@/core/auth/AuthContext"
 import { PrivateRoute } from "@/core/auth/PrivateRoute"
 import { useAuth } from "@/core/auth/useAuth"
@@ -17,6 +18,7 @@ function RoleRoute({ roles, children }) {
 }
 
 export default function App() {
+  useAutoUpdate()
   return (
     <BrowserRouter>
       <AuthProvider>

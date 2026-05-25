@@ -17,6 +17,7 @@ Formato: [versión] — fecha — descripción
 
 ### Usuarios
 - Corregido: tabla con scroll interno fijo por consistencia
+- Nuevo: Auto-update — el EXE chequea actualizaciones al abrirse y permite instalarlas sin reinstalar manualmente (requiere última reinstalación manual de este EXE)
 
 ---
 

@@ -9,6 +9,9 @@
     "core:window:allow-set-title",
     "opener:default",
     "dialog:allow-save",
-    "fs:allow-write-file"
+    "fs:allow-write-file",
+    "updater:allow-check",
+    "updater:allow-download-and-install",
+    "process:allow-relaunch"
   ]
 }

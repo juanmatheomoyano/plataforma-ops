@@ -49,5 +49,5 @@
 ---
 
 ## General
-- [ ] Auto-update de Tauri 2
+- [x] Auto-update de Tauri 2
 - [ ] Limpieza automática de historial: borrar operaciones con más de 90 días
