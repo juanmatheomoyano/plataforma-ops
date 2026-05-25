@@ -1,19 +1,21 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
+  getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { X } from "lucide-react"
 import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -25,12 +27,11 @@ import client from "@/core/api/client"
 import { ResultsTable } from "./ResultsTable"
 
 const OP_BADGE = {
-  R: "border-blue-700 bg-blue-900/40 text-blue-400",
-  C: "border-emerald-700 bg-emerald-900/40 text-emerald-400",
-  U: "border-amber-700 bg-amber-900/40 text-amber-400",
-  D: "border-red-700 bg-red-900/40 text-red-400",
+  R: { cls: "border-blue-700 bg-blue-900/40 text-blue-400", label: "Read" },
+  C: { cls: "border-emerald-700 bg-emerald-900/40 text-emerald-400", label: "Create" },
+  U: { cls: "border-amber-700 bg-amber-900/40 text-amber-400", label: "Update" },
+  D: { cls: "border-red-700 bg-red-900/40 text-red-400", label: "Delete" },
 }
-const OP_LABEL = { R: "Read", C: "Create", U: "Update", D: "Delete" }
 
 function formatDate(iso) {
   if (!iso) return "—"
@@ -43,8 +44,15 @@ function formatDate(iso) {
 export function HistorialTable() {
   const [ops, setOps] = useState([])
   const [loading, setLoading] = useState(true)
+
+  // Filters
   const [opFilter, setOpFilter] = useState("all")
-  const [detail, setDetail] = useState(null) // { op, rows }
+  const [dryRunFilter, setDryRunFilter] = useState("all")
+  const [fechaDesde, setFechaDesde] = useState("")
+  const [fechaHasta, setFechaHasta] = useState("")
+
+  // Detail modal
+  const [detail, setDetail] = useState(null) // { op, rows } | null
   const [detailLoading, setDetailLoading] = useState(false)
 
   useEffect(() => {
@@ -55,26 +63,50 @@ export function HistorialTable() {
   }, [])
 
   async function openDetail(op) {
-    setDetailLoading(true)
     setDetail({ op, rows: [] })
+    setDetailLoading(true)
     try {
       const { data } = await client.get(`/crud-medios/operations/${op.id}`)
       setDetail({ op, rows: data.rows })
     } catch {
-      toast.error("Error al cargar detalle")
+      toast.error("Error al cargar detalle de operación")
     } finally {
       setDetailLoading(false)
     }
   }
 
-  const filtered = ops.filter((op) => opFilter === "all" || op.operacion === opFilter)
+  const filtered = useMemo(() => {
+    return ops.filter((op) => {
+      if (opFilter !== "all" && op.operacion !== opFilter) return false
+      if (dryRunFilter === "real" && op.dry_run) return false
+      if (dryRunFilter === "dry" && !op.dry_run) return false
+      if (fechaDesde) {
+        const opDate = new Date(op.started_at)
+        if (opDate < new Date(fechaDesde)) return false
+      }
+      if (fechaHasta) {
+        const opDate = new Date(op.started_at)
+        const hasta = new Date(fechaHasta)
+        hasta.setHours(23, 59, 59)
+        if (opDate > hasta) return false
+      }
+      return true
+    })
+  }, [ops, opFilter, dryRunFilter, fechaDesde, fechaHasta])
 
-  const columns = [
+  const columns = useMemo(() => [
     {
       accessorKey: "started_at",
       header: "Fecha",
       cell: ({ getValue }) => (
-        <span className="text-xs text-slate-400">{formatDate(getValue())}</span>
+        <span className="text-xs text-slate-400 whitespace-nowrap">{formatDate(getValue())}</span>
+      ),
+    },
+    {
+      accessorKey: "username",
+      header: "Usuario",
+      cell: ({ getValue }) => (
+        <span className="font-mono text-xs text-slate-300">{getValue() ?? "—"}</span>
       ),
     },
     {
@@ -82,9 +114,10 @@ export function HistorialTable() {
       header: "Operación",
       cell: ({ getValue }) => {
         const v = getValue()
+        const b = OP_BADGE[v]
         return (
-          <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${OP_BADGE[v] ?? ""}`}>
-            {OP_LABEL[v] ?? v}
+          <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${b?.cls ?? ""}`}>
+            {b?.label ?? v}
           </span>
         )
       },
@@ -94,27 +127,38 @@ export function HistorialTable() {
       header: "Dry Run",
       cell: ({ getValue }) =>
         getValue() ? (
-          <span className="text-xs text-slate-400">Sí</span>
+          <Badge className="border-slate-600 bg-slate-800 text-slate-400 text-xs">Sí</Badge>
         ) : (
-          <span className="text-xs text-emerald-400 font-medium">No (real)</span>
+          <Badge className="border-emerald-800 bg-emerald-950/40 text-emerald-400 text-xs">Real</Badge>
         ),
+    },
+    {
+      accessorKey: "total_sellers",
+      header: "Sellers",
+      cell: ({ getValue }) => <span className="text-slate-400 text-xs">{getValue()}</span>,
     },
     {
       accessorKey: "total_matched",
       header: "Matched",
-      cell: ({ getValue }) => <span className="text-slate-300">{getValue()}</span>,
+      cell: ({ getValue }) => <span className="text-slate-300 text-sm font-medium">{getValue()}</span>,
     },
     {
       accessorKey: "total_success",
-      header: "Éxitos",
-      cell: ({ getValue }) => <span className="text-emerald-400">{getValue()}</span>,
+      header: "Exitosos",
+      cell: ({ getValue }) => (
+        <span className="text-emerald-400 text-sm font-medium">{getValue()}</span>
+      ),
     },
     {
       accessorKey: "total_errors",
       header: "Errores",
       cell: ({ getValue }) => {
         const v = getValue()
-        return <span className={v > 0 ? "text-red-400 font-medium" : "text-slate-500"}>{v}</span>
+        return (
+          <span className={`text-sm font-medium ${v > 0 ? "text-red-400" : "text-slate-500"}`}>
+            {v}
+          </span>
+        )
       },
     },
     {
@@ -124,13 +168,15 @@ export function HistorialTable() {
         <span className="text-xs text-slate-500">{getValue().toFixed(2)}s</span>
       ),
     },
-  ]
+  ], [])
 
   const table = useReactTable({
     data: filtered,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: 50 } },
   })
 
   if (loading) {
@@ -143,22 +189,62 @@ export function HistorialTable() {
 
   return (
     <>
-      <div className="space-y-3">
+      <div className="space-y-4">
         {/* Filters */}
-        <div className="flex items-center gap-3">
-          <Select value={opFilter} onValueChange={setOpFilter}>
-            <SelectTrigger className="w-40 border-slate-600 bg-slate-800 text-slate-100 h-8 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="border-slate-700 bg-slate-800 text-slate-100">
-              <SelectItem value="all">Todas</SelectItem>
-              <SelectItem value="R">Read</SelectItem>
-              <SelectItem value="C">Create</SelectItem>
-              <SelectItem value="U">Update</SelectItem>
-              <SelectItem value="D">Delete</SelectItem>
-            </SelectContent>
-          </Select>
-          <span className="text-xs text-slate-500">{filtered.length} operaciones</span>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs text-slate-500">Operación</Label>
+            <Select value={opFilter} onValueChange={setOpFilter}>
+              <SelectTrigger className="w-36 border-slate-600 bg-slate-800 text-slate-100 h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="border-slate-700 bg-slate-800 text-slate-100">
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="R">Read</SelectItem>
+                <SelectItem value="C">Create</SelectItem>
+                <SelectItem value="U">Update</SelectItem>
+                <SelectItem value="D">Delete</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs text-slate-500">Modo</Label>
+            <Select value={dryRunFilter} onValueChange={setDryRunFilter}>
+              <SelectTrigger className="w-32 border-slate-600 bg-slate-800 text-slate-100 h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="border-slate-700 bg-slate-800 text-slate-100">
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="dry">Solo Dry Run</SelectItem>
+                <SelectItem value="real">Solo Real</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs text-slate-500">Desde</Label>
+            <Input
+              type="date"
+              value={fechaDesde}
+              onChange={(e) => setFechaDesde(e.target.value)}
+              className="border-slate-600 bg-slate-800 text-slate-100 h-8 text-xs w-36"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs text-slate-500">Hasta</Label>
+            <Input
+              type="date"
+              value={fechaHasta}
+              onChange={(e) => setFechaHasta(e.target.value)}
+              className="border-slate-600 bg-slate-800 text-slate-100 h-8 text-xs w-36"
+            />
+          </div>
+
+          <span className="text-xs text-slate-500 pb-1">
+            {filtered.length} de {ops.length} operaciones
+          </span>
         </div>
 
         {/* Table */}
@@ -168,7 +254,10 @@ export function HistorialTable() {
               {table.getHeaderGroups().map((hg) => (
                 <tr key={hg.id} className="border-b border-slate-700 bg-slate-800/80">
                   {hg.headers.map((h) => (
-                    <th key={h.id} className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    <th
+                      key={h.id}
+                      className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 whitespace-nowrap"
+                    >
                       {flexRender(h.column.columnDef.header, h.getContext())}
                     </th>
                   ))}
@@ -199,6 +288,30 @@ export function HistorialTable() {
             </tbody>
           </table>
         </div>
+
+        {table.getPageCount() > 1 && (
+          <div className="flex items-center justify-between text-xs text-slate-500">
+            <span>
+              Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
+            </span>
+            <div className="flex gap-1">
+              <button
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+                className="rounded px-2 py-1 hover:bg-slate-700 disabled:opacity-30"
+              >
+                ‹ Anterior
+              </button>
+              <button
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+                className="rounded px-2 py-1 hover:bg-slate-700 disabled:opacity-30"
+              >
+                Siguiente ›
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Detail dialog */}
@@ -206,21 +319,30 @@ export function HistorialTable() {
         <DialogContent className="border-slate-700 bg-[#1e293b] text-slate-100 sm:max-w-5xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 text-slate-100">
-              {detail && (
-                <>
-                  <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${OP_BADGE[detail.op.operacion]}`}>
-                    {OP_LABEL[detail.op.operacion]}
-                  </span>
-                  <span className="text-sm font-normal text-slate-400">
-                    {formatDate(detail.op.started_at)}
-                  </span>
-                  {detail.op.dry_run && (
-                    <span className="rounded-full border border-slate-600 bg-slate-800 px-2 py-0.5 text-xs text-slate-400">
-                      DRY RUN
+              {detail && (() => {
+                const b = OP_BADGE[detail.op.operacion]
+                return (
+                  <>
+                    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${b?.cls ?? ""}`}>
+                      {b?.label ?? detail.op.operacion}
                     </span>
-                  )}
-                </>
-              )}
+                    {detail.op.username && (
+                      <span className="font-mono text-sm text-slate-400">{detail.op.username}</span>
+                    )}
+                    <span className="text-sm font-normal text-slate-400">
+                      {formatDate(detail.op.started_at)}
+                    </span>
+                    {detail.op.dry_run && (
+                      <span className="rounded-full border border-slate-600 bg-slate-800 px-2 py-0.5 text-xs text-slate-400">
+                        DRY RUN
+                      </span>
+                    )}
+                    <span className="ml-auto text-xs text-slate-500 font-normal">
+                      {detail.op.total_matched} matched · {detail.op.total_success} ok · {detail.op.total_errors} err · {detail.op.duration_secs.toFixed(2)}s
+                    </span>
+                  </>
+                )
+              })()}
             </DialogTitle>
           </DialogHeader>
 

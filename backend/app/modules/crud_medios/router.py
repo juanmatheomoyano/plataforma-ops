@@ -3,9 +3,11 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
+from app.modules.auth.models import User
 
 from .models import CrudOperation
 from .schemas import CrudRequest, CrudResponse, OperationSummary, SellerScopeOut
@@ -22,7 +24,6 @@ async def execute_crud(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    # C/U/D en modo real requieren rol analista_senior o admin
     if body.operacion in ("C", "U", "D") and not body.dry_run:
         if current_user.role.value not in _WRITE_ROLES:
             raise HTTPException(status_code=403, detail="Insufficient permissions")
@@ -34,13 +35,36 @@ async def list_operations(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(CrudOperation)
-        .where(CrudOperation.user_id == current_user.id)
+    is_admin = current_user.role.value == "admin"
+
+    q = (
+        select(CrudOperation, User.username)
+        .join(User, CrudOperation.user_id == User.id)
         .order_by(CrudOperation.started_at.desc())
-        .limit(100)
+        .limit(200)
     )
-    return result.scalars().all()
+    if not is_admin:
+        q = q.where(CrudOperation.user_id == current_user.id)
+
+    result = await db.execute(q)
+    rows = result.all()
+
+    return [
+        OperationSummary(
+            id=op.id,
+            operacion=op.operacion,
+            dry_run=op.dry_run,
+            total_sellers=len(op.sellers_scope),
+            total_matched=op.total_matched,
+            total_success=op.total_success,
+            total_errors=op.total_errors,
+            duration_secs=op.duration_secs,
+            started_at=op.started_at,
+            finished_at=op.finished_at,
+            username=username,
+        )
+        for op, username in rows
+    ]
 
 
 @router.get("/operations/{operation_id}", response_model=CrudResponse)
@@ -49,17 +73,17 @@ async def get_operation(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    from fastapi import HTTPException
-    from sqlalchemy.orm import selectinload
+    is_admin = current_user.role.value == "admin"
 
-    result = await db.execute(
+    q = (
         select(CrudOperation)
-        .where(
-            CrudOperation.id == operation_id,
-            CrudOperation.user_id == current_user.id,
-        )
+        .where(CrudOperation.id == operation_id)
         .options(selectinload(CrudOperation.rows))
     )
+    if not is_admin:
+        q = q.where(CrudOperation.user_id == current_user.id)
+
+    result = await db.execute(q)
     op = result.scalar_one_or_none()
     if op is None:
         raise HTTPException(status_code=404, detail="Operation not found")

@@ -82,12 +82,14 @@ class OperationSummary(BaseModel):
     id: uuid.UUID
     operacion: str
     dry_run: bool
+    total_sellers: int = 0
     total_matched: int
     total_success: int
     total_errors: int
     duration_secs: float
     started_at: datetime
     finished_at: datetime | None
+    username: str | None = None
 
     model_config = {"from_attributes": True}
 
