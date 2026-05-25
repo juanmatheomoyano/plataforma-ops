@@ -27,7 +27,8 @@
   "plugins": {
     "updater": {
       "endpoints": ["https://plataforma-ops-production.up.railway.app/api/updates/latest"],
-      "dangerousInsecureTransportProtocol": false
+      "dangerousInsecureTransportProtocol": false,
+      "pubkey": ""
     }
   },
   "bundle": {
