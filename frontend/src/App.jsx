@@ -8,6 +8,7 @@ import Dashboard from "@/pages/Dashboard"
 import Login from "@/pages/Login"
 import UsersPage from "@/modules/users/UsersPage"
 import SellersPage from "@/modules/sellers/SellersPage"
+import CrudMediosPage from "@/modules/crud_medios/CrudMediosPage"
 import "./index.css"
 
 function RoleRoute({ roles, children }) {
@@ -57,6 +58,7 @@ export default function App() {
                 </RoleRoute>
               }
             />
+            <Route path="crud-medios" element={<CrudMediosPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
