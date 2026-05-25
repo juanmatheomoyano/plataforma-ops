@@ -1,6 +1,6 @@
 import axios from "axios"
 
-const BASE_URL = "http://192.168.1.96:8000/api"
+const BASE_URL = import.meta.env.VITE_API_URL ?? "http://192.168.1.96:8000/api"
 
 // Tokens live only in module memory — never in localStorage
 let accessToken = null
