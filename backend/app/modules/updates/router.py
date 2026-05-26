@@ -4,9 +4,10 @@ from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
 
 router = APIRouter(prefix="/updates", tags=["updates"])
+public_router = APIRouter(tags=["updates"])
 
 
-@router.get("/download", include_in_schema=False)
+@public_router.get("/updates/download", include_in_schema=False)
 async def download_page():
     version = os.getenv("APP_VERSION", "1.3.0")
     release_url = os.getenv("RELEASE_URL", "")
