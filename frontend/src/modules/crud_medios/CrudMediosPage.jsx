@@ -1,7 +1,6 @@
 import { useState } from "react"
 import { toast } from "sonner"
 import { Card } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/core/auth/useAuth"
@@ -16,36 +15,30 @@ import { ScopeSelector } from "./components/ScopeSelector"
 const WRITE_ROLES = ["admin", "analista_senior"]
 
 const EMPTY_CREATE = {
-  ps_name: "",
-  level: "",
+  rule_name_prefix: "",
+  ps_names: [],
+  levels: [],
   cuotas: "",
-  begin_date: null,
-  end_date: null,
+  begin_date: "",
+  begin_time: "",
+  end_date: "",
+  end_time: "",
   enabled: true,
-  rule_name: "",
 }
 
 const EMPTY_UPDATE = {
-  begin_date: null,
-  end_date: null,
-  cuotas: null,
+  begin_date: "",
+  end_date: "",
+  cuotas: "",
   enabled: undefined,
-  level: null,
+  level: "",
 }
 
-// Map frontend horario mode names to backend literals
-const HORARIO_MODE_MAP = {
-  exacta: "exact",
-  incluye_ini: "gte",
-  incluye_fin: "lte",
-  excluye: "exclude",
-}
-
-function resolveHorarioMode(mode, field) {
-  if (mode === "exacta") return "exact"
-  if (mode === "excluye") return "exclude"
-  // "incluye" maps to gte for ini (start >= filter), lte for fin (end <= filter)
-  return field === "ini" ? "gte" : "lte"
+// Argentina = UTC-3; converts a local AR date+time string to ISO UTC
+function arToUtc(date, time) {
+  if (!date) return null
+  const t = time || "00:00"
+  return new Date(`${date}T${t}:00-03:00`).toISOString()
 }
 
 function buildFiltrosPayload(filtros) {
@@ -76,11 +69,11 @@ function buildFiltrosPayload(filtros) {
   }
   if (filtros.horario_ini) {
     f.horario_ini = filtros.horario_ini
-    f.horario_ini_mode = resolveHorarioMode(filtros.horario_ini_mode, "ini")
+    f.horario_ini_mode = filtros.horario_ini_mode
   }
   if (filtros.horario_fin) {
     f.horario_fin = filtros.horario_fin
-    f.horario_fin_mode = resolveHorarioMode(filtros.horario_fin_mode, "fin")
+    f.horario_fin_mode = filtros.horario_fin_mode
   }
 
   return f
@@ -111,6 +104,8 @@ export default function CrudMediosPage() {
     (!isRealWriteOp || canRunReal) &&
     !loading
 
+  const filtrosDisabled = opConfig.operacion && opConfig.operacion !== "R"
+
   async function handleExecute() {
     setLoading(true)
     setResult(null)
@@ -125,19 +120,22 @@ export default function CrudMediosPage() {
 
     if (opConfig.operacion === "C" && opConfig.accionCreate) {
       const ac = opConfig.accionCreate
-      if (!ac.ps_name || !ac.level || !ac.cuotas || !ac.rule_name) {
-        setExecError("Completá todos los campos requeridos del formulario de creación.")
+      if (!ac.ps_names.length || !ac.levels.length) {
+        setExecError("Seleccioná al menos una firma y un level para crear reglas.")
         setLoading(false)
         return
       }
+      const cuotasList = ac.cuotas
+        ? ac.cuotas.split(",").map((s) => parseInt(s.trim())).filter((n) => !isNaN(n))
+        : []
       body.accion_create = {
-        ps_name: ac.ps_name,
-        level: Number(ac.level),
-        cuotas: Number(ac.cuotas),
-        rule_name: ac.rule_name,
+        rule_name_prefix: ac.rule_name_prefix || "",
+        ps_names: ac.ps_names,
+        levels: ac.levels,
+        cuotas: cuotasList,
+        begin_date: arToUtc(ac.begin_date, ac.begin_time),
+        end_date: arToUtc(ac.end_date, ac.end_time),
         enabled: ac.enabled,
-        begin_date: ac.begin_date || null,
-        end_date: ac.end_date || null,
       }
     }
 
@@ -146,8 +144,11 @@ export default function CrudMediosPage() {
       const patch = {}
       if (au.begin_date) patch.begin_date = au.begin_date
       if (au.end_date) patch.end_date = au.end_date
-      if (au.cuotas) patch.cuotas = Number(au.cuotas)
-      if (au.level) patch.level = Number(au.level)
+      if (au.cuotas) {
+        const parsed = au.cuotas.split(",").map((s) => parseInt(s.trim())).filter((n) => !isNaN(n))
+        if (parsed.length > 0) patch.cuotas = parsed
+      }
+      if (au.level) patch.level = au.level
       if (au.enabled !== undefined) patch.enabled = au.enabled
       if (Object.keys(patch).length > 0) body.accion_update = patch
     }
@@ -195,8 +196,19 @@ export default function CrudMediosPage() {
             />
             <div className="border-t border-slate-700/60" />
 
-            {/* 2. Filtros */}
-            <FiltrosPanel filtros={filtros} onChange={setFiltros} />
+            {/* 2. Filtros — deshabilitados para C/U/D */}
+            <div className="relative">
+              {filtrosDisabled && (
+                <div className="absolute top-2 right-3 z-10 pointer-events-none">
+                  <span className="rounded-full bg-amber-900/80 border border-amber-700 px-2 py-0.5 text-[10px] font-semibold text-amber-300">
+                    Los filtros aplican solo a Leer
+                  </span>
+                </div>
+              )}
+              <div className={filtrosDisabled ? "pointer-events-none opacity-40" : ""}>
+                <FiltrosPanel filtros={filtros} onChange={setFiltros} />
+              </div>
+            </div>
 
             {/* 3. Dry Run (solo para operaciones de escritura) */}
             {opConfig.operacion && opConfig.operacion !== "R" && (

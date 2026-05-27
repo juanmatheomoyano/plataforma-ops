@@ -14,18 +14,17 @@ import { Button } from "@/components/ui/button"
 const BRANDS = ["Visa", "Mastercard", "Electron"]
 
 const LEVEL_CHIPS = [
-  { label: "Classic", value: 1 },
-  { label: "Gold", value: 2 },
-  { label: "Gold/Prem", value: 3 },
-  { label: "Platinum", value: 4 },
-  { label: "Black", value: 5 },
-  { label: "Black Chip", value: 6 },
-  { label: "Signature", value: 7 },
-  { label: "Business", value: 8 },
-  { label: "Premier", value: 9 },
-  { label: "Corporate", value: 10 },
-  { label: "Purchasing", value: 11 },
-  { label: "Electron", value: 12 },
+  { label: "Classic",    value: "classic" },
+  { label: "Gold",       value: "gold" },
+  { label: "Gold/Prem",  value: "gold/prem" },
+  { label: "Platinum",   value: "platinum" },
+  { label: "Black",      value: "black" },
+  { label: "Signature",  value: "signature" },
+  { label: "Electron",   value: "electron" },
+  { label: "Business",   value: "business" },
+  { label: "Premier",    value: "premier" },
+  { label: "Purchasing", value: "purchasing" },
+  { label: "Corporate",  value: "corporate" },
 ]
 
 const ALL_LEVEL_VALUES = LEVEL_CHIPS.map((l) => l.value)
@@ -43,9 +42,9 @@ export const EMPTY_FILTROS = {
   fecha_ini_date: "",
   fecha_fin_date: "",
   horario_ini: "",
-  horario_ini_mode: "incluye",
+  horario_ini_mode: "include",
   horario_fin: "",
-  horario_fin_mode: "incluye",
+  horario_fin_mode: "include",
 }
 
 function ToggleGroup({ value, onChange, options }) {
@@ -96,21 +95,18 @@ export function FiltrosPanel({ filtros, onChange }) {
   function toggleBrand(brand) {
     const lower = brand.toLowerCase()
     if (filtros.brands.length === 0) {
-      // all selected → uncheck one → select all except this one
       set("brands", BRANDS.map((b) => b.toLowerCase()).filter((b) => b !== lower))
     } else if (filtros.brands.includes(lower)) {
       const next = filtros.brands.filter((b) => b !== lower)
       set("brands", next)
     } else {
       const next = [...filtros.brands, lower]
-      // if all are checked again → reset to empty (= all)
       set("brands", next.length === BRANDS.length ? [] : next)
     }
   }
 
   function toggleLevel(value) {
     if (filtros.levels.length === 0) {
-      // all selected → uncheck one → select all except this
       set("levels", ALL_LEVEL_VALUES.filter((v) => v !== value))
     } else if (filtros.levels.includes(value)) {
       const next = filtros.levels.filter((v) => v !== value)
@@ -310,9 +306,8 @@ export function FiltrosPanel({ filtros, onChange }) {
                 value={filtros.horario_ini_mode}
                 onChange={(v) => set("horario_ini_mode", v)}
                 options={[
-                  { value: "exacta", label: "Exacta" },
-                  { value: "incluye", label: "Incluye" },
-                  { value: "excluye", label: "Excluye" },
+                  { value: "include", label: "Incluye" },
+                  { value: "exclude", label: "Excluye" },
                 ]}
               />
             </FieldRow>
@@ -329,9 +324,8 @@ export function FiltrosPanel({ filtros, onChange }) {
                 value={filtros.horario_fin_mode}
                 onChange={(v) => set("horario_fin_mode", v)}
                 options={[
-                  { value: "exacta", label: "Exacta" },
-                  { value: "incluye", label: "Incluye" },
-                  { value: "excluye", label: "Excluye" },
+                  { value: "include", label: "Incluye" },
+                  { value: "exclude", label: "Excluye" },
                 ]}
               />
             </FieldRow>

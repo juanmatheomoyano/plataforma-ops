@@ -5,6 +5,23 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [1.3.2] — 2026-05-27 — Create rediseño completo + nombres español + filtros bloqueados
+
+### CRUD Medios de Pago
+- Nuevo: Create ahora genera múltiples reglas por combinación de firma × level (N firmas × M levels por seller)
+- Nuevo: Formulario Create con chips de firmas (Visa/Mastercard/Electron), chips de levels, cuotas como texto libre y preview de nombres generados
+- Nuevo: Fechas de Create con hora (fecha+hora hora local AR convertida a UTC)
+- Nuevo: Filtros bloqueados (pointer-events-none) con badge "Los filtros aplican solo a Leer" cuando se selecciona C/U/D
+- Mejorado: Nombres de operaciones en español (Crear/Leer/Actualizar/Eliminar)
+- Mejorado: Update usa chips de level (string) y cuotas como texto libre separado por comas
+- Corregido: Filtro de levels ahora usa cardLevel.name (string) en lugar de valor numérico
+- Corregido: Cuotas exacta ahora requiere igualdad de set (alineado con script v6)
+- Corregido: Filtro de horario ahora soporta "include" (exacto) y "exclude" solamente
+- Corregido: Filtro de brands ahora usa paymentSystem.id (alineado con script v6)
+- Corregido: execute_update ahora descifra credenciales correctamente y construye cuerpo VTEX alineado con script v6
+
+---
+
 ## [1.3.1] — 2026-05-26 — Rediseño filtros CRUD
 
 ### CRUD Medios de Pago

@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 class FiltrosRequest(BaseModel):
     brands: list[str] = Field(default_factory=list)
-    levels: list[int] = Field(default_factory=list)
+    levels: list[str] = Field(default_factory=list)
     levels_mode: Literal["include", "exclude"] = "include"
     estado: Literal["todos", "activo", "inactivo"] = "todos"
     nombre: str | None = None
@@ -20,27 +20,27 @@ class FiltrosRequest(BaseModel):
     fecha_ini: str | None = None        # ISO datetime string (begin_date of rule)
     fecha_fin: str | None = None        # ISO datetime string (end_date of rule)
     horario_ini: str | None = None      # HH:MM[:SS]
-    horario_ini_mode: Literal["gte", "lte", "exact", "exclude"] = "gte"
+    horario_ini_mode: Literal["include", "exclude"] = "include"
     horario_fin: str | None = None      # HH:MM[:SS]
-    horario_fin_mode: Literal["gte", "lte", "exact", "exclude"] = "lte"
+    horario_fin_mode: Literal["include", "exclude"] = "include"
 
 
 class AcreateRequest(BaseModel):
-    ps_name: str
-    level: int
-    cuotas: int
-    begin_date: str | None = None
+    rule_name_prefix: str = ""
+    ps_names: list[str] = Field(default_factory=list)   # ["Visa", "Mastercard"]
+    levels: list[str] = Field(default_factory=list)     # ["gold", "platinum"]
+    cuotas: list[int] = Field(default_factory=list)     # [1, 3, 6, 9]
+    begin_date: str | None = None   # ISO UTC datetime or None
     end_date: str | None = None
     enabled: bool = True
-    rule_name: str
 
 
 class UpdateRequest(BaseModel):
     begin_date: str | None = None
     end_date: str | None = None
-    cuotas: int | None = None
+    cuotas: list[int] | None = None
     enabled: bool | None = None
-    level: int | None = None
+    level: str | None = None
 
 
 class ScopeRequest(BaseModel):

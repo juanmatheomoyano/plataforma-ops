@@ -29,6 +29,12 @@ logger = logging.getLogger(__name__)
 # Argentina = UTC-3
 AR_TZ = timezone(timedelta(hours=-3))
 
+PAYMENT_SYSTEMS_MAP = {
+    "visa":       {"id": 2,  "name": "Visa"},
+    "mastercard": {"id": 4,  "name": "Mastercard"},
+    "electron":   {"id": 10, "name": "Visa Electron"},
+}
+
 
 # ── Date/time normalization ────────────────────────────────────────────────────
 
@@ -44,13 +50,10 @@ def _normalize_to_ar(dt_str: str | None) -> datetime | None:
     try:
         s = dt_str.strip()
         if s.endswith("Z"):
-            # UTC — convertir a AR
             dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
         elif "+" in s[10:] or (s.count("-") > 2):
-            # Tiene offset explícito
             dt = datetime.fromisoformat(s)
         else:
-            # Sin zona → tratar como hora local AR
             dt = datetime.fromisoformat(s).replace(tzinfo=AR_TZ)
         return dt.astimezone(AR_TZ)
     except (ValueError, TypeError):
@@ -80,7 +83,6 @@ def _parse_time(t_str: str | None) -> time | None:
 
 
 def _rule_time(rule: dict, field: str) -> time | None:
-    """Extrae hora de un campo de regla (beginTime/endTime)."""
     val = rule.get(field)
     if not val:
         return None
@@ -92,13 +94,17 @@ def _compare_time(rule_t: time | None, filter_t: time | None, mode: str) -> bool
         return True
     if rule_t is None:
         return False
-    if mode == "gte":
-        return rule_t >= filter_t
-    if mode == "lte":
-        return rule_t <= filter_t
     if mode == "exclude":
         return rule_t != filter_t
+    # "include" and default = exact match
     return rule_t == filter_t
+
+
+def _build_installments(cuotas: list[int]) -> list[dict]:
+    return [
+        {"quantity": q, "value": 0.0, "interestRate": 0.0, "interestTax": 0.0}
+        for q in sorted(cuotas)
+    ]
 
 
 # ── Core filter ───────────────────────────────────────────────────────────────
@@ -124,52 +130,62 @@ def matches_filters(rule: dict, filtros: FiltrosRequest) -> bool:  # noqa: C901
 
     # ── connector ──────────────────────────────────────────────────────────
     if filtros.connector:
-        if filtros.connector.lower() not in (rule.get("connector") or "").lower():
+        conn_impl = ((rule.get("connector") or {}).get("implementation") or "").lower()
+        if filtros.connector.lower() not in conn_impl:
             return False
 
-    # ── brands ─────────────────────────────────────────────────────────────
+    # ── brands — match por paymentSystem.id (alineado con script v6) ───────
     if filtros.brands:
-        rule_brands = [b.lower() for b in (rule.get("brands") or [])]
-        if not any(b.lower() in rule_brands for b in filtros.brands):
+        ps_id = (rule.get("paymentSystem") or {}).get("id")
+        ids = [
+            PAYMENT_SYSTEMS_MAP[b.lower()]["id"]
+            for b in filtros.brands
+            if b.lower() in PAYMENT_SYSTEMS_MAP
+        ]
+        if ps_id not in ids:
             return False
 
-    # ── levels ─────────────────────────────────────────────────────────────
+    # ── levels — match por cardLevel.name (string, alineado con script v6) ─
     if filtros.levels:
-        rule_level = rule.get("level") or rule.get("paymentSystemLevel")
-        try:
-            rule_level = int(rule_level)
-        except (TypeError, ValueError):
-            rule_level = None
-        in_list = rule_level in filtros.levels
+        card_level = rule.get("cardLevel")
+        rule_lv = (card_level.get("name") or "").strip().lower() if isinstance(card_level, dict) else ""
+        in_list = rule_lv in {lv.strip().lower() for lv in filtros.levels}
         if filtros.levels_mode == "include" and not in_list:
             return False
         if filtros.levels_mode == "exclude" and in_list:
             return False
 
-    # ── cuotas ─────────────────────────────────────────────────────────────
+    # ── cuotas — usa installmentOptions.installments[].quantity ───────────
     if filtros.cuotas:
-        raw = rule.get("installments") or rule.get("numberOfInstallments")
-        if raw is None:
-            return False
-        if isinstance(raw, list):
-            # Lista de objetos {count, ...}
-            counts = [
-                int(i["count"]) if isinstance(i, dict) else int(i)
-                for i in raw
-                if i is not None
-            ]
-            if not any(c in filtros.cuotas for c in counts):
-                return False
+        inst_opts = rule.get("installmentOptions") or {}
+        inst_list = inst_opts.get("installments") or []
+        if inst_list:
+            rule_set = {
+                int(i["quantity"])
+                for i in inst_list
+                if isinstance(i, dict) and i.get("quantity") is not None
+            }
         else:
-            rule_cuotas = int(raw)
-            if rule_cuotas not in filtros.cuotas:
+            raw = rule.get("installments")
+            if isinstance(raw, list):
+                rule_set = {int(i["count"]) if isinstance(i, dict) else int(i) for i in raw if i is not None}
+            elif raw is not None:
+                rule_set = {int(raw)}
+            else:
+                rule_set = set()
+
+        filtro_set = set(filtros.cuotas)
+        if filtros.cuotas_mode == "exacta":
+            if rule_set != filtro_set:
+                return False
+        else:  # contiene
+            if not (rule_set & filtro_set):
                 return False
 
     # ── fechas ─────────────────────────────────────────────────────────────
     date_filter_active = filtros.fecha_mode != "todos"
 
     if filtros.fecha_mode == "sin_fecha":
-        # Solo reglas SIN fecha
         if rule.get("beginDate") or rule.get("endDate"):
             return False
         return True
@@ -178,7 +194,6 @@ def matches_filters(rule: dict, filtros: FiltrosRequest) -> bool:  # noqa: C901
         rule_begin = _normalize_to_ar(rule.get("beginDate"))
         rule_end = _normalize_to_ar(rule.get("endDate"))
 
-        # Regla sin fecha cuando hay filtro activo → EXCLUIR (lógica crítica del script)
         if rule_begin is None and rule_end is None:
             return False
 
@@ -236,27 +251,19 @@ async def fetch_all_sellers_parallel(
 # ── Filter + build rows ────────────────────────────────────────────────────────
 
 def _rule_brands(rule: dict) -> str:
-    brands = rule.get("brands") or []
-    if brands:
-        return ", ".join(str(b) for b in brands)
     ps = rule.get("paymentSystem")
-    if isinstance(ps, dict):
-        return ps.get("name") or ""
-    if isinstance(ps, str) and ps:
-        return ps
-    return ""
+    if isinstance(ps, dict) and ps.get("name"):
+        return ps["name"]
+    brands = rule.get("brands") or []
+    return ", ".join(str(b) for b in brands)
 
 
 def _rule_level(rule: dict) -> str:
+    cl = rule.get("cardLevel")
+    if isinstance(cl, dict) and cl.get("name"):
+        return cl["name"]
     level = rule.get("level") or rule.get("paymentSystemLevel")
-    if level is not None:
-        return str(level)
-    card_level = rule.get("cardLevel")
-    if isinstance(card_level, dict):
-        return card_level.get("name") or ""
-    if isinstance(card_level, str) and card_level:
-        return card_level
-    return ""
+    return str(level) if level is not None else ""
 
 
 def _rule_estado(rule: dict) -> str:
@@ -304,53 +311,87 @@ async def execute_create(
     dry_run: bool,
 ) -> list[CrudRowOut]:
     rows = []
-    body = {
-        "paymentSystem": accion.ps_name,
-        "name": accion.rule_name,
-        "level": accion.level,
-        "installments": accion.cuotas,
-        "enabled": accion.enabled,
-    }
-    if accion.begin_date:
-        body["beginDate"] = accion.begin_date
-    if accion.end_date:
-        body["endDate"] = accion.end_date
+
+    # Build all brand × level combinations
+    combinations = []
+    for ps_key in accion.ps_names:
+        ps = PAYMENT_SYSTEMS_MAP.get(ps_key.lower())
+        if not ps:
+            logger.warning("execute_create: brand desconocida '%s', ignorada", ps_key)
+            continue
+        for level in accion.levels:
+            level_prefix = level.upper().replace("/", "_").replace(" ", "_")
+            ps_prefix = ps_key.upper()
+            max_c = max(accion.cuotas) if accion.cuotas else 0
+            if accion.rule_name_prefix:
+                rule_name = (
+                    f"{accion.rule_name_prefix}_{ps_prefix}_{level_prefix}_{max_c}"
+                    if max_c else
+                    f"{accion.rule_name_prefix}_{ps_prefix}_{level_prefix}"
+                )
+            else:
+                rule_name = f"{ps_prefix}_{level_prefix}_{max_c}" if max_c else f"{ps_prefix}_{level_prefix}"
+            combinations.append((ps, level, rule_name))
+
+    installments = _build_installments(accion.cuotas) if accion.cuotas else []
 
     for seller, app_key, app_token in sellers_creds:
-        if dry_run:
-            rows.append(CrudRowOut(
-                seller_id=seller.seller_id,
-                rule_id=None,
-                rule_name=accion.rule_name,
-                brand=None,
-                level=str(accion.level),
-                estado="activo" if accion.enabled else "inactivo",
-                detalle="dry_run — no ejecutado",
-            ))
-        else:
-            try:
-                created = await vtex_client.create_rule(
-                    seller.seller_id, app_key, app_token, body
-                )
-                rows.append(CrudRowOut(
-                    seller_id=seller.seller_id,
-                    rule_id=str(created.get("id", "")),
-                    rule_name=accion.rule_name,
-                    brand=None,
-                    level=str(accion.level),
-                    estado="activo" if accion.enabled else "inactivo",
-                    detalle="creado",
-                ))
-            except Exception as e:
+        for ps, level, rule_name in combinations:
+            body = {
+                "name": rule_name,
+                "salesChannels": [{"Id": 1, "Name": "Main", "IsActive": True}],
+                "paymentSystem": {"id": ps["id"], "name": ps["name"], "implementation": None},
+                "connector": None,
+                "issuer": None,
+                "antifraud": None,
+                "installmentOptions": {
+                    "dueDateType": 0,
+                    "interestRateMethod": 0,
+                    "minimumInstallmentValue": 1.0,
+                    "installments": installments,
+                } if installments else None,
+                "enabled": accion.enabled,
+                "installmentsService": False,
+                "condition": None,
+                "multiMerchantList": None,
+                "beginDate": accion.begin_date or None,
+                "endDate": accion.end_date or None,
+                "cobrand": {"name": None},
+                "cardLevel": {"name": level},
+            }
+
+            if dry_run:
                 rows.append(CrudRowOut(
                     seller_id=seller.seller_id,
                     rule_id=None,
-                    rule_name=accion.rule_name,
-                    brand=None,
-                    level=None,
-                    estado=None,
-                    detalle=f"error: {e}",
+                    rule_name=rule_name,
+                    brand=ps["name"],
+                    level=level,
+                    estado="activo" if accion.enabled else "inactivo",
+                    detalle="dry_run — no ejecutado",
                 ))
+            else:
+                try:
+                    created = await vtex_client.create_rule(seller.seller_id, app_key, app_token, body)
+                    rows.append(CrudRowOut(
+                        seller_id=seller.seller_id,
+                        rule_id=str(created.get("id", "")),
+                        rule_name=rule_name,
+                        brand=ps["name"],
+                        level=level,
+                        estado="activo" if accion.enabled else "inactivo",
+                        detalle="creado",
+                    ))
+                except Exception as e:
+                    rows.append(CrudRowOut(
+                        seller_id=seller.seller_id,
+                        rule_id=None,
+                        rule_name=rule_name,
+                        brand=ps["name"],
+                        level=level,
+                        estado=None,
+                        detalle=f"error: {e}",
+                    ))
     return rows
 
 
@@ -360,16 +401,13 @@ async def execute_update(
     dry_run: bool,
 ) -> list[CrudRowOut]:
     rows = []
-    patch = {k: v for k, v in cambios.model_dump(exclude_none=True).items()}
 
-    # Map schema fields to VTEX field names
-    field_map = {
-        "begin_date": "beginDate",
-        "end_date": "endDate",
-        "cuotas": "installments",
-        "enabled": "enabled",
-        "level": "level",
-    }
+    patch = {}
+    if cambios.begin_date: patch["begin_date"] = cambios.begin_date
+    if cambios.end_date: patch["end_date"] = cambios.end_date
+    if cambios.cuotas: patch["cuotas"] = cambios.cuotas
+    if cambios.level: patch["level"] = cambios.level
+    if cambios.enabled is not None: patch["enabled"] = cambios.enabled
 
     for m in matched:
         seller = m["seller"]
@@ -386,18 +424,35 @@ async def execute_update(
                 brand=_rule_brands(rule),
                 level=_rule_level(rule),
                 estado=_rule_estado(rule),
-                detalle=f"dry_run — cambios: {patch}",
+                detalle=f"dry_run — cambios: {list(patch.keys())}",
             ))
         else:
             try:
+                app_key, app_token = get_decrypted_credentials(seller)
                 updated_body = {**rule}
-                for schema_field, vtex_field in field_map.items():
-                    if schema_field in patch:
-                        updated_body[vtex_field] = patch[schema_field]
+
+                if "begin_date" in patch:
+                    updated_body["beginDate"] = patch["begin_date"]
+                if "end_date" in patch:
+                    updated_body["endDate"] = patch["end_date"]
+                if "enabled" in patch:
+                    updated_body["enabled"] = patch["enabled"]
+                if "cuotas" in patch:
+                    inst = _build_installments(patch["cuotas"])
+                    if updated_body.get("installmentOptions"):
+                        updated_body["installmentOptions"]["installments"] = inst
+                    else:
+                        updated_body["installmentOptions"] = {
+                            "dueDateType": 0,
+                            "interestRateMethod": 0,
+                            "minimumInstallmentValue": 1.0,
+                            "installments": inst,
+                        }
+                if "level" in patch:
+                    updated_body["cardLevel"] = {"name": patch["level"]} if patch["level"] else None
 
                 await vtex_client.update_rule(
-                    seller.seller_id, seller.app_key_enc and "" or "",  # placeholder
-                    "", rule_id, updated_body
+                    seller.seller_id, app_key, app_token, rule_id, updated_body
                 )
                 rows.append(CrudRowOut(
                     seller_id=seller.seller_id,
@@ -496,7 +551,7 @@ async def save_operation_log(
         finished_at=datetime.now(timezone.utc),
     )
     db.add(op)
-    await db.flush()  # get op.id
+    await db.flush()
 
     for row in rows:
         db.add(CrudOperationRow(
@@ -552,7 +607,6 @@ async def run_crud_operation(
     rows: list[CrudRowOut] = []
 
     if request.operacion == "R":
-        # Fetch all + filter
         raw_data = await fetch_all_sellers_parallel(sellers_creds)
         for sd in raw_data:
             if sd["error"]:
