@@ -1,6 +1,5 @@
 import { useState } from "react"
 import { ChevronDown, ChevronRight, SlidersHorizontal } from "lucide-react"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -14,9 +13,26 @@ import { Button } from "@/components/ui/button"
 
 const BRANDS = ["Visa", "Mastercard", "Electron"]
 
+const LEVEL_CHIPS = [
+  { label: "Classic", value: 1 },
+  { label: "Gold", value: 2 },
+  { label: "Gold/Prem", value: 3 },
+  { label: "Platinum", value: 4 },
+  { label: "Black", value: 5 },
+  { label: "Black Chip", value: 6 },
+  { label: "Signature", value: 7 },
+  { label: "Business", value: 8 },
+  { label: "Premier", value: 9 },
+  { label: "Corporate", value: 10 },
+  { label: "Purchasing", value: 11 },
+  { label: "Electron", value: 12 },
+]
+
+const ALL_LEVEL_VALUES = LEVEL_CHIPS.map((l) => l.value)
+
 export const EMPTY_FILTROS = {
   brands: [],
-  levels: "",
+  levels: [],
   levels_mode: "include",
   estado: "todos",
   nombre: "",
@@ -27,9 +43,9 @@ export const EMPTY_FILTROS = {
   fecha_ini_date: "",
   fecha_fin_date: "",
   horario_ini: "",
-  horario_ini_mode: "gte",
+  horario_ini_mode: "incluye",
   horario_fin: "",
-  horario_fin_mode: "lte",
+  horario_fin_mode: "incluye",
 }
 
 function ToggleGroup({ value, onChange, options }) {
@@ -55,11 +71,19 @@ function ToggleGroup({ value, onChange, options }) {
 
 function FieldRow({ label, children }) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       <Label className="text-xs font-medium text-slate-400">{label}</Label>
       {children}
     </div>
   )
+}
+
+function isBrandChecked(brand, brands) {
+  return brands.length === 0 || brands.includes(brand.toLowerCase())
+}
+
+function isLevelSelected(value, levels) {
+  return levels.length === 0 || levels.includes(value)
 }
 
 export function FiltrosPanel({ filtros, onChange }) {
@@ -71,15 +95,35 @@ export function FiltrosPanel({ filtros, onChange }) {
 
   function toggleBrand(brand) {
     const lower = brand.toLowerCase()
-    const next = filtros.brands.includes(lower)
-      ? filtros.brands.filter((b) => b !== lower)
-      : [...filtros.brands, lower]
-    set("brands", next)
+    if (filtros.brands.length === 0) {
+      // all selected → uncheck one → select all except this one
+      set("brands", BRANDS.map((b) => b.toLowerCase()).filter((b) => b !== lower))
+    } else if (filtros.brands.includes(lower)) {
+      const next = filtros.brands.filter((b) => b !== lower)
+      set("brands", next)
+    } else {
+      const next = [...filtros.brands, lower]
+      // if all are checked again → reset to empty (= all)
+      set("brands", next.length === BRANDS.length ? [] : next)
+    }
+  }
+
+  function toggleLevel(value) {
+    if (filtros.levels.length === 0) {
+      // all selected → uncheck one → select all except this
+      set("levels", ALL_LEVEL_VALUES.filter((v) => v !== value))
+    } else if (filtros.levels.includes(value)) {
+      const next = filtros.levels.filter((v) => v !== value)
+      set("levels", next)
+    } else {
+      const next = [...filtros.levels, value]
+      set("levels", next.length === ALL_LEVEL_VALUES.length ? [] : next)
+    }
   }
 
   const hasActiveFilters =
     filtros.brands.length > 0 ||
-    filtros.levels ||
+    filtros.levels.length > 0 ||
     filtros.estado !== "todos" ||
     filtros.nombre ||
     filtros.connector ||
@@ -107,17 +151,21 @@ export function FiltrosPanel({ filtros, onChange }) {
       </button>
 
       {open && (
-        <div className="border-t border-slate-700 px-4 pb-4 pt-4 space-y-4">
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+        <div className="border-t border-slate-700 px-4 pb-5 pt-4 space-y-5">
 
-            {/* Brands */}
+          {/* Row 1: Brand + Estado + Nombre */}
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+
+            {/* Brand */}
             <FieldRow label="Brand">
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-2">
                 {BRANDS.map((brand) => (
                   <label key={brand} className="flex items-center gap-2 cursor-pointer">
-                    <Checkbox
-                      checked={filtros.brands.includes(brand.toLowerCase())}
-                      onCheckedChange={() => toggleBrand(brand)}
+                    <input
+                      type="checkbox"
+                      checked={isBrandChecked(brand, filtros.brands)}
+                      onChange={() => toggleBrand(brand)}
+                      className="h-3.5 w-3.5 rounded border-slate-600 accent-blue-500"
                     />
                     <span className="text-xs text-slate-300">{brand}</span>
                   </label>
@@ -125,28 +173,10 @@ export function FiltrosPanel({ filtros, onChange }) {
               </div>
             </FieldRow>
 
-            {/* Levels */}
-            <FieldRow label="Levels (separados por coma)">
-              <Input
-                value={filtros.levels}
-                onChange={(e) => set("levels", e.target.value)}
-                placeholder="ej: 1, 2, 3"
-                className="border-slate-600 bg-slate-900 text-slate-100 placeholder:text-slate-600 h-8 text-xs"
-              />
-              <ToggleGroup
-                value={filtros.levels_mode}
-                onChange={(v) => set("levels_mode", v)}
-                options={[
-                  { value: "include", label: "Incluir" },
-                  { value: "exclude", label: "Excluir" },
-                ]}
-              />
-            </FieldRow>
-
             {/* Estado */}
             <FieldRow label="Estado">
               <Select value={filtros.estado} onValueChange={(v) => set("estado", v)}>
-                <SelectTrigger className="border-slate-600 bg-slate-900 text-slate-100 h-8 text-xs">
+                <SelectTrigger className="border-slate-600 bg-slate-900 text-slate-100 h-9 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="border-slate-700 bg-slate-800 text-slate-100">
@@ -163,18 +193,57 @@ export function FiltrosPanel({ filtros, onChange }) {
                 value={filtros.nombre}
                 onChange={(e) => set("nombre", e.target.value)}
                 placeholder="ej: Visa x6"
-                className="border-slate-600 bg-slate-900 text-slate-100 placeholder:text-slate-600 h-8 text-xs"
+                className="border-slate-600 bg-slate-900 text-slate-100 placeholder:text-slate-600 h-9 text-xs"
               />
             </FieldRow>
+          </div>
+
+          {/* Row 2: Levels — full width */}
+          <FieldRow label="Levels">
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {LEVEL_CHIPS.map(({ label, value }) => {
+                const selected = isLevelSelected(value, filtros.levels)
+                return (
+                  <button
+                    key={value}
+                    onClick={() => toggleLevel(value)}
+                    className={[
+                      "rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors",
+                      selected
+                        ? "border-blue-600 bg-blue-900/50 text-blue-300"
+                        : "border-slate-600 bg-slate-800 text-slate-500 hover:text-slate-300",
+                    ].join(" ")}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
+            <ToggleGroup
+              value={filtros.levels_mode}
+              onChange={(v) => set("levels_mode", v)}
+              options={[
+                { value: "include", label: "Incluir seleccionados" },
+                { value: "exclude", label: "Excluir seleccionados" },
+              ]}
+            />
+          </FieldRow>
+
+          {/* Row 3: Conector + Cuotas + Fecha */}
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
 
             {/* Conector */}
             <FieldRow label="Conector">
-              <Input
-                value={filtros.connector}
-                onChange={(e) => set("connector", e.target.value)}
-                placeholder="ej: Visa"
-                className="border-slate-600 bg-slate-900 text-slate-100 placeholder:text-slate-600 h-8 text-xs"
-              />
+              <Select value={filtros.connector} onValueChange={(v) => set("connector", v)}>
+                <SelectTrigger className="border-slate-600 bg-slate-900 text-slate-100 h-9 text-xs">
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent className="border-slate-700 bg-slate-800 text-slate-100">
+                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="Payway">Payway</SelectItem>
+                  <SelectItem value="Decidir">Decidir</SelectItem>
+                </SelectContent>
+              </Select>
             </FieldRow>
 
             {/* Cuotas */}
@@ -182,10 +251,8 @@ export function FiltrosPanel({ filtros, onChange }) {
               <Input
                 value={filtros.cuotas}
                 onChange={(e) => set("cuotas", e.target.value)}
-                placeholder="ej: 6"
-                type="number"
-                min="1"
-                className="border-slate-600 bg-slate-900 text-slate-100 placeholder:text-slate-600 h-8 text-xs"
+                placeholder="ej: 1, 3, 6, 9, 12"
+                className="border-slate-600 bg-slate-900 text-slate-100 placeholder:text-slate-600 h-9 text-xs"
               />
               <ToggleGroup
                 value={filtros.cuotas_mode}
@@ -200,7 +267,7 @@ export function FiltrosPanel({ filtros, onChange }) {
             {/* Fecha */}
             <FieldRow label="Filtro de fecha">
               <Select value={filtros.fecha_mode} onValueChange={(v) => set("fecha_mode", v)}>
-                <SelectTrigger className="border-slate-600 bg-slate-900 text-slate-100 h-8 text-xs">
+                <SelectTrigger className="border-slate-600 bg-slate-900 text-slate-100 h-9 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="border-slate-700 bg-slate-800 text-slate-100">
@@ -210,7 +277,7 @@ export function FiltrosPanel({ filtros, onChange }) {
                 </SelectContent>
               </Select>
               {filtros.fecha_mode === "entre" && (
-                <div className="flex gap-2 mt-1.5">
+                <div className="flex gap-2 mt-1">
                   <Input
                     type="date"
                     value={filtros.fecha_ini_date}
@@ -226,6 +293,10 @@ export function FiltrosPanel({ filtros, onChange }) {
                 </div>
               )}
             </FieldRow>
+          </div>
+
+          {/* Row 4: Horarios */}
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
 
             {/* Horario inicio */}
             <FieldRow label="Horario inicio (HH:MM)">
@@ -233,15 +304,15 @@ export function FiltrosPanel({ filtros, onChange }) {
                 value={filtros.horario_ini}
                 onChange={(e) => set("horario_ini", e.target.value)}
                 placeholder="ej: 08:00"
-                className="border-slate-600 bg-slate-900 text-slate-100 placeholder:text-slate-600 h-8 text-xs"
+                className="border-slate-600 bg-slate-900 text-slate-100 placeholder:text-slate-600 h-9 text-xs"
               />
               <ToggleGroup
                 value={filtros.horario_ini_mode}
                 onChange={(v) => set("horario_ini_mode", v)}
                 options={[
-                  { value: "gte", label: "≥" },
-                  { value: "lte", label: "≤" },
-                  { value: "exact", label: "=" },
+                  { value: "exacta", label: "Exacta" },
+                  { value: "incluye", label: "Incluye" },
+                  { value: "excluye", label: "Excluye" },
                 ]}
               />
             </FieldRow>
@@ -252,15 +323,15 @@ export function FiltrosPanel({ filtros, onChange }) {
                 value={filtros.horario_fin}
                 onChange={(e) => set("horario_fin", e.target.value)}
                 placeholder="ej: 20:00"
-                className="border-slate-600 bg-slate-900 text-slate-100 placeholder:text-slate-600 h-8 text-xs"
+                className="border-slate-600 bg-slate-900 text-slate-100 placeholder:text-slate-600 h-9 text-xs"
               />
               <ToggleGroup
                 value={filtros.horario_fin_mode}
                 onChange={(v) => set("horario_fin_mode", v)}
                 options={[
-                  { value: "gte", label: "≥" },
-                  { value: "lte", label: "≤" },
-                  { value: "exact", label: "=" },
+                  { value: "exacta", label: "Exacta" },
+                  { value: "incluye", label: "Incluye" },
+                  { value: "excluye", label: "Excluye" },
                 ]}
               />
             </FieldRow>

@@ -1,4 +1,3 @@
-import { useState } from "react"
 import { AlertTriangle, Eye, FilePlus, Pencil, Trash2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -6,18 +5,18 @@ import { Switch } from "@/components/ui/switch"
 
 const OPS = [
   {
-    value: "R",
-    label: "Read",
-    icon: Eye,
-    color: "border-blue-700 bg-blue-900/30 text-blue-400",
-    activeColor: "border-blue-500 bg-blue-800/50 text-blue-300 ring-2 ring-blue-700",
-  },
-  {
     value: "C",
     label: "Create",
     icon: FilePlus,
     color: "border-emerald-700 bg-emerald-900/30 text-emerald-400",
     activeColor: "border-emerald-500 bg-emerald-800/50 text-emerald-300 ring-2 ring-emerald-700",
+  },
+  {
+    value: "R",
+    label: "Read",
+    icon: Eye,
+    color: "border-blue-700 bg-blue-900/30 text-blue-400",
+    activeColor: "border-blue-500 bg-blue-800/50 text-blue-300 ring-2 ring-blue-700",
   },
   {
     value: "U",
@@ -61,20 +60,24 @@ export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdat
     <div className="space-y-4">
       {/* Operation buttons */}
       <div className="grid grid-cols-4 gap-3">
-        {OPS.map(({ value, label, icon: Icon, color, activeColor }) => (
-          <button
-            key={value}
-            onClick={() => set("operacion", operacion === value ? null : value)}
-            className={[
-              "flex flex-col items-center gap-2 rounded-xl border p-4 transition-all",
-              operacion === value ? activeColor : color,
-              "hover:opacity-90",
-            ].join(" ")}
-          >
-            <Icon className="h-6 w-6" />
-            <span className="text-sm font-semibold">{label}</span>
-          </button>
-        ))}
+        {OPS.map(({ value, label, icon: Icon, color, activeColor }) => {
+          const isActive = operacion === value
+          const isDimmed = operacion !== null && !isActive
+          return (
+            <button
+              key={value}
+              onClick={() => set("operacion", operacion === value ? null : value)}
+              className={[
+                "flex flex-col items-center gap-2 rounded-xl border p-4 transition-all",
+                isActive ? activeColor : color,
+                isDimmed ? "opacity-25" : "hover:opacity-90",
+              ].join(" ")}
+            >
+              <Icon className="h-6 w-6" />
+              <span className="text-sm font-semibold">{label}</span>
+            </button>
+          )
+        })}
       </div>
 
       {/* Delete warning */}
@@ -87,20 +90,6 @@ export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdat
               Esta acción eliminará las reglas filtradas. Asegurate de usar Dry Run primero para verificar qué se va a borrar.
             </p>
           </div>
-        </div>
-      )}
-
-      {/* Dry Run toggle */}
-      {operacion && operacion !== "R" && (
-        <div className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3">
-          <div>
-            <p className="text-sm font-medium text-slate-200">Dry Run</p>
-            <p className="text-xs text-slate-500">Simulación — no realiza cambios reales en VTEX</p>
-          </div>
-          <Switch
-            checked={dryRun}
-            onCheckedChange={(v) => set("dryRun", v)}
-          />
         </div>
       )}
 

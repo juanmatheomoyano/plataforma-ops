@@ -1,6 +1,8 @@
 import { useState } from "react"
 import { toast } from "sonner"
 import { Card } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/core/auth/useAuth"
 import client from "@/core/api/client"
@@ -31,26 +33,41 @@ const EMPTY_UPDATE = {
   level: null,
 }
 
+// Map frontend horario mode names to backend literals
+const HORARIO_MODE_MAP = {
+  exacta: "exact",
+  incluye_ini: "gte",
+  incluye_fin: "lte",
+  excluye: "exclude",
+}
+
+function resolveHorarioMode(mode, field) {
+  if (mode === "exacta") return "exact"
+  if (mode === "excluye") return "exclude"
+  // "incluye" maps to gte for ini (start >= filter), lte for fin (end <= filter)
+  return field === "ini" ? "gte" : "lte"
+}
+
 function buildFiltrosPayload(filtros) {
   const f = {}
 
   if (filtros.brands.length > 0) f.brands = filtros.brands
-  if (filtros.levels) {
-    const parsed = filtros.levels
-      .split(",")
-      .map((s) => parseInt(s.trim()))
-      .filter((n) => !isNaN(n))
-    if (parsed.length > 0) {
-      f.levels = parsed
-      f.levels_mode = filtros.levels_mode
-    }
+  if (filtros.levels.length > 0) {
+    f.levels = filtros.levels
+    f.levels_mode = filtros.levels_mode
   }
   if (filtros.estado !== "todos") f.estado = filtros.estado
   if (filtros.nombre) f.nombre = filtros.nombre
   if (filtros.connector) f.connector = filtros.connector
   if (filtros.cuotas) {
-    f.cuotas = parseInt(filtros.cuotas)
-    f.cuotas_mode = filtros.cuotas_mode
+    const parsed = filtros.cuotas
+      .split(",")
+      .map((s) => parseInt(s.trim()))
+      .filter((n) => !isNaN(n))
+    if (parsed.length > 0) {
+      f.cuotas = parsed
+      f.cuotas_mode = filtros.cuotas_mode
+    }
   }
   if (filtros.fecha_mode !== "todos") {
     f.fecha_mode = filtros.fecha_mode
@@ -59,11 +76,11 @@ function buildFiltrosPayload(filtros) {
   }
   if (filtros.horario_ini) {
     f.horario_ini = filtros.horario_ini
-    f.horario_ini_mode = filtros.horario_ini_mode
+    f.horario_ini_mode = resolveHorarioMode(filtros.horario_ini_mode, "ini")
   }
   if (filtros.horario_fin) {
     f.horario_fin = filtros.horario_fin
-    f.horario_fin_mode = filtros.horario_fin_mode
+    f.horario_fin_mode = resolveHorarioMode(filtros.horario_fin_mode, "fin")
   }
 
   return f
@@ -73,13 +90,8 @@ export default function CrudMediosPage() {
   const { hasRole } = useAuth()
   const canRunReal = hasRole(WRITE_ROLES)
 
-  // Scope
   const [sellerIds, setSellerIds] = useState([])
-
-  // Filters
   const [filtros, setFiltros] = useState(EMPTY_FILTROS)
-
-  // Operation config
   const [opConfig, setOpConfig] = useState({
     operacion: null,
     dryRun: true,
@@ -87,12 +99,10 @@ export default function CrudMediosPage() {
     accionUpdate: EMPTY_UPDATE,
   })
 
-  // Execution state
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [execError, setExecError] = useState(null)
 
-  // Derived permissions
   const isRealWriteOp =
     opConfig.operacion && opConfig.operacion !== "R" && !opConfig.dryRun
 
@@ -177,15 +187,35 @@ export default function CrudMediosPage() {
           <Card className="border-slate-700 bg-[#1e293b] p-5 space-y-5">
             <ScopeSelector onChange={setSellerIds} />
             <div className="border-t border-slate-700/60" />
-            <FiltrosPanel filtros={filtros} onChange={setFiltros} />
-            <div className="border-t border-slate-700/60" />
+
+            {/* 1. Selector de operación */}
             <OperacionSelector
               {...opConfig}
               onChange={setOpConfig}
             />
+            <div className="border-t border-slate-700/60" />
+
+            {/* 2. Filtros */}
+            <FiltrosPanel filtros={filtros} onChange={setFiltros} />
+
+            {/* 3. Dry Run (solo para operaciones de escritura) */}
+            {opConfig.operacion && opConfig.operacion !== "R" && (
+              <>
+                <div className="border-t border-slate-700/60" />
+                <div className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-slate-200">Dry Run</p>
+                    <p className="text-xs text-slate-500">Simulación — no realiza cambios reales en VTEX</p>
+                  </div>
+                  <Switch
+                    checked={opConfig.dryRun}
+                    onCheckedChange={(v) => setOpConfig((prev) => ({ ...prev, dryRun: v }))}
+                  />
+                </div>
+              </>
+            )}
           </Card>
 
-          {/* Role restriction banner for real write ops */}
           {isRealWriteOp && !canRunReal && (
             <div className="rounded-lg border border-amber-800 bg-amber-950/40 px-4 py-3 text-sm text-amber-300">
               Solo <strong>admin</strong> o <strong>analista senior</strong> pueden ejecutar operaciones reales. Podés usar Dry Run.

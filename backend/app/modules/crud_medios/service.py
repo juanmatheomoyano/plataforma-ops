@@ -96,6 +96,8 @@ def _compare_time(rule_t: time | None, filter_t: time | None, mode: str) -> bool
         return rule_t >= filter_t
     if mode == "lte":
         return rule_t <= filter_t
+    if mode == "exclude":
+        return rule_t != filter_t
     return rule_t == filter_t
 
 
@@ -145,7 +147,7 @@ def matches_filters(rule: dict, filtros: FiltrosRequest) -> bool:  # noqa: C901
             return False
 
     # ── cuotas ─────────────────────────────────────────────────────────────
-    if filtros.cuotas is not None:
+    if filtros.cuotas:
         raw = rule.get("installments") or rule.get("numberOfInstallments")
         if raw is None:
             return False
@@ -156,17 +158,11 @@ def matches_filters(rule: dict, filtros: FiltrosRequest) -> bool:  # noqa: C901
                 for i in raw
                 if i is not None
             ]
-            if filtros.cuotas_mode == "exacta":
-                if filtros.cuotas not in counts:
-                    return False
-            else:  # contiene
-                if not any(filtros.cuotas == c for c in counts):
-                    return False
+            if not any(c in filtros.cuotas for c in counts):
+                return False
         else:
             rule_cuotas = int(raw)
-            if filtros.cuotas_mode == "exacta" and rule_cuotas != filtros.cuotas:
-                return False
-            if filtros.cuotas_mode == "contiene" and filtros.cuotas != rule_cuotas:
+            if rule_cuotas not in filtros.cuotas:
                 return False
 
     # ── fechas ─────────────────────────────────────────────────────────────

@@ -5,6 +5,20 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [1.3.1] — 2026-05-26 — Rediseño filtros CRUD
+
+### CRUD Medios de Pago
+- Rediseñado: orden de operaciones ahora es Create → Read → Update → Delete
+- Mejorado: operación seleccionada resaltada, las demás opacadas
+- Mejorado: Brand con todos seleccionados por defecto
+- Mejorado: Levels como chips seleccionables con valores reales (sin texto libre)
+- Mejorado: Conector como select (Payway, Decidir, Todos)
+- Mejorado: Cuotas con campo más grande y claro (acepta múltiples valores separados por coma)
+- Mejorado: Horario con opciones Exacta/Incluye/Excluye
+- Mejorado: Filtros posicionados debajo del selector de operación
+
+---
+
 ## [1.3.0] — 2026-05-25 — Exportar/Importar Sellers y Usuarios
 
 ### Sellers

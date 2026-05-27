@@ -12,7 +12,7 @@ class FiltrosRequest(BaseModel):
     estado: Literal["todos", "activo", "inactivo"] = "todos"
     nombre: str | None = None
     connector: str | None = None
-    cuotas: int | None = None
+    cuotas: list[int] = Field(default_factory=list)
     cuotas_mode: Literal["exacta", "contiene"] = "exacta"
     fecha_mode: Literal["todos", "entre", "sin_fecha"] = "todos"
     fecha_ini_date: str | None = None   # YYYY-MM-DD
@@ -20,9 +20,9 @@ class FiltrosRequest(BaseModel):
     fecha_ini: str | None = None        # ISO datetime string (begin_date of rule)
     fecha_fin: str | None = None        # ISO datetime string (end_date of rule)
     horario_ini: str | None = None      # HH:MM[:SS]
-    horario_ini_mode: Literal["gte", "lte", "exact"] = "gte"
+    horario_ini_mode: Literal["gte", "lte", "exact", "exclude"] = "gte"
     horario_fin: str | None = None      # HH:MM[:SS]
-    horario_fin_mode: Literal["gte", "lte", "exact"] = "lte"
+    horario_fin_mode: Literal["gte", "lte", "exact", "exclude"] = "lte"
 
 
 class AcreateRequest(BaseModel):
