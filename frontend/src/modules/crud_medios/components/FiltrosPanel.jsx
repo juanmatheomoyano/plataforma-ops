@@ -36,7 +36,7 @@ export const EMPTY_FILTROS = {
   levels_mode: "include",
   estado: "todos",
   nombre: "",
-  connector: "",
+  connector: "todos",
   cuotas: "",
   cuotas_mode: "exacta",
   fecha_mode: "todos",
@@ -126,7 +126,7 @@ export function FiltrosPanel({ filtros, onChange }) {
     filtros.levels.length > 0 ||
     filtros.estado !== "todos" ||
     filtros.nombre ||
-    filtros.connector ||
+    (filtros.connector && filtros.connector !== "todos") ||
     filtros.cuotas ||
     filtros.fecha_mode !== "todos" ||
     filtros.horario_ini ||
@@ -239,7 +239,7 @@ export function FiltrosPanel({ filtros, onChange }) {
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent className="border-slate-700 bg-slate-800 text-slate-100">
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="todos">Todos</SelectItem>
                   <SelectItem value="Payway">Payway</SelectItem>
                   <SelectItem value="Decidir">Decidir</SelectItem>
                 </SelectContent>

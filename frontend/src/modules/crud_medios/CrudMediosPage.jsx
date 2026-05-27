@@ -58,7 +58,7 @@ function buildFiltrosPayload(filtros) {
   }
   if (filtros.estado !== "todos") f.estado = filtros.estado
   if (filtros.nombre) f.nombre = filtros.nombre
-  if (filtros.connector) f.connector = filtros.connector
+  if (filtros.connector && filtros.connector !== "todos") f.connector = filtros.connector
   if (filtros.cuotas) {
     const parsed = filtros.cuotas
       .split(",")
