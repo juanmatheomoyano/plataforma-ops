@@ -11,9 +11,12 @@ from app.core.dependencies import get_current_user, require_role
 from app.modules.auth.models import User
 from app.modules.sellers.models import EstadoKeys, Seller
 
+from app.modules.sellers.service import get_decrypted_credentials
+
 from .models import CrudOperation
 from .schemas import CrudRequest, CrudResponse, OperationSummary, SellerScopeOut
 from .service import cleanup_old_operations, get_active_sellers, run_crud_operation
+from . import vtex_client
 
 router = APIRouter(prefix="/crud-medios", tags=["crud-medios"])
 
@@ -179,3 +182,24 @@ async def cleanup_history(
 ):
     deleted = await cleanup_old_operations(db)
     return {"deleted": deleted}
+
+
+@router.get("/debug-rules/{seller_id}")
+async def debug_raw_rules(
+    seller_id: str,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_role(["admin"])),
+):
+    """Temporal: devuelve las primeras 3 reglas raw de un seller para diagnóstico de connector."""
+    sellers = await get_active_sellers(db, [seller_id])
+    if not sellers:
+        raise HTTPException(status_code=404, detail=f"Seller '{seller_id}' no encontrado o inactivo")
+    seller = sellers[0]
+    app_key, app_token = get_decrypted_credentials(seller)
+    rules = await vtex_client.get_rules(seller_id, app_key, app_token)
+    sample = rules[:3] if rules else []
+    return {
+        "seller_id": seller_id,
+        "total_rules": len(rules),
+        "sample": sample,
+    }

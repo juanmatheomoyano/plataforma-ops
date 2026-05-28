@@ -107,6 +107,22 @@ def _build_installments(cuotas: list[int]) -> list[dict]:
     ]
 
 
+def _extract_connector(rules: list[dict]) -> tuple[str | None, str | None, str | None]:
+    """
+    Extrae connector.implementation, connector.affiliationId e issuer.name
+    de la primera regla del seller que tenga ambos campos completos.
+    Replica la lógica de extract_connector del script v6.
+    """
+    for r in rules:
+        conn = r.get("connector") or {}
+        if conn.get("implementation") and conn.get("affiliationId"):
+            issuer = (r.get("issuer") or {}).get(
+                "name", "banco de la provincia de buenos aires"
+            )
+            return conn["implementation"], conn["affiliationId"], issuer
+    return None, None, None
+
+
 # ── Core filter ───────────────────────────────────────────────────────────────
 
 def matches_filters(rule: dict, filtros: FiltrosRequest) -> bool:  # noqa: C901
@@ -309,8 +325,26 @@ async def execute_create(
     sellers_creds: list[tuple[Seller, str, str]],
     accion: AcreateRequest,
     dry_run: bool,
+    raw_data: list[dict] | None = None,
 ) -> list[CrudRowOut]:
     rows = []
+
+    # Build connector lookup from pre-fetched rules (seller_id → connector tuple)
+    connector_map: dict[str, tuple[str, str, str]] = {}
+    if raw_data:
+        for sd in raw_data:
+            sid = sd["seller"].seller_id
+            rules = sd.get("rules") or []
+            logger.info("execute_create [%s]: %d reglas fetched", sid, len(rules))
+            if rules:
+                first_conn = (rules[0].get("connector") or {})
+                logger.info("execute_create [%s]: primer connector = %s", sid, first_conn)
+            conn_impl, aff_id, issuer = _extract_connector(rules)
+            if conn_impl:
+                logger.info("execute_create [%s]: connector encontrado — impl=%s aff=%s issuer=%s", sid, conn_impl, aff_id, issuer)
+                connector_map[sid] = (conn_impl, aff_id, issuer)
+            else:
+                logger.warning("execute_create [%s]: NO se encontró connector en ninguna regla", sid)
 
     # Build all brand × level combinations
     combinations = []
@@ -336,13 +370,41 @@ async def execute_create(
     installments = _build_installments(accion.cuotas) if accion.cuotas else []
 
     for seller, app_key, app_token in sellers_creds:
+        conn_tuple = connector_map.get(seller.seller_id)
+        conn_impl, aff_id, issuer = conn_tuple if conn_tuple else (None, None, None)
+
+        if not dry_run and not conn_impl:
+            for ps, level, rule_name in combinations:
+                rows.append(CrudRowOut(
+                    seller_id=seller.seller_id,
+                    rule_id=None,
+                    rule_name=rule_name,
+                    brand=ps["name"],
+                    level=level,
+                    estado=None,
+                    detalle="error: no se encontró connector en las reglas existentes del seller",
+                ))
+            continue
+
         for ps, level, rule_name in combinations:
+            if dry_run:
+                rows.append(CrudRowOut(
+                    seller_id=seller.seller_id,
+                    rule_id=None,
+                    rule_name=rule_name,
+                    brand=ps["name"],
+                    level=level,
+                    estado="activo" if accion.enabled else "inactivo",
+                    detalle="dry_run — no ejecutado",
+                ))
+                continue
+
             body = {
                 "name": rule_name,
                 "salesChannels": [{"Id": 1, "Name": "Main", "IsActive": True}],
                 "paymentSystem": {"id": ps["id"], "name": ps["name"], "implementation": None},
-                "connector": None,
-                "issuer": None,
+                "connector": {"implementation": conn_impl, "affiliationId": aff_id},
+                "issuer": {"name": issuer},
                 "antifraud": None,
                 "installmentOptions": {
                     "dueDateType": 0,
@@ -354,44 +416,38 @@ async def execute_create(
                 "installmentsService": False,
                 "condition": None,
                 "multiMerchantList": None,
+                "country": {"isoCode": "ar", "name": None},
                 "beginDate": accion.begin_date or None,
                 "endDate": accion.end_date or None,
+                "dateIntervals": None,
+                "externalInterest": False,
+                "minimumValue": None,
+                "deadlines": [],
                 "cobrand": {"name": None},
                 "cardLevel": {"name": level},
             }
 
-            if dry_run:
+            try:
+                created = await vtex_client.create_rule(seller.seller_id, app_key, app_token, body)
+                rows.append(CrudRowOut(
+                    seller_id=seller.seller_id,
+                    rule_id=str(created.get("id", "")),
+                    rule_name=rule_name,
+                    brand=ps["name"],
+                    level=level,
+                    estado="activo" if accion.enabled else "inactivo",
+                    detalle="creado",
+                ))
+            except Exception as e:
                 rows.append(CrudRowOut(
                     seller_id=seller.seller_id,
                     rule_id=None,
                     rule_name=rule_name,
                     brand=ps["name"],
                     level=level,
-                    estado="activo" if accion.enabled else "inactivo",
-                    detalle="dry_run — no ejecutado",
+                    estado=None,
+                    detalle=f"error: {e}",
                 ))
-            else:
-                try:
-                    created = await vtex_client.create_rule(seller.seller_id, app_key, app_token, body)
-                    rows.append(CrudRowOut(
-                        seller_id=seller.seller_id,
-                        rule_id=str(created.get("id", "")),
-                        rule_name=rule_name,
-                        brand=ps["name"],
-                        level=level,
-                        estado="activo" if accion.enabled else "inactivo",
-                        detalle="creado",
-                    ))
-                except Exception as e:
-                    rows.append(CrudRowOut(
-                        seller_id=seller.seller_id,
-                        rule_id=None,
-                        rule_name=rule_name,
-                        brand=ps["name"],
-                        level=level,
-                        estado=None,
-                        detalle=f"error: {e}",
-                    ))
     return rows
 
 
@@ -623,7 +679,8 @@ async def run_crud_operation(
     elif request.operacion == "C":
         if not request.accion_create:
             raise ValueError("accion_create es requerido para operacion C")
-        rows = await execute_create(sellers_creds, request.accion_create, request.dry_run)
+        raw_data = await fetch_all_sellers_parallel(sellers_creds)
+        rows = await execute_create(sellers_creds, request.accion_create, request.dry_run, raw_data)
 
     elif request.operacion == "U":
         if not request.accion_update:
