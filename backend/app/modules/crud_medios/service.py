@@ -334,17 +334,11 @@ async def execute_create(
     if raw_data:
         for sd in raw_data:
             sid = sd["seller"].seller_id
-            rules = sd.get("rules") or []
-            logger.info("execute_create [%s]: %d reglas fetched", sid, len(rules))
-            if rules:
-                first_conn = (rules[0].get("connector") or {})
-                logger.info("execute_create [%s]: primer connector = %s", sid, first_conn)
-            conn_impl, aff_id, issuer = _extract_connector(rules)
+            conn_impl, aff_id, issuer = _extract_connector(sd.get("rules") or [])
             if conn_impl:
-                logger.info("execute_create [%s]: connector encontrado — impl=%s aff=%s issuer=%s", sid, conn_impl, aff_id, issuer)
                 connector_map[sid] = (conn_impl, aff_id, issuer)
             else:
-                logger.warning("execute_create [%s]: NO se encontró connector en ninguna regla", sid)
+                logger.warning("execute_create [%s]: no se encontró connector en las reglas existentes", sid)
 
     # Build all brand × level combinations
     combinations = []
