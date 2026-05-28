@@ -66,6 +66,26 @@ class CrudRowOut(BaseModel):
     detalle: str | None
 
 
+class GrupoDashboard(BaseModel):
+    estado: str
+    motivos: list[str] = []
+
+
+class SellerDashboard(BaseModel):
+    seller_id: str
+    seller_name: str
+    totales: int
+    activas: int
+    inactivas: int
+    vigentes_hoy: int
+    firmas: list[str] = []
+    max_cuotas_activas: int = 0
+    conectores: list[str] = []
+    emisores: list[str] = []
+    grupos: dict[str, GrupoDashboard] = {}
+    motivos_all: str = ""
+
+
 class CrudResponse(BaseModel):
     operation_id: uuid.UUID
     operacion: str
@@ -76,6 +96,7 @@ class CrudResponse(BaseModel):
     total_errors: int
     duration_secs: float
     rows: list[CrudRowOut]
+    dashboard: list[SellerDashboard] = []
 
 
 class OperationSummary(BaseModel):
@@ -101,3 +122,42 @@ class SellerScopeOut(BaseModel):
     analista: str | None
 
     model_config = {"from_attributes": True}
+
+
+# ── Validación de Eventos ──────────────────────────────────────────────────────
+
+class EventoConfig(BaseModel):
+    nombre: str
+    cuotas_requeridas: list[int]
+    max_cuota: int
+    fecha_ini_art: str | None = None   # "2026-05-14T00:00:00" (sin tz, se asume AR UTC-3)
+    fecha_fin_art: str | None = None   # "2026-05-17T23:59:00"
+
+
+class EventoValidateRequest(BaseModel):
+    scope: ScopeRequest = Field(default_factory=ScopeRequest)
+    filtros: FiltrosRequest = Field(default_factory=FiltrosRequest)
+    evento: EventoConfig
+
+
+class GrupoEventoResult(BaseModel):
+    estado: str
+    motivos: list[str] = []
+
+
+class SellerEventoResult(BaseModel):
+    seller_id: str
+    seller_name: str
+    estado_general: str
+    motivos: list[str] = []
+    total_rules_evento: int = 0
+
+
+class EventoValidateResponse(BaseModel):
+    evento_nombre: str
+    total_sellers: int
+    sellers_ok: int
+    sellers_a_corregir: int
+    sellers_no_configurado: int
+    duration_secs: float
+    results: list[SellerEventoResult]

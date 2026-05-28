@@ -299,9 +299,14 @@ export default function CrudMediosPage() {
             </DialogContent>
           </Dialog>
 
-          {result && result.rows.length > 0 && (
+          {result && (result.rows.length > 0 || result.dashboard?.length > 0) && (
             <Card className="border-slate-700 bg-[#1e293b] p-5">
-              <ResultsTable rows={result.rows} />
+              <ResultsTable
+                rows={result.rows}
+                dashboard={result.dashboard}
+                operacion={opConfig.operacion}
+                scope={{ seller_ids: sellerIds }}
+              />
             </Card>
           )}
         </TabsContent>

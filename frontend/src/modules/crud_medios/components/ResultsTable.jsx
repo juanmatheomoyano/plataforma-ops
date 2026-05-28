@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { toast } from "sonner"
 import * as XLSX from "xlsx"
 import { save } from "@tauri-apps/plugin-dialog"
 import { writeFile } from "@tauri-apps/plugin-fs"
@@ -9,9 +10,12 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { Download, Search } from "lucide-react"
+import { Download, Loader2, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { DashboardTable } from "./DashboardTable"
+import client from "@/core/api/client"
 
 const DETALLE_BADGE = {
   matched: { label: "OK", cls: "border-emerald-700 bg-emerald-900/40 text-emerald-400" },
@@ -66,10 +70,36 @@ const RESULTADOS = [
   { value: "error", label: "ERROR" },
 ]
 
-export function ResultsTable({ rows, onFilterErrors }) {
+async function downloadBackendExcel(scope) {
+  const { data } = await client.post(
+    "/crud-medios/export",
+    { operacion: "R", scope, dry_run: true },
+    { responseType: "blob" },
+  )
+  const url = URL.createObjectURL(new Blob([data]))
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `vtex_payments_${new Date().toISOString().slice(0, 10)}.xlsx`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+export function ResultsTable({ rows, dashboard, operacion, scope, onFilterErrors }) {
   const [globalFilter, setGlobalFilter] = useState("")
   const [showOnlyErrors, setShowOnlyErrors] = useState(false)
   const [colFilters, setColFilters] = useState({ seller: "", brand: "", level: "", estado: "", resultado: "" })
+  const [exporting, setExporting] = useState(false)
+
+  async function handleBackendExport() {
+    setExporting(true)
+    try {
+      await downloadBackendExcel(scope || { seller_ids: [] })
+    } catch {
+      toast.error("Error al generar el Excel")
+    } finally {
+      setExporting(false)
+    }
+  }
 
   function setCol(field, value) {
     setColFilters((f) => ({ ...f, [field]: value }))
@@ -179,7 +209,7 @@ export function ResultsTable({ rows, onFilterErrors }) {
 
   const errorCount = rows.filter((r) => r.detalle?.toLowerCase().startsWith("error")).length
 
-  return (
+  const rowsTableContent = (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div className="relative flex-1 max-w-sm">
@@ -335,4 +365,44 @@ export function ResultsTable({ rows, onFilterErrors }) {
       )}
     </div>
   )
+
+  if (operacion === "R") {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-slate-400">
+            {rows.length} regla{rows.length !== 1 ? "s" : ""} ·{" "}
+            {dashboard?.length ?? 0} seller{(dashboard?.length ?? 0) !== 1 ? "s" : ""}
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleBackendExport}
+            disabled={exporting}
+            className="h-8 border-slate-600 bg-transparent text-xs text-slate-400 hover:bg-slate-700 hover:text-slate-100"
+          >
+            {exporting
+              ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              : <Download className="mr-1.5 h-3.5 w-3.5" />
+            }
+            Exportar Excel completo
+          </Button>
+        </div>
+        <Tabs defaultValue="dashboard">
+          <TabsList className="bg-slate-800 border border-slate-700">
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="detalle">Detalle de reglas</TabsTrigger>
+          </TabsList>
+          <TabsContent value="dashboard" className="mt-3">
+            <DashboardTable dashboard={dashboard} />
+          </TabsContent>
+          <TabsContent value="detalle" className="mt-3">
+            {rowsTableContent}
+          </TabsContent>
+        </Tabs>
+      </div>
+    )
+  }
+
+  return rowsTableContent
 }

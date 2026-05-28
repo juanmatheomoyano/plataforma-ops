@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -11,9 +12,23 @@ from app.core.dependencies import get_current_user, require_role
 from app.modules.auth.models import User
 from app.modules.sellers.models import EstadoKeys, Seller
 
+from .excel_export import build_excel, build_excel_evento
 from .models import CrudOperation
-from .schemas import CrudRequest, CrudResponse, OperationSummary, SellerScopeOut
-from .service import cleanup_old_operations, get_active_sellers, run_crud_operation
+from .schemas import (
+    CrudRequest,
+    CrudResponse,
+    EventoValidateRequest,
+    EventoValidateResponse,
+    OperationSummary,
+    SellerScopeOut,
+)
+from .service import (
+    cleanup_old_operations,
+    fetch_enriched_for_export,
+    get_active_sellers,
+    run_crud_operation,
+    run_evento_validation,
+)
 
 router = APIRouter(prefix="/crud-medios", tags=["crud-medios"])
 
@@ -179,3 +194,64 @@ async def cleanup_history(
 ):
     deleted = await cleanup_old_operations(db)
     return {"deleted": deleted}
+
+
+@router.post("/export")
+async def export_excel(
+    body: CrudRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """
+    Genera y descarga un Excel con RESUMEN, DASHBOARD_VENDEDORES,
+    PAGOS_CONSOLIDADO, ERRORES. Siempre fetches todas las reglas sin filtrar.
+    """
+    import time as _time
+    t0 = _time.monotonic()
+
+    scope_ids = body.scope.seller_ids or None
+    all_enriched, dashboards, error_rows = await fetch_enriched_for_export(db, scope_ids)
+
+    elapsed = _time.monotonic() - t0
+    xlsx_bytes = build_excel(all_enriched, dashboards, error_rows, elapsed)
+
+    filename = f"vtex_payments_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    return Response(
+        content=xlsx_bytes,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.post("/validate-evento", response_model=EventoValidateResponse)
+async def validate_evento(
+    body: EventoValidateRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """
+    Valida que cada seller tenga reglas correctas para el evento configurado.
+    """
+    return await run_evento_validation(db, body)
+
+
+@router.post("/export-evento")
+async def export_evento_excel(
+    body: EventoValidateRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """
+    Genera Excel de validación de evento con estado por seller.
+    """
+    result = await run_evento_validation(db, body)
+
+    results_dicts = [r.model_dump() for r in result.results]
+    xlsx_bytes = build_excel_evento(results_dicts, result.evento_nombre, result.duration_secs)
+
+    filename = f"evento_{result.evento_nombre.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.xlsx"
+    return Response(
+        content=xlsx_bytes,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

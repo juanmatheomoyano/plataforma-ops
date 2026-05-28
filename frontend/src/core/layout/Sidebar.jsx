@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { NavLink } from "react-router-dom"
-import { CreditCard, Home, KeyRound, LogOut, ShieldCheck, Store, Users } from "lucide-react"
+import { CalendarCheck, CreditCard, Home, KeyRound, LogOut, ShieldCheck, Store, Users } from "lucide-react"
 import { useAuth } from "@/core/auth/useAuth"
 import { ChangePasswordModal } from "@/core/components/ChangePasswordModal"
 
@@ -13,6 +13,7 @@ export function Sidebar() {
     ...(hasRole(["admin"]) ? [{ to: "/users", label: "Usuarios", Icon: Users }] : []),
     ...(hasRole(["admin"]) ? [{ to: "/sellers", label: "Sellers", Icon: Store }] : []),
     { to: "/crud-medios", label: "CRUD Medios de Pago", Icon: CreditCard },
+    { to: "/validacion-eventos", label: "Validación de Eventos", Icon: CalendarCheck },
   ]
 
   return (

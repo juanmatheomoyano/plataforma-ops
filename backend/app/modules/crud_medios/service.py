@@ -5,7 +5,7 @@ Migrado desde crud_medios_de_pago_v6.py con lógica de filtros y fechas preserva
 import asyncio
 import logging
 import uuid
-from datetime import datetime, time, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,7 +20,13 @@ from .schemas import (
     CrudRequest,
     CrudResponse,
     CrudRowOut,
+    EventoConfig,
+    EventoValidateRequest,
+    EventoValidateResponse,
     FiltrosRequest,
+    GrupoDashboard,
+    SellerDashboard,
+    SellerEventoResult,
     UpdateRequest,
 )
 
@@ -121,6 +127,283 @@ def _extract_connector(rules: list[dict]) -> tuple[str | None, str | None, str |
             )
             return conn["implementation"], conn["affiliationId"], issuer
     return None, None, None
+
+
+# ── Payment validation constants ─────────────────────────────────────────────
+
+# Maps short connector key (lowercase) → canonical short name
+CONNECTOR_ALIASES: dict[str, str] = {
+    "paymentprovider_paywaypartnerar-payway-v0": "payway",
+}
+
+VALID_CONNECTORS = {"payway", "promissory"}
+REQUIRED_FIRMAS = {"2": "Visa", "4": "Mastercard"}
+
+_L1 = frozenset({"electron", "business", "corporate t", "premier", "purchasing"})
+_LC = frozenset({"classic", "gold", "gold/prem", "platinum", "black", "signature"})
+
+CUOTA_CONFIGS: list[tuple[str, frozenset, frozenset]] = [
+    ("Tarjetas en 1 pago",    _L1, frozenset({1})),
+    ("Tarjetas en 6 cuotas",  _LC, frozenset({1, 3, 6})),
+    ("Tarjetas en 9 cuotas",  _LC, frozenset({1, 3, 6, 9})),
+    ("Tarjetas en 12 cuotas", _LC, frozenset({1, 3, 6, 9, 12})),
+    ("Tarjetas en 18 cuotas", _LC, frozenset({1, 3, 6, 9, 12, 18})),
+    ("Tarjetas en 24 cuotas", _LC, frozenset({1, 3, 6, 9, 12, 18, 24})),
+]
+
+
+def _parse_connector_short(impl: str) -> str:
+    if not impl:
+        return ""
+    parts = impl.split(".")
+    name = parts[-1].replace("Connector", "") if parts else impl
+    return name.strip()
+
+
+def _normalize_connector(conn: str) -> str:
+    if not conn:
+        return conn
+    return CONNECTOR_ALIASES.get(conn.lower().strip(), conn.lower().strip())
+
+
+def _is_vigente(begin_date: str | None, end_date: str | None) -> str:
+    hoy = datetime.now(timezone.utc).date()
+    try:
+        inicio = datetime.fromisoformat(
+            begin_date.replace("Z", "+00:00")
+        ).date() if begin_date else None
+        fin = datetime.fromisoformat(
+            end_date.replace("Z", "+00:00")
+        ).date() if end_date else None
+        if inicio and hoy < inicio:
+            return "No (no comenzó)"
+        if fin and hoy > fin:
+            return "No (vencida)"
+        return "Sí"
+    except Exception:
+        return "Sin fecha"
+
+
+def parse_rule_enriched(seller_id: str, seller_name: str, rule: dict) -> dict:
+    """
+    Convierte una regla VTEX raw en un dict enriquecido con todos los campos
+    necesarios para validación y exportación. Fiel al parse_rule del script v3.5.
+    """
+    installment_opts = rule.get("installmentOptions") or {}
+    installments = installment_opts.get("installments") or []
+    quantities = sorted([i.get("quantity", 0) for i in installments if i.get("quantity")])
+    max_cuotas = max(quantities) if quantities else None
+    cuotas_lista = ",".join(str(q) for q in quantities) if quantities else None
+    tiene_interes = any(
+        (i.get("interestRate") or 0) > 0 or (i.get("interestTax") or 0) > 0
+        for i in installments
+    )
+    canales = rule.get("salesChannels") or []
+    sc_ids = ",".join(str(sc.get("id", "")) for sc in canales)
+    impl = (rule.get("connector") or {}).get("implementation") or ""
+    begin_date = rule.get("beginDate") or ""
+    end_date = rule.get("endDate") or ""
+
+    return {
+        "vendedor":               seller_name,
+        "cuenta":                 seller_id,
+        "id_regla":               str(rule.get("id", "")),
+        "nombre_regla":           rule.get("name", ""),
+        "id_sistema_pago":        str((rule.get("paymentSystem") or {}).get("id", "")),
+        "sistema_pago":           (rule.get("paymentSystem") or {}).get("name", "") or "",
+        "nivel_tarjeta":          (rule.get("cardLevel") or {}).get("name", "") or "",
+        "cobrand":                (rule.get("cobrand") or {}).get("name", "") or "",
+        "emisor":                 (rule.get("issuer") or {}).get("name", "") or "",
+        "conector":               _normalize_connector(_parse_connector_short(impl)),
+        "conector_completo":      impl,
+        "id_afiliacion":          (rule.get("connector") or {}).get("affiliationId", "") or "",
+        "habilitada":             "Sí" if rule.get("enabled") else "No",
+        "es_default":             str(rule.get("isDefault", "")),
+        "vigente_hoy":            _is_vigente(begin_date or None, end_date or None),
+        "max_cuotas":             max_cuotas,
+        "cuotas_disponibles":     cuotas_lista,
+        "tiene_interes":          "Sí" if tiene_interes else "No",
+        "valor_minimo_cuota":     str(installment_opts.get("minimumInstallmentValue", "") or ""),
+        "fecha_inicio":           begin_date,
+        "fecha_fin":              end_date,
+        "es_self_autorizado":     str(rule.get("isSelfAuthorized", "")),
+        "requiere_autenticacion": str(rule.get("requiresAuthentication", "")),
+        "servicio_cuotas":        str(rule.get("installmentsService", "")),
+        "interes_externo":        str(rule.get("externalInterest", "")),
+        "valor_minimo":           str(rule.get("minimumValue", "") or ""),
+        "canales_venta":          sc_ids,
+        "pais":                   (rule.get("country") or {}).get("isoCode", "") or "",
+    }
+
+
+def _parse_cuotas_set_str(s: str | None) -> frozenset:
+    if not s or str(s).strip() in ("", "None"):
+        return frozenset()
+    try:
+        return frozenset(int(x.strip()) for x in str(s).split(",") if x.strip().isdigit())
+    except Exception:
+        return frozenset()
+
+
+def _is_interes_externo_val(v) -> bool:
+    if v is None:
+        return False
+    return str(v).strip().lower() not in ("", "none", "false", "0")
+
+
+def _valor_min_invalido_val(v) -> bool:
+    s = str(v).strip()
+    if s in ("", "none", "nan"):
+        return False
+    try:
+        return float(s) != 1.0
+    except ValueError:
+        return True
+
+
+def check_cuota_group(
+    rules: list[dict],
+    target_levels: frozenset,
+    expected: frozenset,
+    col_name: str,
+) -> tuple[str, list[str]]:
+    """
+    Evalúa el estado del grupo de cuotas para un seller.
+    Recibe la lista COMPLETA de reglas enriquecidas del seller.
+    Retorna (estado, motivos).
+    Fiel a check_cuota_group del script v3.5.
+    """
+    group = [
+        r for r in rules
+        if r.get("nivel_tarjeta", "").lower().strip() in target_levels
+        and r.get("nivel_tarjeta", "").strip() != ""
+    ]
+    if not group:
+        return "No configurado", []
+
+    for r in group:
+        r["_cuotas"] = _parse_cuotas_set_str(r.get("cuotas_disponibles"))
+
+    any_with_expected = [r for r in group if r["_cuotas"] == expected]
+    if not any_with_expected:
+        return "No configurado", []
+
+    hab = [r for r in group if r.get("habilitada") == "Sí"]
+    for r in hab:
+        if "_cuotas" not in r:
+            r["_cuotas"] = _parse_cuotas_set_str(r.get("cuotas_disponibles"))
+    matching = [r for r in hab if r["_cuotas"] == expected]
+
+    motivos: list[str] = []
+    tl = set(target_levels)
+
+    if not matching:
+        disabled_with_expected = [r for r in any_with_expected if r.get("habilitada") == "No"]
+        if disabled_with_expected:
+            check_base = disabled_with_expected
+        else:
+            found_cuotas: list[int] = sorted({
+                int(c) for r in hab
+                for c in (r.get("cuotas_disponibles") or "").split(",")
+                if c.strip().isdigit()
+            })
+            motivos.append(
+                f"cuotas incorrectas — encontradas: {found_cuotas}, esperadas: {sorted(expected)}"
+            )
+            check_base = hab if hab else group
+    else:
+        check_base = matching
+
+    # Check 2: firmas obligatorias Visa (id=2) + Mastercard (id=4)
+    for firma_id, firma_name in REQUIRED_FIRMAS.items():
+        firma_rules = [
+            r for r in check_base
+            if str(r.get("id_sistema_pago", "")).strip() == firma_id
+        ]
+        if not firma_rules:
+            motivos.append(f"falta firma {firma_name} (id {firma_id})")
+        else:
+            covered = {r.get("nivel_tarjeta", "").lower().strip() for r in firma_rules}
+            missing = tl - covered
+            if missing:
+                motivos.append(f"{firma_name}: levels faltantes: {sorted(missing)}")
+
+    # Check 3: conector válido
+    bad_conn = [
+        r for r in check_base
+        if r.get("conector", "").lower().strip() not in VALID_CONNECTORS
+    ]
+    if bad_conn:
+        bad_names = sorted({r.get("conector", "") for r in bad_conn if r.get("conector")})
+        motivos.append(f"conector inválido: {bad_names if bad_names else ['(vacío)']}")
+
+    # Check 4: interes_externo = False
+    bad_int = [r for r in check_base if _is_interes_externo_val(r.get("interes_externo"))]
+    if bad_int:
+        motivos.append("interes_externo debe ser False")
+
+    # Check 5: valor_minimo_cuota = 1
+    bad_min = [r for r in check_base if _valor_min_invalido_val(r.get("valor_minimo_cuota"))]
+    if bad_min:
+        vals = sorted({str(r.get("valor_minimo_cuota", "")) for r in bad_min if r.get("valor_minimo_cuota")})
+        motivos.append(f"valor_minimo_cuota debe ser 1 (encontrado: {vals})")
+
+    if motivos:
+        return "A corregir", [f"[{col_name}] {m}" for m in motivos]
+
+    vigencia_base = matching if matching else check_base
+    vigencias = {r.get("vigente_hoy") for r in vigencia_base}
+    if "Sí" in vigencias:
+        return "Ok (vigente)", []
+    if "No (no comenzó)" in vigencias:
+        return "Ok (programado)", []
+    return "Ok (inactiva)", []
+
+
+def build_seller_dashboard(
+    seller_id: str, seller_name: str, rules_enriched: list[dict]
+) -> SellerDashboard:
+    """
+    Construye el dashboard de validación para un seller a partir de sus reglas enriquecidas.
+    Fiel a build_dashboard del script v3.5.
+    """
+    active = [r for r in rules_enriched if r.get("habilitada") == "Sí"]
+    activas = len(active)
+    inactivas = len(rules_enriched) - activas
+    vigentes = sum(1 for r in rules_enriched if r.get("vigente_hoy") == "Sí")
+
+    sistemas = sorted({r["sistema_pago"] for r in rules_enriched if r.get("sistema_pago")})
+    conectores = sorted({r["conector"] for r in rules_enriched if r.get("conector")})
+    emisores = sorted({r["emisor"] for r in rules_enriched if r.get("emisor")})
+
+    vigentes_active = [r for r in active if r.get("vigente_hoy") == "Sí"]
+    max_c_vals = [r["max_cuotas"] for r in vigentes_active if r.get("max_cuotas") is not None]
+    max_cuotas_activas = int(max(max_c_vals)) if max_c_vals else 0
+
+    # Work on copies to avoid mutating the enriched dicts (check_cuota_group adds _cuotas key)
+    rules_copy = [dict(r) for r in rules_enriched]
+
+    grupos: dict[str, GrupoDashboard] = {}
+    all_motivos: list[str] = []
+    for col_name, target_levels, expected in CUOTA_CONFIGS:
+        estado, motivos = check_cuota_group(rules_copy, target_levels, expected, col_name)
+        grupos[col_name] = GrupoDashboard(estado=estado, motivos=motivos)
+        all_motivos.extend(motivos)
+
+    return SellerDashboard(
+        seller_id=seller_id,
+        seller_name=seller_name,
+        totales=len(rules_enriched),
+        activas=activas,
+        inactivas=inactivas,
+        vigentes_hoy=vigentes,
+        firmas=sistemas,
+        max_cuotas_activas=max_cuotas_activas,
+        conectores=conectores,
+        emisores=emisores,
+        grupos=grupos,
+        motivos_all=" | ".join(all_motivos),
+    )
 
 
 # ── Core filter ───────────────────────────────────────────────────────────────
@@ -309,14 +592,19 @@ def execute_read(matched: list[dict]) -> list[CrudRowOut]:
     for m in matched:
         s = m["seller"]
         r = m["rule"]
+        enriched = parse_rule_enriched(s.seller_id, s.seller_name, r)
         rows.append(CrudRowOut(
             seller_id=s.seller_id,
-            rule_id=str(r.get("id", "")),
-            rule_name=r.get("name"),
-            brand=_rule_brands(r),
-            level=_rule_level(r),
-            estado=_rule_estado(r),
-            detalle="matched",
+            rule_id=enriched["id_regla"],
+            rule_name=enriched["nombre_regla"],
+            brand=enriched["sistema_pago"],
+            level=enriched["nivel_tarjeta"],
+            estado="activo" if r.get("enabled") else "inactivo",
+            detalle=(
+                f"vigente: {enriched['vigente_hoy']} | "
+                f"cuotas: {enriched['cuotas_disponibles'] or '-'} | "
+                f"conector: {enriched['conector'] or '-'}"
+            ),
         ))
     return rows
 
@@ -655,18 +943,30 @@ async def run_crud_operation(
             sellers_creds.append((s, app_key, app_token))
 
     rows: list[CrudRowOut] = []
+    dashboards: list[SellerDashboard] = []
 
     if request.operacion == "R":
         raw_data = await fetch_all_sellers_parallel(sellers_creds)
         for sd in raw_data:
+            seller = sd["seller"]
             if sd["error"]:
                 rows.append(CrudRowOut(
-                    seller_id=sd["seller"].seller_id,
+                    seller_id=seller.seller_id,
                     rule_id=None, rule_name=None, brand=None, level=None,
                     estado="error",
                     detalle=sd["error"],
                 ))
                 continue
+            # Dashboard from ALL rules (unfiltered) for accurate validation
+            all_enriched = [
+                parse_rule_enriched(seller.seller_id, seller.seller_name, r)
+                for r in sd.get("rules", [])
+            ]
+            if all_enriched:
+                dashboards.append(
+                    build_seller_dashboard(seller.seller_id, seller.seller_name, all_enriched)
+                )
+            # Rows from filtered rules only
             matched = build_matched_rules(sd, request.filtros)
             rows.extend(execute_read(matched))
 
@@ -714,6 +1014,217 @@ async def run_crud_operation(
         total_errors=errors,
         duration_secs=round(duration, 3),
         rows=rows,
+        dashboard=dashboards,
+    )
+
+
+async def fetch_enriched_for_export(
+    db: AsyncSession,
+    scope_ids: list[str] | None,
+) -> tuple[list[dict], list[SellerDashboard], list[dict]]:
+    """
+    Devuelve (all_enriched_rows, dashboards, error_rows) para generación de Excel.
+    Todas las reglas sin filtrar — export siempre es panorama completo.
+    """
+    sellers = await get_active_sellers(db, scope_ids if scope_ids else None)
+
+    sellers_creds: list[tuple] = []
+    for s in sellers:
+        if s.app_key_enc and s.app_token_enc:
+            app_key, app_token = get_decrypted_credentials(s)
+            sellers_creds.append((s, app_key, app_token))
+
+    raw_data = await fetch_all_sellers_parallel(sellers_creds)
+
+    all_enriched: list[dict] = []
+    dashboards: list[SellerDashboard] = []
+    error_rows: list[dict] = []
+
+    for sd in raw_data:
+        seller = sd["seller"]
+        if sd["error"]:
+            error_rows.append({
+                "vendedor": seller.seller_name,
+                "cuenta":   seller.seller_id,
+                "error":    sd["error"],
+                "fecha":    datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+            })
+            continue
+        enriched = [
+            parse_rule_enriched(seller.seller_id, seller.seller_name, r)
+            for r in sd.get("rules", [])
+        ]
+        all_enriched.extend(enriched)
+        if enriched:
+            dashboards.append(
+                build_seller_dashboard(seller.seller_id, seller.seller_name, enriched)
+            )
+
+    return all_enriched, dashboards, error_rows
+
+
+async def run_evento_validation(
+    db: AsyncSession,
+    request: EventoValidateRequest,
+) -> EventoValidateResponse:
+    """
+    Valida que cada seller tenga reglas configuradas correctamente para el evento:
+    - Cuotas exactas = cuotas_requeridas
+    - Habilitadas
+    - Rango de fechas cubre el evento (beginDate <= ini, endDate >= fin)
+    - Conector válido (payway | promissory)
+    - Visa (id=2) + Mastercard (id=4) presentes por level
+    """
+    started_at = datetime.now(timezone.utc)
+
+    scope_ids = request.scope.seller_ids or []
+    sellers = await get_active_sellers(db, scope_ids if scope_ids else None)
+
+    sellers_creds: list[tuple] = []
+    for s in sellers:
+        if s.app_key_enc and s.app_token_enc:
+            app_key, app_token = get_decrypted_credentials(s)
+            sellers_creds.append((s, app_key, app_token))
+
+    raw_data = await fetch_all_sellers_parallel(sellers_creds)
+
+    evento = request.evento
+    expected = frozenset(evento.cuotas_requeridas)
+
+    # Parse event dates (ART = UTC-3)
+    def _parse_art(dt_str: str | None) -> datetime | None:
+        if not dt_str:
+            return None
+        try:
+            dt = datetime.fromisoformat(dt_str)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=AR_TZ)
+            return dt
+        except Exception:
+            return None
+
+    event_ini = _parse_art(evento.fecha_ini_art)
+    event_fin = _parse_art(evento.fecha_fin_art)
+
+    results: list[SellerEventoResult] = []
+    sellers_ok = 0
+    sellers_a_corregir = 0
+    sellers_no_config = 0
+
+    for sd in raw_data:
+        seller = sd["seller"]
+        if sd["error"]:
+            results.append(SellerEventoResult(
+                seller_id=seller.seller_id,
+                seller_name=seller.seller_name,
+                estado_general="Error",
+                motivos=[sd["error"]],
+            ))
+            sellers_a_corregir += 1
+            continue
+
+        rules = sd.get("rules", [])
+        enriched = [parse_rule_enriched(seller.seller_id, seller.seller_name, r) for r in rules]
+
+        # Find rules for _LC levels with the exact required cuotas
+        lc_rules = [
+            r for r in enriched
+            if r.get("nivel_tarjeta", "").lower().strip() in _LC
+        ]
+        for r in lc_rules:
+            r["_cuotas"] = _parse_cuotas_set_str(r.get("cuotas_disponibles"))
+
+        matching = [r for r in lc_rules if r["_cuotas"] == expected and r.get("habilitada") == "Sí"]
+
+        if not matching:
+            # Check if any exist at all (maybe disabled or wrong cuotas)
+            any_with_cuotas = [r for r in lc_rules if r["_cuotas"] == expected]
+            if not any_with_cuotas and not lc_rules:
+                results.append(SellerEventoResult(
+                    seller_id=seller.seller_id,
+                    seller_name=seller.seller_name,
+                    estado_general="No configurado",
+                    motivos=["No hay reglas para levels _LC con las cuotas del evento"],
+                ))
+                sellers_no_config += 1
+                continue
+            motivos = [
+                f"No hay reglas habilitadas con cuotas exactas {sorted(expected)} para levels _LC"
+            ]
+            if any_with_cuotas:
+                motivos = ["Reglas con cuotas correctas pero deshabilitadas"]
+            results.append(SellerEventoResult(
+                seller_id=seller.seller_id,
+                seller_name=seller.seller_name,
+                estado_general="A corregir",
+                motivos=motivos,
+                total_rules_evento=len(any_with_cuotas),
+            ))
+            sellers_a_corregir += 1
+            continue
+
+        motivos: list[str] = []
+
+        # Check connector
+        bad_conn = [r for r in matching if r.get("conector", "").lower() not in VALID_CONNECTORS]
+        if bad_conn:
+            bad_names = sorted({r.get("conector", "") for r in bad_conn})
+            motivos.append(f"Conector inválido: {bad_names}")
+
+        # Check Visa + Mastercard
+        for firma_id, firma_name in REQUIRED_FIRMAS.items():
+            has_firma = any(str(r.get("id_sistema_pago", "")).strip() == firma_id for r in matching)
+            if not has_firma:
+                motivos.append(f"Falta firma {firma_name} (id {firma_id})")
+
+        # Check date coverage
+        if event_ini or event_fin:
+            for r in matching:
+                raw_r = next(
+                    (rr for rr in rules if str(rr.get("id", "")) == r["id_regla"]),
+                    None,
+                )
+                if not raw_r:
+                    continue
+                r_begin = _normalize_to_ar(raw_r.get("beginDate"))
+                r_end = _normalize_to_ar(raw_r.get("endDate"))
+                if event_ini and r_begin and r_begin > event_ini:
+                    motivos.append(
+                        f"Regla {r['id_regla'][:8]}: begin_date posterior al inicio del evento"
+                    )
+                if event_fin and r_end and r_end < event_fin:
+                    motivos.append(
+                        f"Regla {r['id_regla'][:8]}: end_date anterior al fin del evento"
+                    )
+
+        # Deduplicate motivos
+        motivos = list(dict.fromkeys(motivos))
+
+        if motivos:
+            estado_general = "A corregir"
+            sellers_a_corregir += 1
+        else:
+            estado_general = "Ok"
+            sellers_ok += 1
+
+        results.append(SellerEventoResult(
+            seller_id=seller.seller_id,
+            seller_name=seller.seller_name,
+            estado_general=estado_general,
+            motivos=motivos,
+            total_rules_evento=len(matching),
+        ))
+
+    duration = (datetime.now(timezone.utc) - started_at).total_seconds()
+
+    return EventoValidateResponse(
+        evento_nombre=evento.nombre,
+        total_sellers=len(sellers),
+        sellers_ok=sellers_ok,
+        sellers_a_corregir=sellers_a_corregir,
+        sellers_no_configurado=sellers_no_config,
+        duration_secs=round(duration, 3),
+        results=results,
     )
 
 
