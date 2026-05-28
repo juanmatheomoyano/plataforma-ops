@@ -1,25 +1,26 @@
 import { useState } from "react"
-import { ChevronDown, ChevronUp } from "lucide-react"
 
-const ESTADO_STYLE = {
-  "Ok":              { bg: "bg-emerald-900/40 text-emerald-300 border-emerald-700", dot: "bg-emerald-400" },
-  "A corregir":      { bg: "bg-red-900/40 text-red-300 border-red-700",             dot: "bg-red-400" },
-  "No configurado":  { bg: "bg-slate-900 text-slate-600 border-slate-700",          dot: "bg-slate-700" },
-  "Error":           { bg: "bg-amber-900/40 text-amber-300 border-amber-700",       dot: "bg-amber-400" },
+const ESTADO_ROW = {
+  "Ok":             "bg-emerald-950/50 hover:bg-emerald-950/70",
+  "A corregir":     "bg-red-950/40 hover:bg-red-950/60",
+  "No configurado": "hover:bg-slate-700/20",
+  "Error":          "bg-amber-950/30 hover:bg-amber-950/50",
 }
 
-function EstadoChip({ estado }) {
-  const s = ESTADO_STYLE[estado] || ESTADO_STYLE["Error"]
-  return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${s.bg}`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
-      {estado}
-    </span>
-  )
+const ESTADO_BADGE = {
+  "Ok":             "bg-emerald-900/60 text-emerald-300 border-emerald-700",
+  "A corregir":     "bg-red-900/60 text-red-300 border-red-700",
+  "No configurado": "bg-slate-800 text-slate-500 border-slate-600",
+  "Error":          "bg-amber-900/60 text-amber-300 border-amber-700",
 }
 
-export function EventoResultsTable({ results, eventoNombre }) {
-  const [expanded, setExpanded] = useState(null)
+const FILTER_CHIP = {
+  "Ok":             { active: "bg-emerald-900/60 text-emerald-300 border-emerald-700", dot: "bg-emerald-400" },
+  "A corregir":     { active: "bg-red-900/60 text-red-300 border-red-700",             dot: "bg-red-400" },
+  "No configurado": { active: "bg-slate-800 text-slate-400 border-slate-600",          dot: "bg-slate-500" },
+}
+
+export function EventoResultsTable({ results }) {
   const [filterEstado, setFilterEstado] = useState("")
 
   if (!results || results.length === 0) {
@@ -37,10 +38,10 @@ export function EventoResultsTable({ results, eventoNombre }) {
 
   return (
     <div className="space-y-3">
-      {/* Summary chips */}
+      {/* Summary filter chips */}
       <div className="flex flex-wrap gap-2">
         {Object.entries(stats).map(([estado, count]) => {
-          const s = ESTADO_STYLE[estado] || {}
+          const style = FILTER_CHIP[estado] || {}
           const active = filterEstado === estado
           return (
             <button
@@ -48,10 +49,10 @@ export function EventoResultsTable({ results, eventoNombre }) {
               onClick={() => setFilterEstado(active ? "" : estado)}
               className={[
                 "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
-                active ? (s.bg || "") : "border-slate-700 bg-slate-800/40 text-slate-400 hover:bg-slate-700",
+                active ? (style.active || "") : "border-slate-700 bg-slate-800/40 text-slate-400 hover:bg-slate-700",
               ].join(" ")}
             >
-              <span className={`h-1.5 w-1.5 rounded-full ${s.dot || "bg-slate-500"}`} />
+              <span className={`h-1.5 w-1.5 rounded-full ${style.dot || "bg-slate-500"}`} />
               {estado} <span className="opacity-70">({count})</span>
             </button>
           )
@@ -69,56 +70,47 @@ export function EventoResultsTable({ results, eventoNombre }) {
             <tr className="border-b border-slate-700 bg-slate-800/80">
               <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Seller</th>
               <th className="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">Estado</th>
-              <th className="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">Reglas evento</th>
-              <th className="px-2 py-2.5 w-8" />
+              <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Qué corregir</th>
+              <th className="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">Reglas</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((r) => {
-              const hasMotivos = r.motivos?.length > 0
-              const isExpanded = expanded === r.seller_id
+              const rowBg = ESTADO_ROW[r.estado_general] || "hover:bg-slate-700/20"
+              const badgeCls = ESTADO_BADGE[r.estado_general] || ESTADO_BADGE["No configurado"]
+              const showMotivos = r.estado_general === "A corregir" && r.motivos?.length > 0
               return (
-                <>
-                  <tr key={r.seller_id} className="border-b border-slate-700/40 hover:bg-slate-700/20 transition-colors">
-                    <td className="px-3 py-2.5">
-                      <div className="flex flex-col">
-                        <span className="font-mono text-xs text-slate-200">{r.seller_id}</span>
-                        {r.seller_name !== r.seller_id && (
-                          <span className="text-xs text-slate-500 truncate max-w-[200px]">{r.seller_name}</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-3 py-2.5 text-center">
-                      <EstadoChip estado={r.estado_general} />
-                    </td>
-                    <td className="px-3 py-2.5 text-center text-xs text-slate-400">
-                      {r.total_rules_evento || <span className="text-slate-600">—</span>}
-                    </td>
-                    <td className="px-2 py-2.5 text-center">
-                      {hasMotivos && (
-                        <button
-                          onClick={() => setExpanded(isExpanded ? null : r.seller_id)}
-                          className="text-slate-500 hover:text-slate-300 transition-colors"
-                        >
-                          {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                        </button>
+                <tr key={r.seller_id} className={`border-b border-slate-700/40 transition-colors ${rowBg}`}>
+                  <td className="px-3 py-2.5">
+                    <div className="flex flex-col">
+                      <span className="font-mono text-xs text-slate-200">{r.seller_id}</span>
+                      {r.seller_name !== r.seller_id && (
+                        <span className="text-xs text-slate-500 truncate max-w-[200px]">{r.seller_name}</span>
                       )}
-                    </td>
-                  </tr>
-                  {isExpanded && hasMotivos && (
-                    <tr key={`${r.seller_id}-motivos`} className="border-b border-slate-700/30 bg-red-950/20">
-                      <td colSpan={4} className="px-4 py-2">
-                        <ul className="space-y-0.5">
-                          {r.motivos.map((m, i) => (
-                            <li key={i} className="text-xs text-red-300/80">
-                              <span className="text-red-500 mr-1">•</span>{m}
-                            </li>
-                          ))}
-                        </ul>
-                      </td>
-                    </tr>
-                  )}
-                </>
+                    </div>
+                  </td>
+                  <td className="px-3 py-2.5 text-center">
+                    <span className={`inline-flex items-center rounded border px-2 py-0.5 text-xs font-medium ${badgeCls}`}>
+                      {r.estado_general}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2.5">
+                    {showMotivos ? (
+                      <ul className="space-y-0.5">
+                        {r.motivos.map((m, i) => (
+                          <li key={i} className="text-xs text-red-300/90">
+                            <span className="text-red-500 mr-1">•</span>{m}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <span className="text-slate-600 text-xs">—</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2.5 text-center text-xs text-slate-400">
+                    {r.total_rules_evento || <span className="text-slate-600">—</span>}
+                  </td>
+                </tr>
               )
             })}
             {filtered.length === 0 && (

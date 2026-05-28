@@ -10,22 +10,21 @@ const GRUPOS = [
   "Tarjetas en 24 cuotas",
 ]
 
-const ESTADO_STYLE = {
-  "Ok (vigente)":    { bg: "bg-emerald-900/40 text-emerald-300 border-emerald-700",  dot: "bg-emerald-400" },
-  "Ok (programado)": { bg: "bg-blue-900/40 text-blue-300 border-blue-700",           dot: "bg-blue-400" },
-  "Ok (inactiva)":   { bg: "bg-slate-800 text-slate-400 border-slate-600",           dot: "bg-slate-500" },
-  "A corregir":      { bg: "bg-red-900/40 text-red-300 border-red-700",              dot: "bg-red-400" },
-  "No configurado":  { bg: "bg-slate-900 text-slate-600 border-slate-700",           dot: "bg-slate-700" },
+// Cell background colors matching payment extractor VALIDATION_FILLS (adapted for dark theme)
+const ESTADO_CELL = {
+  "Ok (vigente)":    { td: "bg-emerald-900/50", text: "text-emerald-300", label: "Ok" },
+  "Ok (programado)": { td: "bg-blue-900/50",    text: "text-blue-300",    label: "Prog." },
+  "Ok (inactiva)":   { td: "bg-slate-700/40",   text: "text-slate-400",   label: "Inact." },
+  "A corregir":      { td: "bg-red-900/50",      text: "text-red-300",     label: "✗" },
+  "No configurado":  { td: "",                   text: "text-slate-600",   label: "—" },
 }
 
-function EstadoCell({ estado }) {
-  const style = ESTADO_STYLE[estado] || ESTADO_STYLE["No configurado"]
-  return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap ${style.bg}`}>
-      <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${style.dot}`} />
-      {estado || "No configurado"}
-    </span>
-  )
+const FILTER_CHIP = {
+  "Ok (vigente)":    { active: "bg-emerald-900/60 text-emerald-300 border-emerald-700", dot: "bg-emerald-400" },
+  "Ok (programado)": { active: "bg-blue-900/60 text-blue-300 border-blue-700",          dot: "bg-blue-400" },
+  "Ok (inactiva)":   { active: "bg-slate-700 text-slate-400 border-slate-500",          dot: "bg-slate-400" },
+  "A corregir":      { active: "bg-red-900/60 text-red-300 border-red-700",             dot: "bg-red-400" },
+  "No configurado":  { active: "bg-slate-800 text-slate-400 border-slate-600",          dot: "bg-slate-500" },
 }
 
 function MotivosRow({ motivos, colSpan }) {
@@ -55,7 +54,6 @@ export function DashboardTable({ dashboard }) {
     )
   }
 
-  // Count totals per estado across all sellers x groups
   const stats = { "Ok (vigente)": 0, "Ok (programado)": 0, "Ok (inactiva)": 0, "A corregir": 0, "No configurado": 0 }
   for (const d of dashboard) {
     for (const g of GRUPOS) {
@@ -75,10 +73,9 @@ export function DashboardTable({ dashboard }) {
 
   return (
     <div className="space-y-3">
-      {/* Legend + filter */}
       <div className="flex flex-wrap items-center gap-2">
         {Object.entries(stats).map(([estado, count]) => {
-          const style = ESTADO_STYLE[estado] || ESTADO_STYLE["No configurado"]
+          const style = FILTER_CHIP[estado] || FILTER_CHIP["No configurado"]
           const active = filterEstado === estado
           return (
             <button
@@ -86,7 +83,7 @@ export function DashboardTable({ dashboard }) {
               onClick={() => setFilterEstado(active ? "" : estado)}
               className={[
                 "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
-                active ? style.bg : "border-slate-700 bg-slate-800/40 text-slate-400 hover:bg-slate-700",
+                active ? style.active : "border-slate-700 bg-slate-800/40 text-slate-400 hover:bg-slate-700",
               ].join(" ")}
             >
               <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
@@ -137,7 +134,7 @@ export function DashboardTable({ dashboard }) {
                 <>
                   <tr
                     key={d.seller_id}
-                    className="border-b border-slate-700/40 transition-colors hover:bg-slate-700/20"
+                    className="border-b border-slate-700/40 transition-colors hover:brightness-110"
                   >
                     <td className="px-3 py-2.5">
                       <div className="flex flex-col">
@@ -152,11 +149,15 @@ export function DashboardTable({ dashboard }) {
                     <td className="px-3 py-2.5 text-center text-xs text-slate-300">
                       {d.max_cuotas_activas > 0 ? d.max_cuotas_activas : <span className="text-slate-600">—</span>}
                     </td>
-                    {GRUPOS.map((g) => (
-                      <td key={g} className="px-3 py-2.5 text-center">
-                        <EstadoCell estado={d.grupos?.[g]?.estado || "No configurado"} />
-                      </td>
-                    ))}
+                    {GRUPOS.map((g) => {
+                      const estado = d.grupos?.[g]?.estado || "No configurado"
+                      const style = ESTADO_CELL[estado] || ESTADO_CELL["No configurado"]
+                      return (
+                        <td key={g} className={`px-3 py-2.5 text-center text-xs font-medium ${style.td} ${style.text}`}>
+                          {style.label}
+                        </td>
+                      )
+                    })}
                     <td className="px-2 py-2.5 text-center">
                       {hasMotivos && (
                         <button

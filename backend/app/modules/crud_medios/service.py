@@ -1162,31 +1162,26 @@ async def run_evento_validation(
             for r in sd.get("rules", [])
         ]
 
-        # ── Paso 1: reglas _LC activas durante el evento ──────────────────────
+        # ── Paso 1: reglas _LC con fechas específicas que solapan el evento ─────
+        # Las reglas "always-on" (sin fecha_inicio ni fecha_fin) son la configuración
+        # base del seller, no cuentan como configuración específica para el evento.
         lc_all = [
             r for r in enriched
             if r.get("nivel_tarjeta", "").lower().strip() in _LC
         ]
         lc_active = [
             r for r in lc_all
-            if r.get("habilitada") == "Sí" and _overlaps_event(r, event_ini, event_fin)
+            if r.get("habilitada") == "Sí"
+            and (r.get("fecha_inicio") or r.get("fecha_fin"))  # debe tener fechas explícitas
+            and _overlaps_event(r, event_ini, event_fin)
         ]
 
         if not lc_active:
-            # Distinguir: nunca tuvo _LC rules vs las tiene pero fuera de ventana/deshabilitadas
-            if not lc_all:
-                motivo = "No hay reglas multi-cuota (_LC) configuradas"
-            else:
-                habilitadas = [r for r in lc_all if r.get("habilitada") == "Sí"]
-                if not habilitadas:
-                    motivo = "Hay reglas _LC pero todas están deshabilitadas"
-                else:
-                    motivo = "No hay reglas _LC habilitadas activas durante las fechas del evento"
             results.append(SellerEventoResult(
                 seller_id=seller.seller_id,
                 seller_name=seller.seller_name,
                 estado_general="No configurado",
-                motivos=[motivo],
+                motivos=[],
                 total_rules_evento=0,
             ))
             sellers_no_config += 1
@@ -1209,14 +1204,14 @@ async def run_evento_validation(
             missing_cuotas = sorted(expected - union_cuotas)
             motivos.append(
                 f"Cuotas faltantes: {missing_cuotas} "
-                f"(unión de reglas activas: {sorted(union_cuotas)})"
+                f"(cuotas configuradas para el evento: {sorted(union_cuotas)})"
             )
 
         # Check 2: conector válido en todas las reglas activas
         bad_conn = [r for r in lc_active if r.get("conector", "").lower() not in VALID_CONNECTORS]
         if bad_conn:
             bad_names = sorted({r.get("conector", "") or "(vacío)" for r in bad_conn})
-            motivos.append(f"Conector inválido: {bad_names}")
+            motivos.append(f"Conector inválido en tarjetas del evento: {bad_names}")
 
         # Check 3: Visa (id=2) + Mastercard (id=4) presentes en reglas activas
         levels_activos = {r.get("nivel_tarjeta", "").lower().strip() for r in lc_active}
@@ -1226,12 +1221,12 @@ async def run_evento_validation(
                 if str(r.get("id_sistema_pago", "")).strip() == firma_id
             ]
             if not firma_rules:
-                motivos.append(f"Falta firma {firma_name} (id {firma_id}) en reglas del evento")
+                motivos.append(f"Falta {firma_name} en las tarjetas configuradas para el evento")
             else:
                 covered = {r.get("nivel_tarjeta", "").lower().strip() for r in firma_rules}
                 missing_levels = levels_activos - covered
                 if missing_levels:
-                    motivos.append(f"{firma_name}: levels sin cubrir: {sorted(missing_levels)}")
+                    motivos.append(f"{firma_name}: no cubre todos los niveles ({sorted(missing_levels)})")
 
         motivos = list(dict.fromkeys(motivos))
 
