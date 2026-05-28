@@ -104,7 +104,7 @@ export default function CrudMediosPage() {
     (!isRealWriteOp || canRunReal) &&
     !loading
 
-  const filtrosDisabled = opConfig.operacion && opConfig.operacion !== "R"
+  const filtrosDisabled = opConfig.operacion === "C"
 
   async function handleExecute() {
     setLoading(true)
@@ -133,8 +133,8 @@ export default function CrudMediosPage() {
         ps_names: ac.ps_names,
         levels: ac.levels,
         cuotas: cuotasList,
-        begin_date: arToUtc(ac.begin_date, ac.begin_time),
-        end_date: arToUtc(ac.end_date, ac.end_time),
+        begin_date: arToUtc(ac.begin_date, ac.begin_time || "00:00"),
+        end_date: arToUtc(ac.end_date, ac.end_time || "23:59"),
         enabled: ac.enabled,
       }
     }
@@ -201,7 +201,7 @@ export default function CrudMediosPage() {
               {filtrosDisabled && (
                 <div className="absolute top-2 right-3 z-10 pointer-events-none">
                   <span className="rounded-full bg-amber-900/80 border border-amber-700 px-2 py-0.5 text-[10px] font-semibold text-amber-300">
-                    Los filtros aplican solo a Leer
+                    Los filtros no aplican a Crear
                   </span>
                 </div>
               )}
