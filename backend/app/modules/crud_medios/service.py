@@ -1063,17 +1063,64 @@ async def fetch_enriched_for_export(
     return all_enriched, dashboards, error_rows
 
 
+def _parse_art_dt(dt_str: str | None) -> datetime | None:
+    """Parsea un string de fecha ART (sin tz asume UTC-3) a datetime aware."""
+    if not dt_str:
+        return None
+    try:
+        dt = datetime.fromisoformat(dt_str)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=AR_TZ)
+        return dt
+    except Exception:
+        return None
+
+
+def _overlaps_event(
+    r: dict, event_ini: datetime | None, event_fin: datetime | None
+) -> bool:
+    """
+    True si la regla tiene vigencia que se superpone con la ventana del evento.
+    Reglas sin fechas = siempre activas = solapan con cualquier evento.
+    Lógica de overlap: rule_begin <= event_fin AND rule_end >= event_ini
+    """
+    begin_str = r.get("fecha_inicio") or ""
+    end_str = r.get("fecha_fin") or ""
+
+    if not begin_str and not end_str:
+        return True  # sin fechas = siempre activa
+
+    try:
+        rule_begin = _normalize_to_ar(begin_str) if begin_str else None
+        rule_end = _normalize_to_ar(end_str) if end_str else None
+    except Exception:
+        return True
+
+    # regla empieza después de que termina el evento
+    if event_fin and rule_begin and rule_begin > event_fin:
+        return False
+    # regla termina antes de que empieza el evento
+    if event_ini and rule_end and rule_end < event_ini:
+        return False
+
+    return True
+
+
 async def run_evento_validation(
     db: AsyncSession,
     request: EventoValidateRequest,
 ) -> EventoValidateResponse:
     """
-    Valida que cada seller tenga reglas configuradas correctamente para el evento:
-    - Cuotas exactas = cuotas_requeridas
-    - Habilitadas
-    - Rango de fechas cubre el evento (beginDate <= ini, endDate >= fin)
+    Valida sellers para un evento. Flujo:
+    1. Filtrar reglas _LC habilitadas que solapen con las fechas del evento
+    2. Si ninguna → "No configurado"
+    3. Si hay pero algo falla → "A corregir" con motivos específicos
+    4. Todo OK → "Ok"
+
+    Checks (sobre reglas activas en el periodo):
+    - Cuotas exactas = frozenset(cuotas_requeridas)
     - Conector válido (payway | promissory)
-    - Visa (id=2) + Mastercard (id=4) presentes por level
+    - Visa (id=2) + Mastercard (id=4) presentes en levels _LC
     """
     started_at = datetime.now(timezone.utc)
 
@@ -1090,21 +1137,8 @@ async def run_evento_validation(
 
     evento = request.evento
     expected = frozenset(evento.cuotas_requeridas)
-
-    # Parse event dates (ART = UTC-3)
-    def _parse_art(dt_str: str | None) -> datetime | None:
-        if not dt_str:
-            return None
-        try:
-            dt = datetime.fromisoformat(dt_str)
-            if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=AR_TZ)
-            return dt
-        except Exception:
-            return None
-
-    event_ini = _parse_art(evento.fecha_ini_art)
-    event_fin = _parse_art(evento.fecha_fin_art)
+    event_ini = _parse_art_dt(evento.fecha_ini_art)
+    event_fin = _parse_art_dt(evento.fecha_fin_art)
 
     results: list[SellerEventoResult] = []
     sellers_ok = 0
@@ -1123,81 +1157,83 @@ async def run_evento_validation(
             sellers_a_corregir += 1
             continue
 
-        rules = sd.get("rules", [])
-        enriched = [parse_rule_enriched(seller.seller_id, seller.seller_name, r) for r in rules]
+        enriched = [
+            parse_rule_enriched(seller.seller_id, seller.seller_name, r)
+            for r in sd.get("rules", [])
+        ]
 
-        # Find rules for _LC levels with the exact required cuotas
-        lc_rules = [
+        # ── Paso 1: reglas _LC activas durante el evento ──────────────────────
+        lc_all = [
             r for r in enriched
             if r.get("nivel_tarjeta", "").lower().strip() in _LC
         ]
-        for r in lc_rules:
-            r["_cuotas"] = _parse_cuotas_set_str(r.get("cuotas_disponibles"))
+        lc_active = [
+            r for r in lc_all
+            if r.get("habilitada") == "Sí" and _overlaps_event(r, event_ini, event_fin)
+        ]
 
-        matching = [r for r in lc_rules if r["_cuotas"] == expected and r.get("habilitada") == "Sí"]
-
-        if not matching:
-            # Check if any exist at all (maybe disabled or wrong cuotas)
-            any_with_cuotas = [r for r in lc_rules if r["_cuotas"] == expected]
-            if not any_with_cuotas and not lc_rules:
-                results.append(SellerEventoResult(
-                    seller_id=seller.seller_id,
-                    seller_name=seller.seller_name,
-                    estado_general="No configurado",
-                    motivos=["No hay reglas para levels _LC con las cuotas del evento"],
-                ))
-                sellers_no_config += 1
-                continue
-            motivos = [
-                f"No hay reglas habilitadas con cuotas exactas {sorted(expected)} para levels _LC"
-            ]
-            if any_with_cuotas:
-                motivos = ["Reglas con cuotas correctas pero deshabilitadas"]
+        if not lc_active:
+            # Distinguir: nunca tuvo _LC rules vs las tiene pero fuera de ventana/deshabilitadas
+            if not lc_all:
+                motivo = "No hay reglas multi-cuota (_LC) configuradas"
+            else:
+                habilitadas = [r for r in lc_all if r.get("habilitada") == "Sí"]
+                if not habilitadas:
+                    motivo = "Hay reglas _LC pero todas están deshabilitadas"
+                else:
+                    motivo = "No hay reglas _LC habilitadas activas durante las fechas del evento"
             results.append(SellerEventoResult(
                 seller_id=seller.seller_id,
                 seller_name=seller.seller_name,
-                estado_general="A corregir",
-                motivos=motivos,
-                total_rules_evento=len(any_with_cuotas),
+                estado_general="No configurado",
+                motivos=[motivo],
+                total_rules_evento=0,
             ))
-            sellers_a_corregir += 1
+            sellers_no_config += 1
             continue
+
+        # ── Paso 2: chequeos sobre las reglas activas en el evento ────────────
+        for r in lc_active:
+            r["_cuotas"] = _parse_cuotas_set_str(r.get("cuotas_disponibles"))
 
         motivos: list[str] = []
 
-        # Check connector
-        bad_conn = [r for r in matching if r.get("conector", "").lower() not in VALID_CONNECTORS]
+        # Check 1: cuotas exactas
+        matching = [r for r in lc_active if r["_cuotas"] == expected]
+        if not matching:
+            found = sorted({
+                int(c) for r in lc_active
+                for c in (r.get("cuotas_disponibles") or "").split(",")
+                if c.strip().isdigit()
+            })
+            motivos.append(
+                f"Cuotas incorrectas — encontradas: {found}, esperadas: {sorted(expected)}"
+            )
+            check_base = lc_active
+        else:
+            check_base = matching
+
+        # Check 2: conector válido
+        bad_conn = [r for r in check_base if r.get("conector", "").lower() not in VALID_CONNECTORS]
         if bad_conn:
-            bad_names = sorted({r.get("conector", "") for r in bad_conn})
+            bad_names = sorted({r.get("conector", "") or "(vacío)" for r in bad_conn})
             motivos.append(f"Conector inválido: {bad_names}")
 
-        # Check Visa + Mastercard
+        # Check 3: Visa (id=2) + Mastercard (id=4) por nivel
+        tl = set(_LC)
         for firma_id, firma_name in REQUIRED_FIRMAS.items():
-            has_firma = any(str(r.get("id_sistema_pago", "")).strip() == firma_id for r in matching)
-            if not has_firma:
-                motivos.append(f"Falta firma {firma_name} (id {firma_id})")
+            firma_rules = [
+                r for r in check_base
+                if str(r.get("id_sistema_pago", "")).strip() == firma_id
+            ]
+            if not firma_rules:
+                motivos.append(f"Falta firma {firma_name} (id {firma_id}) en reglas del evento")
+            else:
+                covered = {r.get("nivel_tarjeta", "").lower().strip() for r in firma_rules}
+                missing = tl & {r.get("nivel_tarjeta", "").lower().strip() for r in check_base} - covered
+                if missing:
+                    motivos.append(f"{firma_name}: levels faltantes: {sorted(missing)}")
 
-        # Check date coverage
-        if event_ini or event_fin:
-            for r in matching:
-                raw_r = next(
-                    (rr for rr in rules if str(rr.get("id", "")) == r["id_regla"]),
-                    None,
-                )
-                if not raw_r:
-                    continue
-                r_begin = _normalize_to_ar(raw_r.get("beginDate"))
-                r_end = _normalize_to_ar(raw_r.get("endDate"))
-                if event_ini and r_begin and r_begin > event_ini:
-                    motivos.append(
-                        f"Regla {r['id_regla'][:8]}: begin_date posterior al inicio del evento"
-                    )
-                if event_fin and r_end and r_end < event_fin:
-                    motivos.append(
-                        f"Regla {r['id_regla'][:8]}: end_date anterior al fin del evento"
-                    )
-
-        # Deduplicate motivos
         motivos = list(dict.fromkeys(motivos))
 
         if motivos:
@@ -1212,7 +1248,7 @@ async def run_evento_validation(
             seller_name=seller.seller_name,
             estado_general=estado_general,
             motivos=motivos,
-            total_rules_evento=len(matching),
+            total_rules_evento=len(lc_active),
         ))
 
     duration = (datetime.now(timezone.utc) - started_at).total_seconds()
