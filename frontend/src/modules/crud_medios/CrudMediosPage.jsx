@@ -1,7 +1,16 @@
 import { useState } from "react"
 import { toast } from "sonner"
+import { AlertTriangle } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/core/auth/useAuth"
 import client from "@/core/api/client"
@@ -95,6 +104,7 @@ export default function CrudMediosPage() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [execError, setExecError] = useState(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
   const isRealWriteOp =
     opConfig.operacion && opConfig.operacion !== "R" && !opConfig.dryRun
@@ -105,6 +115,14 @@ export default function CrudMediosPage() {
     !loading
 
   const filtrosDisabled = opConfig.operacion === "C"
+
+  function handleExecuteClick() {
+    if (opConfig.operacion === "D" && !opConfig.dryRun) {
+      setConfirmOpen(true)
+      return
+    }
+    handleExecute()
+  }
 
   async function handleExecute() {
     setLoading(true)
@@ -240,9 +258,46 @@ export default function CrudMediosPage() {
               loading={loading}
               result={result}
               error={execError}
-              onExecute={handleExecute}
+              onExecute={handleExecuteClick}
             />
           </Card>
+
+          <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+            <DialogContent className="border-red-800 bg-[#1e293b] text-slate-100 sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-red-400">
+                  <AlertTriangle className="h-5 w-5" />
+                  Confirmar eliminación real
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3 py-2">
+                <p className="text-sm text-slate-300">
+                  Estás por <strong className="text-red-400">eliminar reglas de pago en producción</strong>.
+                  Esta acción no se puede deshacer.
+                </p>
+                <div className="rounded-lg border border-red-900 bg-red-950/40 px-4 py-3 text-xs text-red-300 space-y-1">
+                  <p>• Los cambios son <strong>inmediatos e irreversibles</strong></p>
+                  <p>• Afecta a todos los sellers del scope seleccionado</p>
+                  <p>• Usá <strong>Dry Run</strong> primero si no estás seguro</p>
+                </div>
+              </div>
+              <DialogFooter className="gap-2 sm:gap-2">
+                <Button
+                  variant="outline"
+                  className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                  onClick={() => setConfirmOpen(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  className="bg-red-700 text-white hover:bg-red-600"
+                  onClick={() => { setConfirmOpen(false); handleExecute() }}
+                >
+                  Sí, eliminar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           {result && result.rows.length > 0 && (
             <Card className="border-slate-700 bg-[#1e293b] p-5">
