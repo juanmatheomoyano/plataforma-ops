@@ -1,24 +1,20 @@
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-const CUOTAS_OPCIONES = [1, 3, 6, 9, 12, 18, 24]
-const MAX_CUOTA_OPCIONES = [1, 3, 6, 9, 12, 18, 24]
+// Presets de cuotas: el operador elige max, el set completo se deriva automáticamente
+export const CUOTA_PRESETS = {
+  9:  { label: "hasta 9 cuotas",  set: [1, 3, 6, 9],           desc: "1 · 3 · 6 · 9" },
+  12: { label: "hasta 12 cuotas", set: [1, 3, 6, 9, 12],       desc: "1 · 3 · 6 · 9 · 12" },
+  18: { label: "hasta 18 cuotas", set: [1, 3, 6, 9, 12, 18],   desc: "1 · 3 · 6 · 9 · 12 · 18" },
+  24: { label: "hasta 24 cuotas", set: [1, 3, 6, 9, 12, 18, 24], desc: "1 · 3 · 6 · 9 · 12 · 18 · 24" },
+}
 
 export function EventoConfigPanel({ value, onChange }) {
   function set(field, val) {
     onChange({ ...value, [field]: val })
   }
 
-  function toggleCuota(c) {
-    const current = value.cuotas_requeridas || []
-    const next = current.includes(c)
-      ? current.filter((x) => x !== c)
-      : [...current, c].sort((a, b) => a - b)
-    set("cuotas_requeridas", next)
-  }
-
-  const cuotas = value.cuotas_requeridas || []
-  const maxCuota = value.max_cuota
+  const selectedMax = value.max_cuota
 
   return (
     <div className="space-y-5">
@@ -33,48 +29,45 @@ export function EventoConfigPanel({ value, onChange }) {
       </div>
 
       <div className="space-y-2">
-        <Label className="text-slate-300 text-sm">Cuotas requeridas</Label>
-        <p className="text-xs text-slate-500">Las reglas deben cubrir exactamente estas cuotas</p>
-        <div className="flex flex-wrap gap-2">
-          {CUOTAS_OPCIONES.map((c) => {
-            const selected = cuotas.includes(c)
+        <Label className="text-slate-300 text-sm">Cuotas del evento</Label>
+        <p className="text-xs text-slate-500">
+          La validación comprueba que la <strong className="text-slate-400">unión</strong> de
+          reglas activas del seller cubra todas las cuotas requeridas — pueden estar en una
+          sola regla o distribuidas en varias.
+        </p>
+        <div className="flex flex-wrap gap-2 pt-1">
+          {Object.entries(CUOTA_PRESETS).map(([max, preset]) => {
+            const selected = selectedMax === Number(max)
             return (
               <button
-                key={c}
+                key={max}
                 type="button"
-                onClick={() => toggleCuota(c)}
+                onClick={() => set("max_cuota", Number(max))}
                 className={[
-                  "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                  "flex flex-col items-start rounded-lg border px-4 py-2.5 text-left transition-colors",
                   selected
-                    ? "border-indigo-600 bg-indigo-900/50 text-indigo-300"
-                    : "border-slate-600 bg-slate-800/40 text-slate-400 hover:bg-slate-700",
+                    ? "border-indigo-600 bg-indigo-900/40 text-indigo-200"
+                    : "border-slate-600 bg-slate-800/40 text-slate-400 hover:bg-slate-700 hover:text-slate-200",
                 ].join(" ")}
               >
-                {c === 1 ? "1 pago" : `${c} cuotas`}
+                <span className="text-sm font-semibold">{preset.label}</span>
+                <span className={`text-xs mt-0.5 ${selected ? "text-indigo-400" : "text-slate-600"}`}>
+                  {preset.desc}
+                </span>
               </button>
             )
           })}
         </div>
-        {cuotas.length === 0 && (
-          <p className="text-xs text-amber-400">Seleccioná al menos una cuota</p>
+        {!selectedMax && (
+          <p className="text-xs text-amber-400">Seleccioná el nivel de cuotas del evento</p>
         )}
-      </div>
-
-      <div className="space-y-1.5">
-        <Label className="text-slate-300 text-sm">Máximo de cuotas</Label>
-        <select
-          value={maxCuota || ""}
-          onChange={(e) => set("max_cuota", Number(e.target.value))}
-          className="w-40 rounded-md border border-slate-600 bg-slate-800/60 px-3 py-2 text-sm text-slate-300 focus:outline-none"
-        >
-          <option value="">Seleccioná...</option>
-          {MAX_CUOTA_OPCIONES.map((c) => (
-            <option key={c} value={c}>{c === 1 ? "1 pago" : `${c} cuotas`}</option>
-          ))}
-        </select>
-        {maxCuota && cuotas.length > 0 && maxCuota < Math.max(...cuotas) && (
-          <p className="text-xs text-amber-400">
-            El máximo debe ser ≥ {Math.max(...cuotas)} (max de cuotas requeridas)
+        {selectedMax && (
+          <p className="text-xs text-slate-500">
+            Se verifica cobertura de:{" "}
+            <span className="text-slate-300 font-mono">
+              {"{" + CUOTA_PRESETS[selectedMax].set.join(", ") + "}"}
+            </span>
+            {" "}(por unión de reglas activas)
           </p>
         )}
       </div>

@@ -5,13 +5,12 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import client from "@/core/api/client"
 import { ScopeSelector } from "@/modules/crud_medios/components/ScopeSelector"
-import { EventoConfigPanel } from "./components/EventoConfigPanel"
+import { EventoConfigPanel, CUOTA_PRESETS } from "./components/EventoConfigPanel"
 import { EventoResultsTable } from "./components/EventoResultsTable"
 
 const EMPTY_EVENTO = {
   nombre: "",
-  cuotas_requeridas: [],
-  max_cuota: null,
+  max_cuota: null,   // 9 | 12 | 18 | 24
   fecha_ini_date: "",
   fecha_ini_time: "00:00",
   fecha_fin_date: "",
@@ -32,13 +31,14 @@ export default function ValidacionEventosPage() {
   const [error, setError] = useState(null)
 
   function buildRequestBody() {
+    const preset = CUOTA_PRESETS[eventoConfig.max_cuota]
     return {
       scope: { seller_ids: sellerIds },
       filtros: {},
       evento: {
         nombre: eventoConfig.nombre,
-        cuotas_requeridas: eventoConfig.cuotas_requeridas,
-        max_cuota: eventoConfig.max_cuota || Math.max(...(eventoConfig.cuotas_requeridas.length ? eventoConfig.cuotas_requeridas : [1])),
+        cuotas_requeridas: preset?.set ?? [],
+        max_cuota: eventoConfig.max_cuota,
         fecha_ini_art: buildArtDatetime(eventoConfig.fecha_ini_date, eventoConfig.fecha_ini_time),
         fecha_fin_art: buildArtDatetime(eventoConfig.fecha_fin_date, eventoConfig.fecha_fin_time),
       },
@@ -47,11 +47,7 @@ export default function ValidacionEventosPage() {
 
   function validate() {
     if (!eventoConfig.nombre.trim()) return "Ingresá un nombre para el evento"
-    if (!eventoConfig.cuotas_requeridas.length) return "Seleccioná al menos una cuota requerida"
-    if (!eventoConfig.max_cuota) return "Seleccioná el máximo de cuotas"
-    if (eventoConfig.max_cuota < Math.max(...eventoConfig.cuotas_requeridas)) {
-      return `El máximo (${eventoConfig.max_cuota}) debe ser ≥ ${Math.max(...eventoConfig.cuotas_requeridas)}`
-    }
+    if (!eventoConfig.max_cuota) return "Seleccioná el nivel de cuotas del evento"
     return null
   }
 
@@ -105,7 +101,7 @@ export default function ValidacionEventosPage() {
     }
   }
 
-  const canExecute = !loading && eventoConfig.cuotas_requeridas.length > 0 && !!eventoConfig.nombre.trim()
+  const canExecute = !loading && !!eventoConfig.max_cuota && !!eventoConfig.nombre.trim()
 
   return (
     <div className="space-y-6">

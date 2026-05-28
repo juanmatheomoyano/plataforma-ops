@@ -1198,41 +1198,40 @@ async def run_evento_validation(
 
         motivos: list[str] = []
 
-        # Check 1: cuotas exactas
-        matching = [r for r in lc_active if r["_cuotas"] == expected]
-        if not matching:
-            found = sorted({
-                int(c) for r in lc_active
-                for c in (r.get("cuotas_disponibles") or "").split(",")
-                if c.strip().isdigit()
-            })
+        # Check 1: unión de cuotas de todas las reglas activas ⊇ set requerido
+        # El seller puede tener las cuotas distribuidas en varias reglas (concatenación)
+        union_cuotas = frozenset({
+            int(c) for r in lc_active
+            for c in (r.get("cuotas_disponibles") or "").split(",")
+            if c.strip().isdigit()
+        })
+        if not expected.issubset(union_cuotas):
+            missing_cuotas = sorted(expected - union_cuotas)
             motivos.append(
-                f"Cuotas incorrectas — encontradas: {found}, esperadas: {sorted(expected)}"
+                f"Cuotas faltantes: {missing_cuotas} "
+                f"(unión de reglas activas: {sorted(union_cuotas)})"
             )
-            check_base = lc_active
-        else:
-            check_base = matching
 
-        # Check 2: conector válido
-        bad_conn = [r for r in check_base if r.get("conector", "").lower() not in VALID_CONNECTORS]
+        # Check 2: conector válido en todas las reglas activas
+        bad_conn = [r for r in lc_active if r.get("conector", "").lower() not in VALID_CONNECTORS]
         if bad_conn:
             bad_names = sorted({r.get("conector", "") or "(vacío)" for r in bad_conn})
             motivos.append(f"Conector inválido: {bad_names}")
 
-        # Check 3: Visa (id=2) + Mastercard (id=4) por nivel
-        tl = set(_LC)
+        # Check 3: Visa (id=2) + Mastercard (id=4) presentes en reglas activas
+        levels_activos = {r.get("nivel_tarjeta", "").lower().strip() for r in lc_active}
         for firma_id, firma_name in REQUIRED_FIRMAS.items():
             firma_rules = [
-                r for r in check_base
+                r for r in lc_active
                 if str(r.get("id_sistema_pago", "")).strip() == firma_id
             ]
             if not firma_rules:
                 motivos.append(f"Falta firma {firma_name} (id {firma_id}) en reglas del evento")
             else:
                 covered = {r.get("nivel_tarjeta", "").lower().strip() for r in firma_rules}
-                missing = tl & {r.get("nivel_tarjeta", "").lower().strip() for r in check_base} - covered
-                if missing:
-                    motivos.append(f"{firma_name}: levels faltantes: {sorted(missing)}")
+                missing_levels = levels_activos - covered
+                if missing_levels:
+                    motivos.append(f"{firma_name}: levels sin cubrir: {sorted(missing_levels)}")
 
         motivos = list(dict.fromkeys(motivos))
 
