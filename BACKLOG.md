@@ -51,3 +51,51 @@
 - [x] Auto-update de Tauri 2
 - [x] Limpieza automática de historial: borrar operaciones con más de 90 días
 - [x] Cambio de contraseña propio (sidebar, cualquier rol)
+
+---
+
+## Próximos pasos — Sprint 2
+
+### 1. Módulo Eventos (reemplaza Validación de Eventos)
+- [ ] Renombrar la solapa "Validación de Eventos" a "Eventos"
+- [ ] Restringir acceso solo a rol admin
+- [ ] Dividir en dos sub-secciones: "Crear Evento" y "Administrar Eventos"
+- [ ] Crear Evento: usar los parámetros actuales de validación (nombre, fechas, cuotas requeridas, scope) y persistirlo en BD como un evento planificado con fechas de vigencia
+- [ ] Administrar Eventos: tabla de eventos creados con acciones editar / eliminar / activar
+- [ ] En el CRUD → operación Read: si hay eventos vigentes en la fecha actual, agregarlos como columnas adicionales en la tabla de resultados (igual que hoy se muestra validación de 6/9 cuotas)
+- [ ] Modelo BD nuevo: tabla `eventos` con campos `nombre`, `fecha_ini`, `fecha_fin`, `cuotas_requeridas`, `scope`, `creado_por`, `created_at`
+
+### 2. Filtro de analista en CRUD Read
+- [ ] En el módulo CRUD Medios de Pago, operación Read: agregar filtro "Analista" al scope selector
+- [ ] Al seleccionar un analista, el scope se limita automáticamente a los sellers asignados a ese analista
+- [ ] El filtro debe mostrar solo analistas con sellers activos asignados
+
+### 3. Desencriptar y exponer credenciales VTEX (solo admin)
+- [ ] Agregar endpoint `GET /api/sellers/{id}/credentials` (solo admin) que devuelva `app_key` y `app_token` desencriptados
+- [ ] En la UI de Sellers: solo admins ven botón "Ver credenciales" que abre un modal con las keys visibles (con advertencia de confidencialidad)
+- [ ] El export de Excel de Sellers (solo admin) debe incluir opción de exportar con o sin credenciales desencriptadas
+- [ ] Registrar en auditoría cada acceso a credenciales (quién, cuándo, qué seller)
+- [ ] Roles no-admin: sin cambios, solo lectura de datos no sensibles
+
+### 4. Dashboard personalizado por rol con gráficos
+- [ ] Reemplazar el dashboard actual por uno con gráficos dinámicos según el rol del usuario
+- [ ] Implementar gráficos de torta y métricas actualizadas (frecuencia a definir: horaria o diaria)
+- [ ] Admin: visión completa — sellers activos/inactivos, operaciones por módulo, usuarios activos, actividad reciente
+- [ ] Analista Senior: sellers de su área, estado de eventos vigentes, operaciones del día
+- [ ] Analista: solo sus sellers asignados y métricas propias
+- [ ] Viewer: métricas de solo lectura
+- [ ] Definir librería de gráficos (Recharts ya disponible en el stack)
+- [ ] Las actualizaciones automáticas (polling o WebSocket) se definirán en iteración siguiente
+
+### 5. Optimización de almacenamiento — historial ligero
+- [ ] Cambiar modelo de historial: dejar de guardar el detalle de cada regla procesada (tabla `crud_operation_rows` o similar)
+- [ ] Solo persistir: quién ejecutó, qué operación, qué módulo, cuándo, scope utilizado, cantidad de registros afectados, resultado general (ok / error / parcial)
+- [ ] Los resultados detallados se muestran en frontend en el momento y se pueden exportar — no se persisten
+- [ ] Eliminar limpieza automática de 90 días (ya no necesaria si no se guarda detalle)
+- [ ] Revisar y ajustar retención: el log de auditoría liviano puede mantenerse indefinidamente
+- [ ] Aplica también al módulo Eventos (reemplaza Validación de Eventos)
+
+### 6. Revisión de accesibilidad visual — colores
+- [ ] Auditar componentes con bajo contraste (identificar casos específicos durante el desarrollo)
+- [ ] Ajustar tokens de color en Tailwind/shadcn para mejorar legibilidad
+- [ ] Priorizar: texto sobre fondos oscuros, estados de badges, colores de estado en tablas
