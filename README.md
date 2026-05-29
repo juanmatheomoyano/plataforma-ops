@@ -27,7 +27,7 @@ Reemplaza el script Python de consola `crud_medios_de_pago_v6.py` con una interf
 | **Dashboard** | todos | Métricas por rol, últimas operaciones, accesos rápidos |
 | **Sellers** | todos (ABM: admin) | Gestión de sellers y credenciales VTEX encriptadas |
 | **CRUD Medios de Pago** | todos | Operaciones R/C/U/D masivas sobre reglas de pago VTEX |
-| **Validación de Eventos** | todos | Verifica que sellers tengan reglas correctas para un evento (Hot Sale, etc.) |
+| **Eventos** | solo admin | Crear/administrar eventos planificados y verificar que sellers tengan reglas correctas |
 | **Usuarios** | solo admin | ABM de usuarios y roles |
 | **Configuración** | todos | Toggle dark/light mode, cambio de contraseña |
 
