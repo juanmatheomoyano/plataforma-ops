@@ -26,8 +26,8 @@ Reemplaza el script Python de consola `crud_medios_de_pago_v6.py` con una interf
 |---|---|---|
 | **Dashboard** | todos | Métricas por rol, últimas operaciones, accesos rápidos |
 | **Sellers** | todos (ABM: admin) | Gestión de sellers y credenciales VTEX encriptadas |
-| **CRUD Medios de Pago** | todos | Operaciones R/C/U/D masivas sobre reglas de pago VTEX |
-| **Eventos** | solo admin | Crear/administrar eventos planificados y verificar que sellers tengan reglas correctas |
+| **CRUD Medios de Pago** | todos | Operaciones R/C/U/D masivas sobre reglas de pago VTEX. Read incluye validación por grupos de cuotas y eventos |
+| **Eventos** | solo admin | Crear y administrar eventos planificados (Hot Sale, Cyber Monday, etc.). La validación por seller se ejecuta desde CRUD Read |
 | **Usuarios** | solo admin | ABM de usuarios y roles |
 | **Configuración** | todos | Toggle dark/light mode, cambio de contraseña |
 
@@ -44,14 +44,14 @@ plataforma-ops/
 ├── backend/               # FastAPI
 │   ├── app/
 │   │   ├── core/          # auth, config, db, seguridad
-│   │   └── modules/       # auth, crud_medios, sellers, updates, users
+│   │   └── modules/       # auth, crud_medios, eventos, sellers, updates, users
 │   ├── alembic/           # migraciones de BD
 │   ├── requirements.txt
 │   └── .env.example
 ├── frontend/              # React + Tauri
 │   ├── src/
 │   │   ├── core/          # api client, auth, layout, theme
-│   │   ├── modules/       # crud_medios, sellers, users, validacion_eventos
+│   │   ├── modules/       # crud_medios, eventos, sellers, users, validacion_eventos
 │   │   └── pages/         # Dashboard, Login, ConfiguracionPage
 │   ├── src-tauri/         # capa Rust / config Tauri
 │   ├── public/fonts/      # Encode Sans TTF

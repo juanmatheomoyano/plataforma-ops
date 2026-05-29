@@ -5,20 +5,24 @@ Formato: [versión] — fecha — descripción
 
 ---
 
-## [1.6.0] — 2026-05-29 — Módulo Eventos
+## [1.6.0] — 2026-05-29 — Módulo Eventos + validación integrada en CRUD Read
 
 ### Backend
 - Nuevo módulo `eventos`: CRUD completo de eventos planificados (POST/GET/PUT/PATCH/DELETE)
 - Modelo BD: tabla `eventos` con nombre, fechas UTC, cuotas requeridas, scope, is_active, creado_por
 - Migración Alembic: `f1a2b3c4d5e6_create_eventos`
-- Endpoint `GET /api/eventos/vigentes`: devuelve eventos activos cuya ventana cubre el momento actual (disponible para cualquier usuario autenticado)
+- Endpoint `GET /api/eventos/vigentes`: devuelve eventos activos cuya ventana cubre el momento actual (accesible a cualquier usuario autenticado)
 
-### Frontend
-- `EventosPage` con tabs: **Validar y crear** / **Administrar eventos** — reemplaza la página de Validación de Eventos
-- **Tab "Validar y crear"**: mismos parámetros de antes (nombre, cuotas, fechas, scope) + botón "Guardar evento" que persiste el evento en BD al terminar la validación
-- **Tab "Administrar eventos"**: tabla con todos los eventos, badge VIGENTE si está activo hoy, acciones editar / activar-desactivar / eliminar; modal de edición con los mismos campos
-- Sidebar: "Eventos" reemplaza "Validación de Eventos", acceso restringido a `admin`
-- CRUD Read: después de ejecutar, busca eventos vigentes y corre `validate-evento` para cada uno; resultados aparecen como **columnas adicionales** en DashboardTable con el estado por seller (Ok / ✗ / —)
+### Frontend — Módulo Eventos (solo admin)
+- Reemplaza la antigua página "Validación de Eventos"
+- **Tab "Administrar eventos"** (default): tabla de todos los eventos con badge VIGENTE, acciones editar / activar-desactivar / eliminar; modal de edición completo
+- **Tab "Crear evento"**: formulario simple (nombre, cuotas preset, fechas ART, scope opcional) → guarda directamente en BD sin validar, redirige a Administrar
+
+### Frontend — CRUD Medios de Pago: Read mejorado
+- Nuevo panel **"Validación"** visible solo cuando operacion=Read
+- **Grupos de cuotas**: chips seleccionables (1 pago / 6c / 9c / 12c / 18c / 24c) — la tabla Dashboard muestra solo las columnas activadas
+- **Eventos vigentes**: chips por cada evento activo hoy; al seleccionar uno y ejecutar el Read, se valida ese evento por seller y aparece como columna adicional en el Dashboard (Ok / ✗ / —)
+- Las fechas del evento se convierten correctamente de UTC a ART antes de llamar al validador
 
 ---
 
