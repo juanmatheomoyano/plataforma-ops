@@ -39,7 +39,7 @@ export default function Login() {
             alt="Provincia Compras"
             className="h-12 w-auto"
           />
-          <p className="text-sm text-muted-foreground">Plataforma Operativa</p>
+          <p className="text-sm text-muted-foreground">Provincia Ops</p>
         </div>
 
         {/* Card de login */}

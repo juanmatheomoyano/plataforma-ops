@@ -18,7 +18,7 @@ async def download_page():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Plataforma Operativa — Descarga</title>
+        <title>Provincia Ops — Descarga</title>
         <style>
             body {{ font-family: Arial, sans-serif; background: #0f172a; color: #e2e8f0;
                    display: flex; align-items: center; justify-content: center;
@@ -38,7 +38,7 @@ async def download_page():
     <body>
         <div class="card">
             <div class="logo">🛡️</div>
-            <h1>Plataforma Operativa</h1>
+            <h1>Provincia Ops</h1>
             <p class="version">Versión {version} — Provincia NET</p>
             <a href="{release_url}" class="btn">⬇️ Descargar instalador</a>
             <p class="note">Windows 10/11 · 64 bits</p>
