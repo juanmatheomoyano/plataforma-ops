@@ -13,7 +13,7 @@ import ConfiguracionPage from "@/pages/ConfiguracionPage"
 import UsersPage from "@/modules/users/UsersPage"
 import SellersPage from "@/modules/sellers/SellersPage"
 import CrudMediosPage from "@/modules/crud_medios/CrudMediosPage"
-import ValidacionEventosPage from "@/modules/validacion_eventos/ValidacionEventosPage"
+import EventosPage from "@/modules/eventos/EventosPage"
 import "./index.css"
 
 function RoleRoute({ roles, children }) {
@@ -62,7 +62,14 @@ export default function App() {
                 }
               />
               <Route path="crud-medios" element={<CrudMediosPage />} />
-              <Route path="validacion-eventos" element={<ValidacionEventosPage />} />
+              <Route
+                path="eventos"
+                element={
+                  <RoleRoute roles={["admin"]}>
+                    <EventosPage />
+                  </RoleRoute>
+                }
+              />
               <Route path="configuracion" element={<ConfiguracionPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

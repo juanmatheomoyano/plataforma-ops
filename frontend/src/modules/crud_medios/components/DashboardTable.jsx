@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronDown, ChevronUp, Loader2 } from "lucide-react"
 
 const GRUPOS = [
   "Tarjetas en 1 pago",
@@ -43,7 +43,14 @@ function MotivosRow({ motivos, colSpan }) {
   )
 }
 
-export function DashboardTable({ dashboard }) {
+const EVENTO_CELL = {
+  "Ok":             { td: "bg-emerald-50 dark:bg-emerald-900/50", text: "text-emerald-700 dark:text-emerald-300", label: "Ok" },
+  "A corregir":     { td: "bg-red-50 dark:bg-red-900/50",         text: "text-red-700 dark:text-red-300",         label: "✗" },
+  "No configurado": { td: "",                                      text: "text-muted-foreground/60",               label: "—" },
+  "Error":          { td: "bg-amber-50 dark:bg-amber-900/40",     text: "text-amber-700 dark:text-amber-300",     label: "!" },
+}
+
+export function DashboardTable({ dashboard, eventoColumns = [], loadingEventos = false }) {
   const [expandedSeller, setExpandedSeller] = useState(null)
   const [filterEstado, setFilterEstado] = useState("")
 
@@ -121,6 +128,16 @@ export function DashboardTable({ dashboard }) {
                   {g.replace("Tarjetas en ", "")}
                 </th>
               ))}
+              {loadingEventos && (
+                <th className="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">
+                  <Loader2 className="h-3 w-3 animate-spin inline" />
+                </th>
+              )}
+              {eventoColumns.map(({ evento }) => (
+                <th key={evento.id} className="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-primary/80 whitespace-nowrap border-l border-primary/20 bg-primary/5">
+                  {evento.nombre}
+                </th>
+              ))}
               <th className="px-2 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground w-8" />
             </tr>
           </thead>
@@ -157,6 +174,18 @@ export function DashboardTable({ dashboard }) {
                         </td>
                       )
                     })}
+                    {loadingEventos && (
+                      <td className="px-3 py-2.5 text-center text-muted-foreground/40">…</td>
+                    )}
+                    {eventoColumns.map(({ evento, resultMap }) => {
+                      const estado = resultMap[d.seller_id] || "No configurado"
+                      const style = EVENTO_CELL[estado] || EVENTO_CELL["No configurado"]
+                      return (
+                        <td key={evento.id} className={`px-3 py-2.5 text-center text-xs font-medium border-l border-primary/10 ${style.td} ${style.text}`}>
+                          {style.label}
+                        </td>
+                      )
+                    })}
                     <td className="px-2 py-2.5 text-center">
                       {hasMotivos && (
                         <button
@@ -170,14 +199,14 @@ export function DashboardTable({ dashboard }) {
                     </td>
                   </tr>
                   {isExpanded && hasMotivos && (
-                    <MotivosRow motivos={motivos} colSpan={GRUPOS.length + 5} />
+                    <MotivosRow motivos={motivos} colSpan={GRUPOS.length + 5 + eventoColumns.length + (loadingEventos ? 1 : 0)} />
                   )}
                 </>
               )
             })}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={GRUPOS.length + 5} className="py-10 text-center text-sm text-muted-foreground">
+                <td colSpan={GRUPOS.length + 5 + eventoColumns.length} className="py-10 text-center text-sm text-muted-foreground">
                   Sin resultados para el filtro seleccionado
                 </td>
               </tr>

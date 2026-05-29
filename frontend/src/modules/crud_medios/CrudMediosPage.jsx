@@ -105,6 +105,8 @@ export default function CrudMediosPage() {
   const [result, setResult] = useState(null)
   const [execError, setExecError] = useState(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [eventoColumns, setEventoColumns] = useState([])  // [{ evento, resultMap }]
+  const [loadingEventos, setLoadingEventos] = useState(false)
 
   const isRealWriteOp =
     opConfig.operacion && opConfig.operacion !== "R" && !opConfig.dryRun
@@ -179,12 +181,54 @@ export default function CrudMediosPage() {
       } else {
         toast.success(`${data.total_matched} reglas procesadas`)
       }
+
+      if (body.operacion === "R") {
+        _loadEventoColumns(body.scope)
+      }
     } catch (err) {
       const msg = err.response?.data?.detail ?? "Error al ejecutar la operación"
       setExecError(msg)
       toast.error(msg)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function _loadEventoColumns(scope) {
+    setEventoColumns([])
+    setLoadingEventos(true)
+    try {
+      const { data: vigentes } = await client.get("/eventos/vigentes")
+      if (!vigentes.length) return
+
+      const cols = []
+      for (const evento of vigentes) {
+        try {
+          const { data: val } = await client.post("/crud-medios/validate-evento", {
+            scope,
+            filtros: {},
+            evento: {
+              nombre: evento.nombre,
+              cuotas_requeridas: evento.cuotas_requeridas,
+              max_cuota: evento.max_cuota,
+              fecha_ini_art: null,
+              fecha_fin_art: null,
+            },
+          })
+          const resultMap = {}
+          for (const r of val.results) {
+            resultMap[r.seller_id] = r.estado_general
+          }
+          cols.push({ evento, resultMap })
+        } catch {
+          // evento individual falla → skip
+        }
+      }
+      setEventoColumns(cols)
+    } catch {
+      // sin vigentes o sin permisos → silencioso
+    } finally {
+      setLoadingEventos(false)
     }
   }
 
@@ -306,6 +350,8 @@ export default function CrudMediosPage() {
                 dashboard={result.dashboard}
                 operacion={opConfig.operacion}
                 scope={{ seller_ids: sellerIds }}
+                eventoColumns={eventoColumns}
+                loadingEventos={loadingEventos}
               />
             </Card>
           )}

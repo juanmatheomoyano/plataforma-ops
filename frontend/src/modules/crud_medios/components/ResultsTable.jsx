@@ -84,7 +84,7 @@ async function downloadBackendExcel(scope) {
   URL.revokeObjectURL(url)
 }
 
-export function ResultsTable({ rows, dashboard, operacion, scope, onFilterErrors }) {
+export function ResultsTable({ rows, dashboard, operacion, scope, onFilterErrors, eventoColumns = [], loadingEventos = false }) {
   const [globalFilter, setGlobalFilter] = useState("")
   const [showOnlyErrors, setShowOnlyErrors] = useState(false)
   const [colFilters, setColFilters] = useState({ seller: "", brand: "", level: "", estado: "", resultado: "" })
@@ -394,7 +394,7 @@ export function ResultsTable({ rows, dashboard, operacion, scope, onFilterErrors
             <TabsTrigger value="detalle">Detalle de reglas</TabsTrigger>
           </TabsList>
           <TabsContent value="dashboard" className="mt-3">
-            <DashboardTable dashboard={dashboard} />
+            <DashboardTable dashboard={dashboard} eventoColumns={eventoColumns} loadingEventos={loadingEventos} />
           </TabsContent>
           <TabsContent value="detalle" className="mt-3">
             {rowsTableContent}

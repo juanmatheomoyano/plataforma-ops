@@ -10,7 +10,7 @@ export function Sidebar() {
     ...(hasRole(["admin"]) ? [{ to: "/users", label: "Usuarios", Icon: Users }] : []),
     ...(hasRole(["admin"]) ? [{ to: "/sellers", label: "Sellers", Icon: Store }] : []),
     { to: "/crud-medios", label: "CRUD Medios de Pago", Icon: CreditCard },
-    { to: "/validacion-eventos", label: "Validación de Eventos", Icon: CalendarCheck },
+    ...(hasRole(["admin"]) ? [{ to: "/eventos", label: "Eventos", Icon: CalendarCheck }] : []),
   ]
 
   return (
