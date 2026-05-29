@@ -39,11 +39,11 @@ async def list_eventos(db: AsyncSession) -> list[Evento]:
 
 
 async def get_vigentes(db: AsyncSession) -> list[Evento]:
+    """Returns active events that are current or upcoming (fecha_fin >= now)."""
     now = datetime.now(timezone.utc)
     result = await db.execute(
         select(Evento).where(
             Evento.is_active.is_(True),
-            Evento.fecha_ini <= now,
             Evento.fecha_fin >= now,
         ).order_by(Evento.fecha_ini)
     )

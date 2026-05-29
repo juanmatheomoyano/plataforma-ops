@@ -77,27 +77,33 @@ export function ReadValidacionConfig({ selectedGrupos, onGruposChange, selectedE
       {eventosDisponibles.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Eventos vigentes a validar
+            Eventos a validar
           </p>
           <div className="flex flex-wrap gap-2">
             {eventosDisponibles.map((e) => {
               const active = selectedEventos.includes(e.id)
+              const isProximo = e.fecha_ini && new Date(e.fecha_ini) > new Date()
               return (
                 <button
                   key={e.id}
                   type="button"
                   onClick={() => toggleEvento(e.id)}
                   className={[
-                    "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                    "rounded-full border px-3 py-1 text-xs font-medium transition-colors flex items-center gap-1.5",
                     active
                       ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-600"
                       : "border-border bg-muted/60 text-muted-foreground hover:bg-accent hover:text-foreground",
                   ].join(" ")}
                 >
                   {e.nombre}
-                  <span className="ml-1 opacity-60">
+                  <span className="opacity-60">
                     ({e.cuotas_requeridas?.[e.cuotas_requeridas.length - 1]}c)
                   </span>
+                  {isProximo && (
+                    <span className="rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 px-1.5 py-0.5 text-[10px] font-semibold leading-none">
+                      PRÓX
+                    </span>
+                  )}
                 </button>
               )
             })}

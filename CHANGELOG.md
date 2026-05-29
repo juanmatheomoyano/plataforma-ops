@@ -5,6 +5,17 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [1.6.1] — 2026-05-29 — Fix: eventos próximos visibles en CRUD Read
+
+### Backend
+- `GET /api/eventos/vigentes`: ahora devuelve eventos activos vigentes **y próximos** (`fecha_fin >= now`, sin requerir que ya hayan comenzado). Permite seleccionar un evento futuro para validar antes de que empiece.
+
+### Frontend
+- CRUD Read — panel Validación: los chips de eventos ahora muestran también eventos próximos con badge `PRÓX` (azul) para distinguirlos de los ya vigentes.
+- Sección renombrada de "Eventos vigentes a validar" → "Eventos a validar"
+
+---
+
 ## [1.6.0] — 2026-05-29 — Módulo Eventos + validación integrada en CRUD Read
 
 ### Backend
