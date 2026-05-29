@@ -266,9 +266,23 @@ export default function CrudMediosPage() {
               {...opConfig}
               onChange={setOpConfig}
             />
+
+            {/* 2. Validación (solo Read) — justo después del selector */}
+            {opConfig.operacion === "R" && (
+              <>
+                <div className="border-t border-border" />
+                <ReadValidacionConfig
+                  selectedGrupos={selectedGrupos}
+                  onGruposChange={setSelectedGrupos}
+                  selectedEventos={selectedEventoIds}
+                  onEventosChange={setSelectedEventoIds}
+                />
+              </>
+            )}
+
             <div className="border-t border-border" />
 
-            {/* 2. Filtros — deshabilitados para C/U/D */}
+            {/* 3. Filtros — deshabilitados para C */}
             <div className="relative">
               {filtrosDisabled && (
                 <div className="absolute top-2 right-3 z-10 pointer-events-none">
@@ -281,19 +295,6 @@ export default function CrudMediosPage() {
                 <FiltrosPanel filtros={filtros} onChange={setFiltros} />
               </div>
             </div>
-
-            {/* 3. Validación (solo Read) */}
-            {opConfig.operacion === "R" && (
-              <>
-                <div className="border-t border-border" />
-                <ReadValidacionConfig
-                  selectedGrupos={selectedGrupos}
-                  onGruposChange={setSelectedGrupos}
-                  selectedEventos={selectedEventoIds}
-                  onEventosChange={setSelectedEventoIds}
-                />
-              </>
-            )}
 
             {/* 4. Dry Run (solo para operaciones de escritura) */}
             {opConfig.operacion && opConfig.operacion !== "R" && (

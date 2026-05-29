@@ -1,5 +1,8 @@
 import { useState } from "react"
-import { ChevronDown, ChevronUp, Loader2 } from "lucide-react"
+import { ChevronDown, ChevronUp, Download, Loader2 } from "lucide-react"
+import * as XLSX from "xlsx"
+import { save } from "@tauri-apps/plugin-dialog"
+import { writeFile } from "@tauri-apps/plugin-fs"
 
 const GRUPOS = [
   "Tarjetas en 1 pago",
@@ -24,6 +27,25 @@ const FILTER_CHIP = {
   "Ok (inactiva)":   { active: "bg-muted text-muted-foreground border-border",                                                                            dot: "bg-muted-foreground" },
   "A corregir":      { active: "bg-red-50 text-red-700 border-red-300 dark:bg-red-900/60 dark:text-red-300 dark:border-red-700",                         dot: "bg-red-500 dark:bg-red-400" },
   "No configurado":  { active: "bg-muted text-muted-foreground border-border",                                                                            dot: "bg-muted-foreground" },
+}
+
+async function exportDashboard(dashboard, grupos, eventoColumns) {
+  const eventoHeaders = eventoColumns.map((c) => c.evento.nombre)
+  const headers = ["Seller ID", "Seller", "Total reglas", "Activas", "Max cuotas", ...grupos.map((g) => g.replace("Tarjetas en ", "")), ...eventoHeaders]
+  const rows = dashboard.map((d) => {
+    const grupoVals = grupos.map((g) => d.grupos?.[g]?.estado || "No configurado")
+    const eventoVals = eventoColumns.map(({ evento, resultMap }) => resultMap[d.seller_id] || "No configurado")
+    return [d.seller_id, d.seller_name, d.totales, d.activas, d.max_cuotas_activas, ...grupoVals, ...eventoVals]
+  })
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, "Dashboard")
+  const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" })
+  const filePath = await save({
+    filters: [{ name: "Excel", extensions: ["xlsx"] }],
+    defaultPath: `dashboard_${new Date().toISOString().slice(0, 10)}.xlsx`,
+  })
+  if (filePath) await writeFile(filePath, new Uint8Array(buf))
 }
 
 function MotivosRow({ motivos, colSpan }) {
@@ -79,8 +101,9 @@ export function DashboardTable({ dashboard, grupos = GRUPOS, eventoColumns = [],
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
-        {Object.entries(stats).map(([estado, count]) => {
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {Object.entries(stats).map(([estado, count]) => {
           const style = FILTER_CHIP[estado] || FILTER_CHIP["No configurado"]
           const active = filterEstado === estado
           return (
@@ -105,6 +128,14 @@ export function DashboardTable({ dashboard, grupos = GRUPOS, eventoColumns = [],
             Limpiar
           </button>
         )}
+        </div>
+        <button
+          onClick={() => exportDashboard(filtered, grupos, eventoColumns)}
+          className="flex items-center gap-1.5 rounded-md border border-border bg-transparent px-3 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+        >
+          <Download className="h-3.5 w-3.5" />
+          Excel
+        </button>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-border">
