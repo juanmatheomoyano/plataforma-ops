@@ -18,9 +18,9 @@ import { SellerFormModal } from "./SellerFormModal"
 import { ImportResultModal } from "./ImportResultModal"
 
 const ESTADO_BADGE = {
-  activo: "border-emerald-700 bg-emerald-900/40 text-emerald-400",
+  activo:  "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400",
   inactivo: "border-border bg-muted text-muted-foreground",
-  vencido: "border-orange-700 bg-orange-900/40 text-orange-400",
+  vencido: "border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-700 dark:bg-orange-900/40 dark:text-orange-400",
 }
 
 export default function SellersPage() {
@@ -204,7 +204,7 @@ export default function SellersPage() {
       header: "Vendiendo",
       cell: ({ getValue }) =>
         getValue() ? (
-          <Badge className="border-blue-700 bg-blue-900/40 text-blue-400">Sí</Badge>
+          <Badge className="border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-900/40 dark:text-blue-400">Sí</Badge>
         ) : (
           <Badge className="border-border bg-muted text-muted-foreground">No</Badge>
         ),
@@ -214,7 +214,7 @@ export default function SellersPage() {
       header: "Estado",
       cell: ({ getValue }) =>
         getValue() ? (
-          <Badge className="border-emerald-700 bg-emerald-900/40 text-emerald-400">Activo</Badge>
+          <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">Activo</Badge>
         ) : (
           <Badge className="border-border bg-muted text-muted-foreground">Inactivo</Badge>
         ),

@@ -10,31 +10,30 @@ const GRUPOS = [
   "Tarjetas en 24 cuotas",
 ]
 
-// Cell background colors matching payment extractor VALIDATION_FILLS (adapted for dark theme)
 const ESTADO_CELL = {
-  "Ok (vigente)":    { td: "bg-emerald-900/50", text: "text-emerald-300", label: "Ok" },
-  "Ok (programado)": { td: "bg-blue-900/50",    text: "text-blue-300",    label: "Prog." },
-  "Ok (inactiva)":   { td: "bg-slate-700/40",   text: "text-slate-400",   label: "Inact." },
-  "A corregir":      { td: "bg-red-900/50",      text: "text-red-300",     label: "✗" },
-  "No configurado":  { td: "",                   text: "text-slate-600",   label: "—" },
+  "Ok (vigente)":    { td: "bg-emerald-50 dark:bg-emerald-900/50", text: "text-emerald-700 dark:text-emerald-300", label: "Ok" },
+  "Ok (programado)": { td: "bg-blue-50 dark:bg-blue-900/50",       text: "text-blue-700 dark:text-blue-300",       label: "Prog." },
+  "Ok (inactiva)":   { td: "bg-muted/40 dark:bg-slate-700/40",     text: "text-muted-foreground dark:text-slate-400", label: "Inact." },
+  "A corregir":      { td: "bg-red-50 dark:bg-red-900/50",         text: "text-red-700 dark:text-red-300",         label: "✗" },
+  "No configurado":  { td: "",                                      text: "text-muted-foreground/60",               label: "—" },
 }
 
 const FILTER_CHIP = {
-  "Ok (vigente)":    { active: "bg-emerald-900/60 text-emerald-300 border-emerald-700", dot: "bg-emerald-400" },
-  "Ok (programado)": { active: "bg-blue-900/60 text-blue-300 border-blue-700",          dot: "bg-blue-400" },
-  "Ok (inactiva)":   { active: "bg-slate-700 text-slate-400 border-slate-500",          dot: "bg-slate-400" },
-  "A corregir":      { active: "bg-red-900/60 text-red-300 border-red-700",             dot: "bg-red-400" },
-  "No configurado":  { active: "bg-slate-800 text-slate-400 border-slate-600",          dot: "bg-slate-500" },
+  "Ok (vigente)":    { active: "bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-300 dark:border-emerald-700", dot: "bg-emerald-500 dark:bg-emerald-400" },
+  "Ok (programado)": { active: "bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-900/60 dark:text-blue-300 dark:border-blue-700",                   dot: "bg-blue-500 dark:bg-blue-400" },
+  "Ok (inactiva)":   { active: "bg-muted text-muted-foreground border-border",                                                                            dot: "bg-muted-foreground" },
+  "A corregir":      { active: "bg-red-50 text-red-700 border-red-300 dark:bg-red-900/60 dark:text-red-300 dark:border-red-700",                         dot: "bg-red-500 dark:bg-red-400" },
+  "No configurado":  { active: "bg-muted text-muted-foreground border-border",                                                                            dot: "bg-muted-foreground" },
 }
 
 function MotivosRow({ motivos, colSpan }) {
   if (!motivos || motivos.length === 0) return null
   return (
-    <tr className="border-b border-slate-700/30 bg-red-950/20">
+    <tr className="border-b border-border/30 bg-red-50 dark:bg-red-950/20">
       <td colSpan={colSpan} className="px-4 py-2">
         <ul className="space-y-0.5">
           {motivos.map((m, i) => (
-            <li key={i} className="text-xs text-red-300/80">
+            <li key={i} className="text-xs text-red-600 dark:text-red-300/80">
               <span className="text-red-500 mr-1">•</span>{m}
             </li>
           ))}
@@ -50,7 +49,7 @@ export function DashboardTable({ dashboard }) {
 
   if (!dashboard || dashboard.length === 0) {
     return (
-      <p className="py-10 text-center text-sm text-slate-500">Sin datos de dashboard</p>
+      <p className="py-10 text-center text-sm text-muted-foreground">Sin datos de dashboard</p>
     )
   }
 
@@ -83,7 +82,7 @@ export function DashboardTable({ dashboard }) {
               onClick={() => setFilterEstado(active ? "" : estado)}
               className={[
                 "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
-                active ? style.active : "border-slate-700 bg-slate-800/40 text-slate-400 hover:bg-slate-700",
+                active ? style.active : "border-border bg-muted/60 text-muted-foreground hover:bg-accent",
               ].join(" ")}
             >
               <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
@@ -94,35 +93,35 @@ export function DashboardTable({ dashboard }) {
         {filterEstado && (
           <button
             onClick={() => setFilterEstado("")}
-            className="text-xs text-slate-500 hover:text-slate-300 underline"
+            className="text-xs text-muted-foreground hover:text-foreground underline"
           >
             Limpiar
           </button>
         )}
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-700">
+      <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-700 bg-slate-800/80">
-              <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 whitespace-nowrap">
+            <tr className="border-b border-border bg-muted/60">
+              <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">
                 Seller
               </th>
-              <th className="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <th className="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Total
               </th>
-              <th className="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <th className="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Activas
               </th>
-              <th className="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <th className="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Max cuotas
               </th>
               {GRUPOS.map((g) => (
-                <th key={g} className="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-slate-500 whitespace-nowrap">
+                <th key={g} className="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">
                   {g.replace("Tarjetas en ", "")}
                 </th>
               ))}
-              <th className="px-2 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-slate-500 w-8" />
+              <th className="px-2 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground w-8" />
             </tr>
           </thead>
           <tbody>
@@ -134,20 +133,20 @@ export function DashboardTable({ dashboard }) {
                 <>
                   <tr
                     key={d.seller_id}
-                    className="border-b border-slate-700/40 transition-colors hover:brightness-110"
+                    className="border-b border-border/40 transition-colors hover:brightness-[0.97] dark:hover:brightness-110"
                   >
                     <td className="px-3 py-2.5">
                       <div className="flex flex-col">
-                        <span className="font-mono text-xs text-slate-200">{d.seller_id}</span>
+                        <span className="font-mono text-xs text-foreground">{d.seller_id}</span>
                         {d.seller_name !== d.seller_id && (
-                          <span className="text-xs text-slate-500 truncate max-w-[180px]">{d.seller_name}</span>
+                          <span className="text-xs text-muted-foreground truncate max-w-[180px]">{d.seller_name}</span>
                         )}
                       </div>
                     </td>
-                    <td className="px-3 py-2.5 text-center text-xs text-slate-300">{d.totales}</td>
-                    <td className="px-3 py-2.5 text-center text-xs text-slate-300">{d.activas}</td>
-                    <td className="px-3 py-2.5 text-center text-xs text-slate-300">
-                      {d.max_cuotas_activas > 0 ? d.max_cuotas_activas : <span className="text-slate-600">—</span>}
+                    <td className="px-3 py-2.5 text-center text-xs text-foreground/80">{d.totales}</td>
+                    <td className="px-3 py-2.5 text-center text-xs text-foreground/80">{d.activas}</td>
+                    <td className="px-3 py-2.5 text-center text-xs text-foreground/80">
+                      {d.max_cuotas_activas > 0 ? d.max_cuotas_activas : <span className="text-muted-foreground">—</span>}
                     </td>
                     {GRUPOS.map((g) => {
                       const estado = d.grupos?.[g]?.estado || "No configurado"
@@ -162,7 +161,7 @@ export function DashboardTable({ dashboard }) {
                       {hasMotivos && (
                         <button
                           onClick={() => setExpandedSeller(isExpanded ? null : d.seller_id)}
-                          className="text-slate-500 hover:text-slate-300 transition-colors"
+                          className="text-muted-foreground hover:text-foreground transition-colors"
                           title={isExpanded ? "Ocultar motivos" : "Ver motivos"}
                         >
                           {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
@@ -178,7 +177,7 @@ export function DashboardTable({ dashboard }) {
             })}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={GRUPOS.length + 5} className="py-10 text-center text-sm text-slate-500">
+                <td colSpan={GRUPOS.length + 5} className="py-10 text-center text-sm text-muted-foreground">
                   Sin resultados para el filtro seleccionado
                 </td>
               </tr>
@@ -187,7 +186,7 @@ export function DashboardTable({ dashboard }) {
         </table>
       </div>
 
-      <p className="text-xs text-slate-600">
+      <p className="text-xs text-muted-foreground">
         {filtered.length} de {dashboard.length} seller{dashboard.length !== 1 ? "s" : ""}
       </p>
     </div>

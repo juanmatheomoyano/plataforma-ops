@@ -106,28 +106,28 @@ export default function ValidacionEventosPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-100">Validación de Eventos</h1>
-        <p className="text-sm text-slate-400">
+        <h1 className="text-2xl font-semibold text-foreground">Validación de Eventos</h1>
+        <p className="text-sm text-muted-foreground">
           Verificá que los sellers tengan las reglas correctas para un evento específico
         </p>
       </div>
 
-      <Card className="border-slate-700 bg-[#1e293b] p-5 space-y-5">
+      <Card className="border-border bg-card p-5 space-y-5">
         <ScopeSelector onChange={setSellerIds} />
-        <div className="border-t border-slate-700/60" />
+        <div className="border-t border-border/60" />
 
         <div>
-          <h2 className="text-sm font-semibold text-slate-200 mb-4">Configuración del evento</h2>
+          <h2 className="text-sm font-semibold text-foreground mb-4">Configuración del evento</h2>
           <EventoConfigPanel value={eventoConfig} onChange={setEventoConfig} />
         </div>
 
-        <div className="border-t border-slate-700/60" />
+        <div className="border-t border-border/60" />
 
         <div className="flex items-center gap-3">
           <Button
             onClick={handleValidar}
             disabled={!canExecute}
-            className="bg-indigo-700 text-white hover:bg-indigo-600 disabled:opacity-40"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
           >
             {loading
               ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Validando...</>
@@ -139,7 +139,7 @@ export default function ValidacionEventosPage() {
               variant="outline"
               onClick={handleExportExcel}
               disabled={exporting}
-              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+              className="border-border text-foreground/80 hover:bg-accent"
             >
               {exporting
                 ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -152,18 +152,18 @@ export default function ValidacionEventosPage() {
       </Card>
 
       {error && (
-        <div className="rounded-lg border border-red-800 bg-red-950/40 px-4 py-3 text-sm text-red-300">
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300">
           {error}
         </div>
       )}
 
       {result && (
-        <Card className="border-slate-700 bg-[#1e293b] p-5 space-y-4">
+        <Card className="border-border bg-card p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-200">
+            <h2 className="text-sm font-semibold text-foreground">
               Resultados — {result.evento_nombre}
             </h2>
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-muted-foreground">
               {result.total_sellers} sellers · {result.duration_secs}s
             </span>
           </div>

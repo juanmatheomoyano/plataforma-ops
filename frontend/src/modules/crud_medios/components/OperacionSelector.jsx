@@ -8,29 +8,29 @@ const OPS = [
     value: "C",
     label: "Crear",
     icon: FilePlus,
-    color: "border-emerald-700 bg-emerald-900/30 text-emerald-400",
-    activeColor: "border-emerald-500 bg-emerald-800/50 text-emerald-300 ring-2 ring-emerald-700",
+    color:       "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+    activeColor: "border-emerald-500 bg-emerald-100 text-emerald-800 ring-2 ring-emerald-300 dark:border-emerald-500 dark:bg-emerald-800/50 dark:text-emerald-300 dark:ring-emerald-700",
   },
   {
     value: "R",
     label: "Leer",
     icon: Eye,
-    color: "border-blue-700 bg-blue-900/30 text-blue-400",
-    activeColor: "border-blue-500 bg-blue-800/50 text-blue-300 ring-2 ring-blue-700",
+    color:       "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+    activeColor: "border-blue-500 bg-blue-100 text-blue-800 ring-2 ring-blue-300 dark:border-blue-500 dark:bg-blue-800/50 dark:text-blue-300 dark:ring-blue-700",
   },
   {
     value: "U",
     label: "Actualizar",
     icon: Pencil,
-    color: "border-amber-700 bg-amber-900/30 text-amber-400",
-    activeColor: "border-amber-500 bg-amber-800/50 text-amber-300 ring-2 ring-amber-700",
+    color:       "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+    activeColor: "border-amber-500 bg-amber-100 text-amber-800 ring-2 ring-amber-300 dark:border-amber-500 dark:bg-amber-800/50 dark:text-amber-300 dark:ring-amber-700",
   },
   {
     value: "D",
     label: "Eliminar",
     icon: Trash2,
-    color: "border-red-700 bg-red-900/30 text-red-400",
-    activeColor: "border-red-500 bg-red-800/50 text-red-300 ring-2 ring-red-700",
+    color:       "border-red-200 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-900/30 dark:text-red-400",
+    activeColor: "border-red-500 bg-red-100 text-red-800 ring-2 ring-red-300 dark:border-red-500 dark:bg-red-800/50 dark:text-red-300 dark:ring-red-700",
   },
 ]
 
@@ -151,11 +151,11 @@ export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdat
 
       {/* Delete warning */}
       {operacion === "D" && (
-        <div className="flex items-start gap-3 rounded-lg border border-red-800 bg-red-950/40 px-4 py-3">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+        <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-800 dark:bg-red-950/40">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-500 dark:text-red-400" />
           <div>
-            <p className="text-sm font-medium text-red-300">Operación destructiva</p>
-            <p className="text-xs text-red-400 mt-0.5">
+            <p className="text-sm font-medium text-red-700 dark:text-red-300">Operación destructiva</p>
+            <p className="text-xs text-red-600 mt-0.5 dark:text-red-400">
               Esta acción eliminará las reglas filtradas. Asegurate de usar Dry Run primero para verificar qué se va a borrar.
             </p>
           </div>
@@ -198,7 +198,7 @@ export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdat
                     className={[
                       "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
                       selected
-                        ? "border-emerald-600 bg-emerald-900/50 text-emerald-300"
+                        ? "border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-300"
                         : "border-border bg-muted text-muted-foreground hover:text-foreground",
                     ].join(" ")}
                   >
@@ -222,7 +222,7 @@ export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdat
                     className={[
                       "rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors",
                       selected
-                        ? "border-emerald-600 bg-emerald-900/50 text-emerald-300"
+                        ? "border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-300"
                         : "border-border bg-muted text-muted-foreground hover:text-foreground",
                     ].join(" ")}
                   >
@@ -308,7 +308,7 @@ export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdat
                     className={[
                       "rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors",
                       selected
-                        ? "border-amber-600 bg-amber-900/50 text-amber-300"
+                        ? "border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-600 dark:bg-amber-900/50 dark:text-amber-300"
                         : "border-border bg-muted text-muted-foreground hover:text-foreground",
                     ].join(" ")}
                   >

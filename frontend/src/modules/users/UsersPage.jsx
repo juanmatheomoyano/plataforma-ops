@@ -18,10 +18,10 @@ import { ResetPasswordModal } from "./ResetPasswordModal"
 import { ImportResultModal } from "@/modules/sellers/ImportResultModal"
 
 const ROLE_BADGE = {
-  admin: "bg-violet-900/60 text-violet-300 border-violet-700",
-  analista_senior: "bg-blue-900/60 text-blue-300 border-blue-700",
-  analista: "bg-emerald-900/60 text-emerald-300 border-emerald-700",
-  viewer: "bg-muted text-muted-foreground border-border",
+  admin:           "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/60 dark:text-violet-300 dark:border-violet-700",
+  analista_senior: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/60 dark:text-blue-300 dark:border-blue-700",
+  analista:        "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/60 dark:text-emerald-300 dark:border-emerald-700",
+  viewer:          "bg-muted text-muted-foreground border-border",
 }
 
 const ROLE_LABEL = {
@@ -163,7 +163,7 @@ export default function UsersPage() {
       header: "Estado",
       cell: ({ getValue }) =>
         getValue() ? (
-          <Badge className="border-emerald-700 bg-emerald-900/40 text-emerald-400">
+          <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
             Activo
           </Badge>
         ) : (
