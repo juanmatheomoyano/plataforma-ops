@@ -3,10 +3,10 @@ import { Label } from "@/components/ui/label"
 
 // Presets de cuotas: el operador elige max, el set completo se deriva automáticamente
 export const CUOTA_PRESETS = {
-  9:  { label: "hasta 9 cuotas",  set: [1, 3, 6, 9],           desc: "1 · 3 · 6 · 9" },
-  12: { label: "hasta 12 cuotas", set: [1, 3, 6, 9, 12],       desc: "1 · 3 · 6 · 9 · 12" },
-  18: { label: "hasta 18 cuotas", set: [1, 3, 6, 9, 12, 18],   desc: "1 · 3 · 6 · 9 · 12 · 18" },
-  24: { label: "hasta 24 cuotas", set: [1, 3, 6, 9, 12, 18, 24], desc: "1 · 3 · 6 · 9 · 12 · 18 · 24" },
+  9:  { label: "hasta 9 cuotas",  set: [9],              desc: "9" },
+  12: { label: "hasta 12 cuotas", set: [9, 12],          desc: "9 · 12" },
+  18: { label: "hasta 18 cuotas", set: [9, 12, 18],      desc: "9 · 12 · 18" },
+  24: { label: "hasta 24 cuotas", set: [9, 12, 18, 24],  desc: "9 · 12 · 18 · 24" },
 }
 
 export function EventoConfigPanel({ value, onChange }) {
@@ -31,9 +31,9 @@ export function EventoConfigPanel({ value, onChange }) {
       <div className="space-y-2">
         <Label className="text-slate-300 text-sm">Cuotas del evento</Label>
         <p className="text-xs text-slate-500">
-          La validación comprueba que la <strong className="text-slate-400">unión</strong> de
-          reglas activas del seller cubra todas las cuotas requeridas — pueden estar en una
-          sola regla o distribuidas en varias.
+          Se buscan tarjetas con cuotas altas (9+) configuradas <strong className="text-slate-400">en las fechas del evento</strong>.
+          Las cuotas 1, 3 y 6 son base y no se validan. La regla puede tener cuotas adicionales
+          (ej: 9·12·18·24 también pasa si se busca 18).
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
           {Object.entries(CUOTA_PRESETS).map(([max, preset]) => {

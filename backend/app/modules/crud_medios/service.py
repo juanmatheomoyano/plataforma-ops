@@ -1169,11 +1169,14 @@ async def run_evento_validation(
             r for r in enriched
             if r.get("nivel_tarjeta", "").lower().strip() in _LC
         ]
+        # Solo reglas con cuotas "altas" (9+) — las que 1,3,6 son base y no cuentan para eventos
+        _UPPER_CUOTAS = {9, 12, 18, 24}
         lc_active = [
             r for r in lc_all
             if r.get("habilitada") == "Sí"
             and (r.get("fecha_inicio") or r.get("fecha_fin"))  # debe tener fechas explícitas
             and _overlaps_event(r, event_ini, event_fin)
+            and bool(_parse_cuotas_set_str(r.get("cuotas_disponibles")) & _UPPER_CUOTAS)
         ]
 
         if not lc_active:
