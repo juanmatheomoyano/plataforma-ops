@@ -18,6 +18,7 @@ import { ExecutionPanel } from "./components/ExecutionPanel"
 import { FiltrosPanel, EMPTY_FILTROS } from "./components/FiltrosPanel"
 import { HistorialTable } from "./components/HistorialTable"
 import { OperacionSelector } from "./components/OperacionSelector"
+import { ReadValidacionConfig, TODOS_GRUPOS } from "./components/ReadValidacionConfig"
 import { ResultsTable } from "./components/ResultsTable"
 import { ScopeSelector } from "./components/ScopeSelector"
 
@@ -105,7 +106,9 @@ export default function CrudMediosPage() {
   const [result, setResult] = useState(null)
   const [execError, setExecError] = useState(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
-  const [eventoColumns, setEventoColumns] = useState([])  // [{ evento, resultMap }]
+  const [selectedGrupos, setSelectedGrupos] = useState(TODOS_GRUPOS.map((g) => g.key))
+  const [selectedEventoIds, setSelectedEventoIds] = useState([])
+  const [eventoColumns, setEventoColumns] = useState([])
   const [loadingEventos, setLoadingEventos] = useState(false)
 
   const isRealWriteOp =
@@ -183,7 +186,7 @@ export default function CrudMediosPage() {
       }
 
       if (body.operacion === "R") {
-        _loadEventoColumns(body.scope)
+        _loadEventoColumns(body.scope, selectedEventoIds)
       }
     } catch (err) {
       const msg = err.response?.data?.detail ?? "Error al ejecutar la operación"
@@ -196,21 +199,22 @@ export default function CrudMediosPage() {
 
   function _utcToArtStr(isoStr) {
     if (!isoStr) return null
-    // UTC → ART (UTC-3), sin zona horaria, formato "YYYY-MM-DDTHH:MM:SS"
     const d = new Date(isoStr)
     const art = new Date(d.getTime() - 3 * 60 * 60 * 1000)
     return art.toISOString().slice(0, 19)
   }
 
-  async function _loadEventoColumns(scope) {
+  async function _loadEventoColumns(scope, eventoIds) {
+    if (!eventoIds.length) { setEventoColumns([]); return }
     setEventoColumns([])
     setLoadingEventos(true)
     try {
       const { data: vigentes } = await client.get("/eventos/vigentes")
-      if (!vigentes.length) return
+      const seleccionados = vigentes.filter((e) => eventoIds.includes(e.id))
+      if (!seleccionados.length) return
 
       const cols = []
-      for (const evento of vigentes) {
+      for (const evento of seleccionados) {
         try {
           const { data: val } = await client.post("/crud-medios/validate-evento", {
             scope,
@@ -224,9 +228,7 @@ export default function CrudMediosPage() {
             },
           })
           const resultMap = {}
-          for (const r of val.results) {
-            resultMap[r.seller_id] = r.estado_general
-          }
+          for (const r of val.results) resultMap[r.seller_id] = r.estado_general
           cols.push({ evento, resultMap })
         } catch {
           // evento individual falla → skip
@@ -234,7 +236,7 @@ export default function CrudMediosPage() {
       }
       setEventoColumns(cols)
     } catch {
-      // sin vigentes o sin permisos → silencioso
+      // sin vigentes → silencioso
     } finally {
       setLoadingEventos(false)
     }
@@ -280,7 +282,20 @@ export default function CrudMediosPage() {
               </div>
             </div>
 
-            {/* 3. Dry Run (solo para operaciones de escritura) */}
+            {/* 3. Validación (solo Read) */}
+            {opConfig.operacion === "R" && (
+              <>
+                <div className="border-t border-border" />
+                <ReadValidacionConfig
+                  selectedGrupos={selectedGrupos}
+                  onGruposChange={setSelectedGrupos}
+                  selectedEventos={selectedEventoIds}
+                  onEventosChange={setSelectedEventoIds}
+                />
+              </>
+            )}
+
+            {/* 4. Dry Run (solo para operaciones de escritura) */}
             {opConfig.operacion && opConfig.operacion !== "R" && (
               <>
                 <div className="border-t border-border" />
@@ -358,6 +373,7 @@ export default function CrudMediosPage() {
                 dashboard={result.dashboard}
                 operacion={opConfig.operacion}
                 scope={{ seller_ids: sellerIds }}
+                selectedGrupos={selectedGrupos}
                 eventoColumns={eventoColumns}
                 loadingEventos={loadingEventos}
               />

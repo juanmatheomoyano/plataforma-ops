@@ -50,7 +50,7 @@ const EVENTO_CELL = {
   "Error":          { td: "bg-amber-50 dark:bg-amber-900/40",     text: "text-amber-700 dark:text-amber-300",     label: "!" },
 }
 
-export function DashboardTable({ dashboard, eventoColumns = [], loadingEventos = false }) {
+export function DashboardTable({ dashboard, grupos = GRUPOS, eventoColumns = [], loadingEventos = false }) {
   const [expandedSeller, setExpandedSeller] = useState(null)
   const [filterEstado, setFilterEstado] = useState("")
 
@@ -62,7 +62,7 @@ export function DashboardTable({ dashboard, eventoColumns = [], loadingEventos =
 
   const stats = { "Ok (vigente)": 0, "Ok (programado)": 0, "Ok (inactiva)": 0, "A corregir": 0, "No configurado": 0 }
   for (const d of dashboard) {
-    for (const g of GRUPOS) {
+    for (const g of grupos) {
       const estado = d.grupos?.[g]?.estado || "No configurado"
       if (estado in stats) stats[estado]++
     }
@@ -70,12 +70,12 @@ export function DashboardTable({ dashboard, eventoColumns = [], loadingEventos =
 
   const filtered = filterEstado
     ? dashboard.filter((d) =>
-        GRUPOS.some((g) => (d.grupos?.[g]?.estado || "No configurado") === filterEstado)
+        grupos.some((g) => (d.grupos?.[g]?.estado || "No configurado") === filterEstado)
       )
     : dashboard
 
   const allMotivos = (d) =>
-    GRUPOS.flatMap((g) => d.grupos?.[g]?.motivos || [])
+    grupos.flatMap((g) => d.grupos?.[g]?.motivos || [])
 
   return (
     <div className="space-y-3">
@@ -123,7 +123,7 @@ export function DashboardTable({ dashboard, eventoColumns = [], loadingEventos =
               <th className="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Max cuotas
               </th>
-              {GRUPOS.map((g) => (
+              {grupos.map((g) => (
                 <th key={g} className="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">
                   {g.replace("Tarjetas en ", "")}
                 </th>
@@ -165,7 +165,7 @@ export function DashboardTable({ dashboard, eventoColumns = [], loadingEventos =
                     <td className="px-3 py-2.5 text-center text-xs text-foreground/80">
                       {d.max_cuotas_activas > 0 ? d.max_cuotas_activas : <span className="text-muted-foreground">—</span>}
                     </td>
-                    {GRUPOS.map((g) => {
+                    {grupos.map((g) => {
                       const estado = d.grupos?.[g]?.estado || "No configurado"
                       const style = ESTADO_CELL[estado] || ESTADO_CELL["No configurado"]
                       return (
