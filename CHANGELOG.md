@@ -1,7 +1,78 @@
-# Changelog — Plataforma Operativa
+# Changelog — Provincia Ops
 
 Todos los cambios importantes del proyecto se documentan acá.
 Formato: [versión] — fecha — descripción
+
+---
+
+## [1.5.1] — 2026-05-29 — Fix light mode completo
+
+### Frontend
+- Migración completa a tokens semánticos en todos los componentes que habían quedado fuera de v1.5.0
+- Badges de estado (Dashboard, Users, Sellers): dual `dark:`/light — light usa `bg-*-50 text-*-700`, dark mantiene el look neon
+- CRUD OperacionSelector: botones C/R/U/D legibles en light mode, neon preservado en dark; chips de firmas/levels y aviso destructivo corregidos
+- Validación de Eventos (ValidacionEventosPage, EventoConfigPanel, EventoResultsTable): migración completa de `slate-*` hardcodeados a tokens semánticos
+- DashboardTable (CRUD Read): ídem, celdas de estado con variantes dual dark:/light
+- `checkbox.jsx` y `tabs.jsx`: migrados a tokens (`border-input`, `bg-background`, `bg-muted`, `data-[state=checked]:bg-primary`)
+- Botón "Validar evento" migrado a `bg-primary` (verde marca) en lugar de indigo hardcodeado
+
+---
+
+## [1.5.0] — 2026-05-29 — Brand redesign completo
+
+### Frontend
+- Tipografía: Encode Sans (fuente oficial Provincia Compras), pesos 300–700 desde `/public/fonts/`
+- Colores de marca: Verde `#279D2E` como `--primary`, Cyan `#25B4BD`, Gris `#3C3C3B`
+- Dark/Light mode: ThemeContext con localStorage, toggle en ConfiguracionPage
+- Logo SVG oficial `logo_provincia_compras-02.svg` en sidebar y login
+- Sistema de tokens semánticos completo: 22 archivos migrados de `slate-*` hardcodeados a tokens CSS
+- Ruta `/configuracion`: toggle dark/light + cambio de contraseña (unificado desde sidebar)
+
+---
+
+## [1.4.6] — 2026-05-29 — Export Excel completo en Validación de Eventos
+
+### CRUD / Validación de Eventos
+- Nuevo: Export Excel del evento con 4 hojas: RESUMEN, VALIDACION_EVENTO, PAGOS_CONSOLIDADO, ERRORES
+- PAGOS_CONSOLIDADO incluye detalle de todas las reglas procesadas por seller
+
+---
+
+## [1.4.5] — 2026-05-29 — Fix validación eventos
+
+### Backend
+- Corregido: cuotas superiores al máximo del evento ahora se marcan como "A corregir" (antes se ignoraban)
+
+---
+
+## [1.4.4] — 2026-05-28 — Fix presets de cuotas
+
+### Backend
+- Corregido: reglas con solo cuotas 1, 3 o 6 se excluyen correctamente de la validación de eventos
+- Corregido: presets de cuotas corregidos (9→{9}, 12→{9,12}, 18→{9,12,18}, 24→{9,12,18,24})
+
+---
+
+## [1.4.0] — 2026-05-28 — Validación de Eventos + Dashboard Read enriquecido
+
+### Nuevo módulo: Validación de Eventos
+- Verifica que sellers tengan reglas _LC con cuotas altas (9+) para un evento dado
+- Parámetros: nombre, fechas inicio/fin (ART), cuotas requeridas (preset)
+- Estados: Ok / A corregir / No configurado, con motivos detallados
+- Export Excel del resultado
+
+### CRUD Medios de Pago — Read enriquecido
+- Dashboard de grupos por seller (1 pago, 6c, 9c, 12c, 18c, 24c)
+- Estados: Ok (vigente) / Ok (programado) / Ok (inactiva) / A corregir / No configurado
+- Filtros por estado con chips, expansión de motivos por fila
+
+---
+
+## [1.3.3] — 2026-05-28 — Fix CREATE connector
+
+### Backend
+- Corregido: CREATE fallaba con 400 "Connector object can not be null"
+- Fix: extraer connector de las reglas existentes del seller antes de crear nuevas
 
 ---
 
