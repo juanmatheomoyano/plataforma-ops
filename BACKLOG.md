@@ -95,7 +95,10 @@
 - [ ] Revisar y ajustar retención: el log de auditoría liviano puede mantenerse indefinidamente
 - [ ] Aplica también al módulo Eventos (reemplaza Validación de Eventos)
 
-### 6. Revisión de accesibilidad visual — colores
-- [ ] Auditar componentes con bajo contraste (identificar casos específicos durante el desarrollo)
-- [ ] Ajustar tokens de color en Tailwind/shadcn para mejorar legibilidad
-- [ ] Priorizar: texto sobre fondos oscuros, estados de badges, colores de estado en tablas
+### 6. Revisión de accesibilidad visual — colores ✓ (v1.5.1, 2026-05-29)
+- [x] Auditar componentes con bajo contraste
+- [x] Badges de estado (Dashboard, Users, Sellers): dual `dark:`/light — light usa `bg-*-50 text-*-700`, dark mantiene el look neon
+- [x] CRUD OperacionSelector: botones C/R/U/D legibles en light, neon en dark; chips de firmas/levels y aviso destructivo corregidos
+- [x] Validación de Eventos (ValidacionEventosPage, EventoConfigPanel, EventoResultsTable): migración completa a tokens semánticos
+- [x] DashboardTable (CRUD Read): migración completa, celdas de estado con dual dark:/light
+- [x] `checkbox.jsx` y `tabs.jsx`: migrados a tokens (`border-input`, `bg-background`, `bg-muted`, `data-[state=checked]:bg-primary`)
