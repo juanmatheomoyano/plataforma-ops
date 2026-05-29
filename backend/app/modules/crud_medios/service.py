@@ -1203,11 +1203,19 @@ async def run_evento_validation(
             for c in (r.get("cuotas_disponibles") or "").split(",")
             if c.strip().isdigit()
         })
+        max_cuota = evento.max_cuota
         if not expected.issubset(union_cuotas):
             missing_cuotas = sorted(expected - union_cuotas)
             motivos.append(
                 f"Cuotas faltantes: {missing_cuotas} "
                 f"(cuotas configuradas para el evento: {sorted(union_cuotas)})"
+            )
+
+        # Check 1b: ninguna cuota puede superar el máximo del evento
+        over_limit = sorted(c for c in union_cuotas if c > max_cuota)
+        if over_limit:
+            motivos.append(
+                f"Cuotas por encima del máximo del evento ({max_cuota}): {over_limit}"
             )
 
         # Check 2: conector válido en todas las reglas activas
