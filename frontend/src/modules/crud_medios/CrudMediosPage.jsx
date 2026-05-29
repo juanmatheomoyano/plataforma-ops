@@ -194,6 +194,14 @@ export default function CrudMediosPage() {
     }
   }
 
+  function _utcToArtStr(isoStr) {
+    if (!isoStr) return null
+    // UTC → ART (UTC-3), sin zona horaria, formato "YYYY-MM-DDTHH:MM:SS"
+    const d = new Date(isoStr)
+    const art = new Date(d.getTime() - 3 * 60 * 60 * 1000)
+    return art.toISOString().slice(0, 19)
+  }
+
   async function _loadEventoColumns(scope) {
     setEventoColumns([])
     setLoadingEventos(true)
@@ -211,8 +219,8 @@ export default function CrudMediosPage() {
               nombre: evento.nombre,
               cuotas_requeridas: evento.cuotas_requeridas,
               max_cuota: evento.max_cuota,
-              fecha_ini_art: null,
-              fecha_fin_art: null,
+              fecha_ini_art: _utcToArtStr(evento.fecha_ini),
+              fecha_fin_art: _utcToArtStr(evento.fecha_fin),
             },
           })
           const resultMap = {}
