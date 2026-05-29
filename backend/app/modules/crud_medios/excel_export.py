@@ -296,67 +296,166 @@ def build_excel(
     return buf.getvalue()
 
 
-def build_excel_evento(
-    results_by_seller: list[dict],
-    evento_nombre: str,
-    elapsed: float,
-) -> bytes:
-    """
-    Excel de validación de evento: una hoja con estado por seller.
-    """
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "VALIDACION_EVENTO"
+EVENTO_FILLS = {
+    "Ok":             PatternFill("solid", start_color="E2EFDA"),
+    "A corregir":     PatternFill("solid", start_color="FFE0E0"),
+    "No configurado": PatternFill("solid", start_color="FFFFFF"),
+    "Error":          PatternFill("solid", start_color="FFF0CC"),
+}
+EVENTO_FONTS = {
+    "Ok":             Font(name="Arial", size=9, bold=True, color="375623"),
+    "A corregir":     Font(name="Arial", size=9, bold=True, color="C00000"),
+    "No configurado": Font(name="Arial", size=9, color="AAAAAA"),
+    "Error":          Font(name="Arial", size=9, bold=True, color="BF5700"),
+}
 
-    cols = ["Seller", "Seller ID", "Estado evento", "Reglas evento", "Motivos evento"]
-    _write_header_row(ws, cols, C["azul"])
+EVENTO_COLS = ["Seller", "Seller ID", "Estado evento", "Reglas evento", "Motivos evento"]
+COL_WIDTHS.update({
+    "Seller": 26, "Seller ID": 26,
+    "Estado evento": 22, "Reglas evento": 16, "Motivos evento": 90,
+})
+
+
+def _write_validacion_evento_sheet(wb, results_by_seller: list[dict]):
+    ws = wb.create_sheet("VALIDACION_EVENTO")
+    _write_header_row(ws, EVENTO_COLS, C["azul"])
 
     rows: list[dict] = []
     for r in results_by_seller:
         rows.append({
-            "Seller":           r.get("seller_name", ""),
-            "Seller ID":        r.get("seller_id", ""),
-            "Estado evento":    r.get("estado_general", ""),
-            "Reglas evento":    str(r.get("total_rules_evento", 0)),
-            "Motivos evento":   " | ".join(r.get("motivos", [])),
+            "Seller":         r.get("seller_name", ""),
+            "Seller ID":      r.get("seller_id", ""),
+            "Estado evento":  r.get("estado_general", ""),
+            "Reglas evento":  str(r.get("total_rules_evento") or 0),
+            "Motivos evento": " | ".join(r.get("motivos") or []),
         })
 
-    _write_data_rows(ws, cols, rows)
+    for r_idx, row_dict in enumerate(rows, 2):
+        base_fill = C["fila_par"] if r_idx % 2 == 0 else None
+        for c_idx, col_name in enumerate(EVENTO_COLS, 1):
+            val = row_dict.get(col_name, "")
+            cell = ws.cell(row=r_idx, column=c_idx, value=val)
+            cell.border = _BORDE
+            if col_name == "Estado evento":
+                cell.fill = EVENTO_FILLS.get(val, PatternFill())
+                cell.font = EVENTO_FONTS.get(val, C["celda"])
+                cell.alignment = C["centro"]
+            else:
+                cell.font = C["celda"]
+                cell.alignment = C["izquierda"]
+                if base_fill:
+                    cell.fill = base_fill
 
-    # Summary sheet
-    ws_sum = wb.create_sheet("RESUMEN")
-    ws_sum.sheet_view.showGridLines = False
-    ws_sum.column_dimensions["A"].width = 3
-    ws_sum.column_dimensions["B"].width = 40
-    ws_sum.column_dimensions["C"].width = 20
+    if rows:
+        ws.auto_filter.ref = ws.dimensions
 
-    ws_sum.merge_cells("B2:C2")
-    _sc(ws_sum, "B2", f"Validación de Evento: {evento_nombre}",
+
+def _write_resumen_evento_sheet(wb, results_by_seller: list[dict],
+                                 all_rows: list[dict], error_rows: list[dict],
+                                 evento_nombre: str, elapsed: float):
+    ws = wb.create_sheet("RESUMEN")
+    ws.sheet_view.showGridLines = False
+    ws.column_dimensions["A"].width = 3
+    ws.column_dimensions["B"].width = 42
+    ws.column_dimensions["C"].width = 20
+
+    ws.merge_cells("B2:C2")
+    _sc(ws, "B2", f"Validación de Evento: {evento_nombre}",
         bold=True, size=14, color="1F4E79", align="left")
-    ws_sum.row_dimensions[2].height = 26
-    ws_sum.merge_cells("B3:C3")
-    _sc(ws_sum, "B3", f"Generado: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+    ws.row_dimensions[2].height = 26
+    ws.merge_cells("B3:C3")
+    _sc(ws, "B3", f"Generado: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
         size=9, color="888888", italic=True, align="left")
+    ws.row_dimensions[3].height = 14
+    ws.row_dimensions[4].height = 8
+
+    ws.merge_cells("B5:C5")
+    _sc(ws, "B5", "Resumen de Ejecución", bold=True, size=11,
+        color="FFFFFF", bg="2E75B6", align="center")
+    ws.row_dimensions[5].height = 22
 
     ok = sum(1 for r in results_by_seller if r.get("estado_general") == "Ok")
     a_corregir = sum(1 for r in results_by_seller if r.get("estado_general") == "A corregir")
     no_config = sum(1 for r in results_by_seller if r.get("estado_general") == "No configurado")
+    total_sellers = len(results_by_seller)
 
     kpis = [
-        ("Sellers OK",             ok,         "375623"),
-        ("Sellers a corregir",     a_corregir, "C00000" if a_corregir else None),
-        ("Sellers no configurado", no_config,  None),
-        ("Tiempo de ejecución",    f"{round(elapsed, 1)}s", None),
+        ("Sellers OK",                   ok,                    "375623" if ok else None),
+        ("Sellers a corregir",           a_corregir,            "C00000" if a_corregir else None),
+        ("Sellers no configurados",      no_config,             None),
+        ("Sellers con error de API",     len(error_rows),       "BF5700" if error_rows else None),
+        ("Total sellers procesados",     total_sellers,         None),
+        ("Total reglas extraídas",       len(all_rows),         None),
+        ("Tiempo de ejecución",          f"{round(elapsed, 1)}s", None),
     ]
-    for i, (label, value, val_color) in enumerate(kpis, 5):
+    for i, (label, value, val_color) in enumerate(kpis, 6):
         alt = "D6E4F0" if i % 2 == 0 else "FFFFFF"
-        _sc(ws_sum, f"B{i}", label, size=10, bg=alt)
-        _sc(ws_sum, f"C{i}", value, bold=True, size=10,
+        _sc(ws, f"B{i}", label, size=10, bg=alt)
+        _sc(ws, f"C{i}", value, bold=True, size=10,
             color=val_color or "000000", bg=alt, align="center")
-        ws_sum.row_dimensions[i].height = 18
+        ws.row_dimensions[i].height = 18
 
-    # Reorder
-    wb.move_sheet("RESUMEN", offset=-wb.sheetnames.index("RESUMEN"))
+    # Pie chart
+    AUX = 20
+    ws[f"H{AUX}"].value = "Estado"
+    ws[f"I{AUX}"].value = "Cantidad"
+    ws[f"H{AUX+1}"].value = "OK"
+    ws[f"I{AUX+1}"].value = ok
+    ws[f"H{AUX+2}"].value = "A corregir"
+    ws[f"I{AUX+2}"].value = a_corregir
+    ws[f"H{AUX+3}"].value = "No configurado"
+    ws[f"I{AUX+3}"].value = no_config
+
+    total = ok + a_corregir + no_config
+    if total > 0:
+        pie = PieChart()
+        pie.title = "Estado de sellers"
+        pie.style = 10
+        pie.width = 14
+        pie.height = 10
+        pie_data = Reference(ws, min_col=9, min_row=AUX + 1, max_row=AUX + 3)
+        pie_labels = Reference(ws, min_col=8, min_row=AUX + 1, max_row=AUX + 3)
+        pie.add_data(pie_data)
+        pie.set_categories(pie_labels)
+        dp_ok = DataPoint(idx=0); dp_ok.graphicalProperties.solidFill = "375623"
+        dp_err = DataPoint(idx=1); dp_err.graphicalProperties.solidFill = "C00000"
+        dp_nc = DataPoint(idx=2); dp_nc.graphicalProperties.solidFill = "AAAAAA"
+        pie.series[0].dPt.extend([dp_ok, dp_err, dp_nc])
+        ws.add_chart(pie, "E5")
+
+
+def build_excel_evento(
+    results_by_seller: list[dict],
+    evento_nombre: str,
+    elapsed: float,
+    all_rows: list[dict] | None = None,
+    error_rows: list[dict] | None = None,
+) -> bytes:
+    """
+    Excel de validación de evento:
+    RESUMEN, VALIDACION_EVENTO, PAGOS_CONSOLIDADO, ERRORES
+    """
+    all_rows = all_rows or []
+    error_rows = error_rows or []
+
+    wb = openpyxl.Workbook()
+    del wb[wb.sheetnames[0]]
+
+    _write_validacion_evento_sheet(wb, results_by_seller)
+
+    if all_rows:
+        _write_pagos_sheet(wb, all_rows)
+
+    if error_rows:
+        _write_errores_sheet(wb, error_rows)
+
+    _write_resumen_evento_sheet(wb, results_by_seller, all_rows, error_rows, evento_nombre, elapsed)
+
+    order = ["RESUMEN", "VALIDACION_EVENTO", "PAGOS_CONSOLIDADO", "ERRORES"]
+    existing = [s for s in order if s in wb.sheetnames]
+    for target_idx, name in enumerate(existing):
+        current_idx = wb.sheetnames.index(name)
+        wb.move_sheet(name, offset=target_idx - current_idx)
 
     buf = io.BytesIO()
     wb.save(buf)

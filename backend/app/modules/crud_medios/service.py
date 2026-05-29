@@ -1106,21 +1106,18 @@ def _overlaps_event(
     return True
 
 
-async def run_evento_validation(
+_UPPER_CUOTAS = {9, 12, 18, 24}
+
+
+async def _run_evento_core(
     db: AsyncSession,
     request: EventoValidateRequest,
-) -> EventoValidateResponse:
+) -> tuple["EventoValidateResponse", list[dict], list[dict]]:
     """
-    Valida sellers para un evento. Flujo:
-    1. Filtrar reglas _LC habilitadas que solapen con las fechas del evento
-    2. Si ninguna → "No configurado"
-    3. Si hay pero algo falla → "A corregir" con motivos específicos
-    4. Todo OK → "Ok"
-
-    Checks (sobre reglas activas en el periodo):
-    - Cuotas exactas = frozenset(cuotas_requeridas)
-    - Conector válido (payway | promissory)
-    - Visa (id=2) + Mastercard (id=4) presentes en levels _LC
+    Núcleo de la validación de evento.
+    Retorna (EventoValidateResponse, all_enriched_rows, error_rows_export).
+    all_enriched_rows contiene TODAS las reglas de TODOS los sellers (para PAGOS_CONSOLIDADO).
+    error_rows_export contiene los sellers que fallaron (para hoja ERRORES).
     """
     started_at = datetime.now(timezone.utc)
 
@@ -1141,6 +1138,8 @@ async def run_evento_validation(
     event_fin = _parse_art_dt(evento.fecha_fin_art)
 
     results: list[SellerEventoResult] = []
+    all_enriched_flat: list[dict] = []
+    error_rows_export: list[dict] = []
     sellers_ok = 0
     sellers_a_corregir = 0
     sellers_no_config = 0
@@ -1154,6 +1153,12 @@ async def run_evento_validation(
                 estado_general="Error",
                 motivos=[sd["error"]],
             ))
+            error_rows_export.append({
+                "vendedor": seller.seller_name,
+                "cuenta": seller.seller_id,
+                "error": sd["error"],
+                "fecha": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+            })
             sellers_a_corregir += 1
             continue
 
@@ -1161,20 +1166,18 @@ async def run_evento_validation(
             parse_rule_enriched(seller.seller_id, seller.seller_name, r)
             for r in sd.get("rules", [])
         ]
+        all_enriched_flat.extend(enriched)
 
-        # ── Paso 1: reglas _LC con fechas específicas que solapan el evento ─────
-        # Las reglas "always-on" (sin fecha_inicio ni fecha_fin) son la configuración
-        # base del seller, no cuentan como configuración específica para el evento.
+        # ── Paso 1: reglas _LC con fechas específicas y cuotas altas (9+) ────────
+        # Always-on (sin fecha) y reglas con solo 1,3,6 son base — no cuentan para eventos.
         lc_all = [
             r for r in enriched
             if r.get("nivel_tarjeta", "").lower().strip() in _LC
         ]
-        # Solo reglas con cuotas "altas" (9+) — las que 1,3,6 son base y no cuentan para eventos
-        _UPPER_CUOTAS = {9, 12, 18, 24}
         lc_active = [
             r for r in lc_all
             if r.get("habilitada") == "Sí"
-            and (r.get("fecha_inicio") or r.get("fecha_fin"))  # debe tener fechas explícitas
+            and (r.get("fecha_inicio") or r.get("fecha_fin"))
             and _overlaps_event(r, event_ini, event_fin)
             and bool(_parse_cuotas_set_str(r.get("cuotas_disponibles")) & _UPPER_CUOTAS)
         ]
@@ -1191,13 +1194,8 @@ async def run_evento_validation(
             continue
 
         # ── Paso 2: chequeos sobre las reglas activas en el evento ────────────
-        for r in lc_active:
-            r["_cuotas"] = _parse_cuotas_set_str(r.get("cuotas_disponibles"))
-
         motivos: list[str] = []
 
-        # Check 1: unión de cuotas de todas las reglas activas ⊇ set requerido
-        # El seller puede tener las cuotas distribuidas en varias reglas (concatenación)
         union_cuotas = frozenset({
             int(c) for r in lc_active
             for c in (r.get("cuotas_disponibles") or "").split(",")
@@ -1211,20 +1209,17 @@ async def run_evento_validation(
                 f"(cuotas configuradas para el evento: {sorted(union_cuotas)})"
             )
 
-        # Check 1b: ninguna cuota puede superar el máximo del evento
         over_limit = sorted(c for c in union_cuotas if c > max_cuota)
         if over_limit:
             motivos.append(
                 f"Cuotas por encima del máximo del evento ({max_cuota}): {over_limit}"
             )
 
-        # Check 2: conector válido en todas las reglas activas
         bad_conn = [r for r in lc_active if r.get("conector", "").lower() not in VALID_CONNECTORS]
         if bad_conn:
             bad_names = sorted({r.get("conector", "") or "(vacío)" for r in bad_conn})
             motivos.append(f"Conector inválido en tarjetas del evento: {bad_names}")
 
-        # Check 3: Visa (id=2) + Mastercard (id=4) presentes en reglas activas
         levels_activos = {r.get("nivel_tarjeta", "").lower().strip() for r in lc_active}
         for firma_id, firma_name in REQUIRED_FIRMAS.items():
             firma_rules = [
@@ -1258,7 +1253,7 @@ async def run_evento_validation(
 
     duration = (datetime.now(timezone.utc) - started_at).total_seconds()
 
-    return EventoValidateResponse(
+    response = EventoValidateResponse(
         evento_nombre=evento.nombre,
         total_sellers=len(sellers),
         sellers_ok=sellers_ok,
@@ -1267,6 +1262,23 @@ async def run_evento_validation(
         duration_secs=round(duration, 3),
         results=results,
     )
+    return response, all_enriched_flat, error_rows_export
+
+
+async def run_evento_validation(
+    db: AsyncSession,
+    request: EventoValidateRequest,
+) -> EventoValidateResponse:
+    response, _, _ = await _run_evento_core(db, request)
+    return response
+
+
+async def run_evento_export(
+    db: AsyncSession,
+    request: EventoValidateRequest,
+) -> tuple["EventoValidateResponse", list[dict], list[dict]]:
+    """Para el endpoint de export: devuelve (response, all_enriched_rows, error_rows)."""
+    return await _run_evento_core(db, request)
 
 
 async def cleanup_old_operations(db: AsyncSession) -> int:

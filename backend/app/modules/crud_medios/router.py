@@ -27,6 +27,7 @@ from .service import (
     fetch_enriched_for_export,
     get_active_sellers,
     run_crud_operation,
+    run_evento_export,
     run_evento_validation,
 )
 
@@ -242,12 +243,19 @@ async def export_evento_excel(
     current_user=Depends(get_current_user),
 ):
     """
-    Genera Excel de validación de evento con estado por seller.
+    Genera Excel de validación de evento:
+    RESUMEN, VALIDACION_EVENTO, PAGOS_CONSOLIDADO, ERRORES
     """
-    result = await run_evento_validation(db, body)
+    result, all_rows, error_rows = await run_evento_export(db, body)
 
     results_dicts = [r.model_dump() for r in result.results]
-    xlsx_bytes = build_excel_evento(results_dicts, result.evento_nombre, result.duration_secs)
+    xlsx_bytes = build_excel_evento(
+        results_dicts,
+        result.evento_nombre,
+        result.duration_secs,
+        all_rows,
+        error_rows,
+    )
 
     filename = f"evento_{result.evento_nombre.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.xlsx"
     return Response(
