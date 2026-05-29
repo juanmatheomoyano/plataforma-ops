@@ -1,12 +1,9 @@
-import { useState } from "react"
 import { NavLink } from "react-router-dom"
-import { CalendarCheck, CreditCard, Home, KeyRound, LogOut, ShieldCheck, Store, Users } from "lucide-react"
+import { CalendarCheck, CreditCard, Home, LogOut, Settings, Store, Users } from "lucide-react"
 import { useAuth } from "@/core/auth/useAuth"
-import { ChangePasswordModal } from "@/core/components/ChangePasswordModal"
 
 export function Sidebar() {
   const { user, logout, hasRole } = useAuth()
-  const [showChangePassword, setShowChangePassword] = useState(false)
 
   const navItems = [
     { to: "/dashboard", label: "Dashboard", Icon: Home },
@@ -17,16 +14,14 @@ export function Sidebar() {
   ]
 
   return (
-    <aside className="flex h-screen w-60 flex-shrink-0 flex-col border-r border-slate-700/60 bg-[#1e293b]">
+    <aside className="flex h-screen w-60 flex-shrink-0 flex-col border-r border-border bg-card">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-5 py-5 border-b border-slate-700/60">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-700">
-          <ShieldCheck className="h-4 w-4 text-slate-200" />
-        </div>
-        <span className="text-sm font-semibold text-slate-100 leading-tight">
-          Plataforma<br />
-          <span className="font-normal text-slate-400">Operativa</span>
-        </span>
+      <div className="flex items-center px-5 py-4 border-b border-border">
+        <img
+          src="/logo_provincia_compras-02.svg"
+          alt="Provincia Compras"
+          className="h-9 w-auto"
+        />
       </div>
 
       {/* Navegación */}
@@ -39,8 +34,8 @@ export function Sidebar() {
               [
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                 isActive
-                  ? "bg-slate-700 text-slate-100 font-medium"
-                  : "text-slate-400 hover:bg-slate-700/50 hover:text-slate-200",
+                  ? "bg-sidebar-active text-sidebar-active-foreground font-medium"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
               ].join(" ")
             }
           >
@@ -50,33 +45,36 @@ export function Sidebar() {
         ))}
       </nav>
 
-      {/* Usuario + logout */}
-      <div className="border-t border-slate-700/60 px-4 py-4">
+      {/* Usuario + configuración + logout */}
+      <div className="border-t border-border px-4 py-4">
         <div className="mb-3">
-          <p className="text-sm font-medium text-slate-200 truncate">
+          <p className="text-sm font-medium text-foreground truncate">
             {user?.full_name || user?.username}
           </p>
-          <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+          <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
         </div>
-        <button
-          onClick={() => setShowChangePassword(true)}
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-400 transition-colors hover:bg-slate-700/50 hover:text-slate-200"
+        <NavLink
+          to="/configuracion"
+          className={({ isActive }) =>
+            [
+              "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+              isActive
+                ? "bg-accent text-foreground"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground",
+            ].join(" ")
+          }
         >
-          <KeyRound className="h-4 w-4" />
-          Cambiar contraseña
-        </button>
+          <Settings className="h-4 w-4" />
+          Configuración
+        </NavLink>
         <button
           onClick={logout}
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-400 transition-colors hover:bg-red-950/40 hover:text-red-400"
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-red-950/40 hover:text-red-400"
         >
           <LogOut className="h-4 w-4" />
           Cerrar sesión
         </button>
       </div>
-
-      {showChangePassword && (
-        <ChangePasswordModal onClose={() => setShowChangePassword(false)} />
-      )}
     </aside>
   )
 }

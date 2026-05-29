@@ -4,9 +4,12 @@ import { useAutoUpdate } from "./core/hooks/useAutoUpdate"
 import { AuthProvider } from "@/core/auth/AuthContext"
 import { PrivateRoute } from "@/core/auth/PrivateRoute"
 import { useAuth } from "@/core/auth/useAuth"
+import { ThemeProvider } from "@/core/theme/ThemeContext"
+import { useTheme } from "@/core/theme/ThemeContext"
 import { Shell } from "@/core/layout/Shell"
 import Dashboard from "@/pages/Dashboard"
 import Login from "@/pages/Login"
+import ConfiguracionPage from "@/pages/ConfiguracionPage"
 import UsersPage from "@/modules/users/UsersPage"
 import SellersPage from "@/modules/sellers/SellersPage"
 import CrudMediosPage from "@/modules/crud_medios/CrudMediosPage"
@@ -18,55 +21,54 @@ function RoleRoute({ roles, children }) {
   return hasRole(roles) ? children : <Navigate to="/dashboard" replace />
 }
 
+function ThemedToaster() {
+  const { theme } = useTheme()
+  return <Toaster position="top-right" theme={theme} />
+}
+
 export default function App() {
   useAutoUpdate()
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            style: {
-              background: "#1e293b",
-              border: "1px solid #334155",
-              color: "#f1f5f9",
-            },
-          }}
-        />
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="/"
-            element={
-              <PrivateRoute>
-                <Shell />
-              </PrivateRoute>
-            }
-          >
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
+      <ThemeProvider>
+        <AuthProvider>
+          <ThemedToaster />
+          <Routes>
+            <Route path="/login" element={<Login />} />
             <Route
-              path="users"
+              path="/"
               element={
-                <RoleRoute roles={["admin"]}>
-                  <UsersPage />
-                </RoleRoute>
+                <PrivateRoute>
+                  <Shell />
+                </PrivateRoute>
               }
-            />
-            <Route
-              path="sellers"
-              element={
-                <RoleRoute roles={["admin"]}>
-                  <SellersPage />
-                </RoleRoute>
-              }
-            />
-            <Route path="crud-medios" element={<CrudMediosPage />} />
-            <Route path="validacion-eventos" element={<ValidacionEventosPage />} />
-          </Route>
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </AuthProvider>
+            >
+              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route
+                path="users"
+                element={
+                  <RoleRoute roles={["admin"]}>
+                    <UsersPage />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="sellers"
+                element={
+                  <RoleRoute roles={["admin"]}>
+                    <SellersPage />
+                  </RoleRoute>
+                }
+              />
+              <Route path="crud-medios" element={<CrudMediosPage />} />
+              <Route path="validacion-eventos" element={<ValidacionEventosPage />} />
+              <Route path="configuracion" element={<ConfiguracionPage />} />
+            </Route>
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   )
 }

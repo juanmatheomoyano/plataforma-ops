@@ -45,14 +45,12 @@ export function HistorialTable() {
   const [ops, setOps] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // Filters
   const [opFilter, setOpFilter] = useState("all")
   const [dryRunFilter, setDryRunFilter] = useState("all")
   const [fechaDesde, setFechaDesde] = useState("")
   const [fechaHasta, setFechaHasta] = useState("")
 
-  // Detail modal
-  const [detail, setDetail] = useState(null) // { op, rows } | null
+  const [detail, setDetail] = useState(null)
   const [detailLoading, setDetailLoading] = useState(false)
 
   useEffect(() => {
@@ -99,14 +97,14 @@ export function HistorialTable() {
       accessorKey: "started_at",
       header: "Fecha",
       cell: ({ getValue }) => (
-        <span className="text-xs text-slate-400 whitespace-nowrap">{formatDate(getValue())}</span>
+        <span className="text-xs text-muted-foreground whitespace-nowrap">{formatDate(getValue())}</span>
       ),
     },
     {
       accessorKey: "username",
       header: "Usuario",
       cell: ({ getValue }) => (
-        <span className="font-mono text-xs text-slate-300">{getValue() ?? "—"}</span>
+        <span className="font-mono text-xs text-foreground/80">{getValue() ?? "—"}</span>
       ),
     },
     {
@@ -127,7 +125,7 @@ export function HistorialTable() {
       header: "Dry Run",
       cell: ({ getValue }) =>
         getValue() ? (
-          <Badge className="border-slate-600 bg-slate-800 text-slate-400 text-xs">Sí</Badge>
+          <Badge className="border-border bg-muted text-muted-foreground text-xs">Sí</Badge>
         ) : (
           <Badge className="border-emerald-800 bg-emerald-950/40 text-emerald-400 text-xs">Real</Badge>
         ),
@@ -135,12 +133,12 @@ export function HistorialTable() {
     {
       accessorKey: "total_sellers",
       header: "Sellers",
-      cell: ({ getValue }) => <span className="text-slate-400 text-xs">{getValue()}</span>,
+      cell: ({ getValue }) => <span className="text-muted-foreground text-xs">{getValue()}</span>,
     },
     {
       accessorKey: "total_matched",
       header: "Matched",
-      cell: ({ getValue }) => <span className="text-slate-300 text-sm font-medium">{getValue()}</span>,
+      cell: ({ getValue }) => <span className="text-foreground/80 text-sm font-medium">{getValue()}</span>,
     },
     {
       accessorKey: "total_success",
@@ -155,7 +153,7 @@ export function HistorialTable() {
       cell: ({ getValue }) => {
         const v = getValue()
         return (
-          <span className={`text-sm font-medium ${v > 0 ? "text-red-400" : "text-slate-500"}`}>
+          <span className={`text-sm font-medium ${v > 0 ? "text-red-400" : "text-muted-foreground"}`}>
             {v}
           </span>
         )
@@ -165,7 +163,7 @@ export function HistorialTable() {
       accessorKey: "duration_secs",
       header: "Duración",
       cell: ({ getValue }) => (
-        <span className="text-xs text-slate-500">{getValue().toFixed(2)}s</span>
+        <span className="text-xs text-muted-foreground">{getValue().toFixed(2)}s</span>
       ),
     },
   ], [])
@@ -182,7 +180,7 @@ export function HistorialTable() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-600 border-t-slate-200" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-foreground" />
       </div>
     )
   }
@@ -193,12 +191,12 @@ export function HistorialTable() {
         {/* Filters */}
         <div className="flex flex-wrap items-end gap-3">
           <div className="space-y-1">
-            <Label className="text-xs text-slate-500">Operación</Label>
+            <Label className="text-xs text-muted-foreground">Operación</Label>
             <Select value={opFilter} onValueChange={setOpFilter}>
-              <SelectTrigger className="w-36 border-slate-600 bg-slate-800 text-slate-100 h-8 text-xs">
+              <SelectTrigger className="w-36 border-border bg-muted text-foreground h-8 text-xs">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="border-slate-700 bg-slate-800 text-slate-100">
+              <SelectContent className="border-border bg-card text-foreground">
                 <SelectItem value="all">Todas</SelectItem>
                 <SelectItem value="R">Read</SelectItem>
                 <SelectItem value="C">Create</SelectItem>
@@ -209,12 +207,12 @@ export function HistorialTable() {
           </div>
 
           <div className="space-y-1">
-            <Label className="text-xs text-slate-500">Modo</Label>
+            <Label className="text-xs text-muted-foreground">Modo</Label>
             <Select value={dryRunFilter} onValueChange={setDryRunFilter}>
-              <SelectTrigger className="w-32 border-slate-600 bg-slate-800 text-slate-100 h-8 text-xs">
+              <SelectTrigger className="w-32 border-border bg-muted text-foreground h-8 text-xs">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="border-slate-700 bg-slate-800 text-slate-100">
+              <SelectContent className="border-border bg-card text-foreground">
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="dry">Solo Dry Run</SelectItem>
                 <SelectItem value="real">Solo Real</SelectItem>
@@ -223,40 +221,40 @@ export function HistorialTable() {
           </div>
 
           <div className="space-y-1">
-            <Label className="text-xs text-slate-500">Desde</Label>
+            <Label className="text-xs text-muted-foreground">Desde</Label>
             <Input
               type="date"
               value={fechaDesde}
               onChange={(e) => setFechaDesde(e.target.value)}
-              className="border-slate-600 bg-slate-800 text-slate-100 h-8 text-xs w-36"
+              className="border-border bg-muted text-foreground h-8 text-xs w-36"
             />
           </div>
 
           <div className="space-y-1">
-            <Label className="text-xs text-slate-500">Hasta</Label>
+            <Label className="text-xs text-muted-foreground">Hasta</Label>
             <Input
               type="date"
               value={fechaHasta}
               onChange={(e) => setFechaHasta(e.target.value)}
-              className="border-slate-600 bg-slate-800 text-slate-100 h-8 text-xs w-36"
+              className="border-border bg-muted text-foreground h-8 text-xs w-36"
             />
           </div>
 
-          <span className="text-xs text-slate-500 pb-1">
+          <span className="text-xs text-muted-foreground pb-1">
             {filtered.length} de {ops.length} operaciones
           </span>
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto rounded-lg border border-slate-700">
+        <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-sm">
             <thead>
               {table.getHeaderGroups().map((hg) => (
-                <tr key={hg.id} className="border-b border-slate-700 bg-slate-800/80">
+                <tr key={hg.id} className="border-b border-border bg-muted/80">
                   {hg.headers.map((h) => (
                     <th
                       key={h.id}
-                      className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 whitespace-nowrap"
+                      className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap"
                     >
                       {flexRender(h.column.columnDef.header, h.getContext())}
                     </th>
@@ -269,7 +267,7 @@ export function HistorialTable() {
                 <tr
                   key={row.id}
                   onClick={() => openDetail(row.original)}
-                  className="cursor-pointer border-b border-slate-700/40 transition-colors hover:bg-slate-700/30"
+                  className="cursor-pointer border-b border-border/40 transition-colors hover:bg-accent/30"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="px-3 py-2.5">
@@ -280,7 +278,7 @@ export function HistorialTable() {
               ))}
               {table.getRowModel().rows.length === 0 && (
                 <tr>
-                  <td colSpan={columns.length} className="py-12 text-center text-sm text-slate-500">
+                  <td colSpan={columns.length} className="py-12 text-center text-sm text-muted-foreground">
                     No hay operaciones registradas
                   </td>
                 </tr>
@@ -290,7 +288,7 @@ export function HistorialTable() {
         </div>
 
         {table.getPageCount() > 1 && (
-          <div className="flex items-center justify-between text-xs text-slate-500">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>
               Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
             </span>
@@ -298,14 +296,14 @@ export function HistorialTable() {
               <button
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage()}
-                className="rounded px-2 py-1 hover:bg-slate-700 disabled:opacity-30"
+                className="rounded px-2 py-1 hover:bg-accent disabled:opacity-30"
               >
                 ‹ Anterior
               </button>
               <button
                 onClick={() => table.nextPage()}
                 disabled={!table.getCanNextPage()}
-                className="rounded px-2 py-1 hover:bg-slate-700 disabled:opacity-30"
+                className="rounded px-2 py-1 hover:bg-accent disabled:opacity-30"
               >
                 Siguiente ›
               </button>
@@ -316,9 +314,9 @@ export function HistorialTable() {
 
       {/* Detail dialog */}
       <Dialog open={!!detail} onOpenChange={(v) => !v && setDetail(null)}>
-        <DialogContent className="border-slate-700 bg-[#1e293b] text-slate-100 sm:max-w-5xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="border-border bg-card text-card-foreground sm:max-w-5xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-3 text-slate-100">
+            <DialogTitle className="flex items-center gap-3 text-card-foreground">
               {detail && (() => {
                 const b = OP_BADGE[detail.op.operacion]
                 return (
@@ -327,17 +325,17 @@ export function HistorialTable() {
                       {b?.label ?? detail.op.operacion}
                     </span>
                     {detail.op.username && (
-                      <span className="font-mono text-sm text-slate-400">{detail.op.username}</span>
+                      <span className="font-mono text-sm text-muted-foreground">{detail.op.username}</span>
                     )}
-                    <span className="text-sm font-normal text-slate-400">
+                    <span className="text-sm font-normal text-muted-foreground">
                       {formatDate(detail.op.started_at)}
                     </span>
                     {detail.op.dry_run && (
-                      <span className="rounded-full border border-slate-600 bg-slate-800 px-2 py-0.5 text-xs text-slate-400">
+                      <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                         DRY RUN
                       </span>
                     )}
-                    <span className="ml-auto text-xs text-slate-500 font-normal">
+                    <span className="ml-auto text-xs text-muted-foreground font-normal">
                       {detail.op.total_matched} matched · {detail.op.total_success} ok · {detail.op.total_errors} err · {detail.op.duration_secs.toFixed(2)}s
                     </span>
                   </>
@@ -348,12 +346,12 @@ export function HistorialTable() {
 
           {detailLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-600 border-t-slate-200" />
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-foreground" />
             </div>
           ) : detail?.rows.length > 0 ? (
             <ResultsTable rows={detail.rows} />
           ) : (
-            <p className="py-8 text-center text-sm text-slate-500">Sin filas registradas</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">Sin filas registradas</p>
           )}
         </DialogContent>
       </Dialog>

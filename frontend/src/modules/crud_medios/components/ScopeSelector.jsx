@@ -12,7 +12,7 @@ const MODES = [
 export function ScopeSelector({ onChange }) {
   const [sellers, setSellers] = useState([])
   const [mode, setMode] = useState("todos")
-  const [selected, setSelected] = useState([]) // list of seller objects
+  const [selected, setSelected] = useState([])
   const [search, setSearch] = useState("")
   const [open, setOpen] = useState(false)
   const dropRef = useRef(null)
@@ -67,14 +67,13 @@ export function ScopeSelector({ onChange }) {
       s.seller_id.toLowerCase().includes(search.toLowerCase())
   )
 
-  const scopeCount =
-    mode === "todos" ? sellers.length : selected.length
+  const scopeCount = mode === "todos" ? sellers.length : selected.length
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <Label className="text-sm font-semibold text-slate-300">Scope / Sellers</Label>
-        <span className="text-xs text-slate-500">
+        <Label className="text-sm font-semibold text-foreground/80">Scope / Sellers</Label>
+        <span className="text-xs text-muted-foreground">
           {scopeCount} seller{scopeCount !== 1 ? "s" : ""} seleccionado{scopeCount !== 1 ? "s" : ""}
         </span>
       </div>
@@ -88,8 +87,8 @@ export function ScopeSelector({ onChange }) {
             className={[
               "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
               mode === m.value
-                ? "bg-slate-700 text-slate-100"
-                : "text-slate-500 hover:text-slate-300 hover:bg-slate-800",
+                ? "bg-accent text-foreground"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted",
             ].join(" ")}
           >
             {m.label}
@@ -106,7 +105,7 @@ export function ScopeSelector({ onChange }) {
               {selected.map((s) => (
                 <span
                   key={s.seller_id}
-                  className="flex items-center gap-1 rounded-full bg-slate-700 px-2.5 py-0.5 text-xs text-slate-200"
+                  className="flex items-center gap-1 rounded-full bg-accent px-2.5 py-0.5 text-xs text-foreground"
                 >
                   {s.seller_name}
                   <button onClick={() => removeChip(s.seller_id)} className="hover:text-red-400">
@@ -120,7 +119,7 @@ export function ScopeSelector({ onChange }) {
           {/* Selected display (uno mode) */}
           {mode === "uno" && selected.length > 0 && !open && (
             <div className="mb-2">
-              <span className="inline-flex items-center gap-1 rounded-full bg-slate-700 px-2.5 py-0.5 text-xs text-slate-200">
+              <span className="inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-0.5 text-xs text-foreground">
                 {selected[0].seller_name}
                 <button onClick={() => { setSelected([]); onChange([]) }} className="hover:text-red-400">
                   <X className="h-3 w-3" />
@@ -135,15 +134,15 @@ export function ScopeSelector({ onChange }) {
               onChange={(e) => { setSearch(e.target.value); setOpen(true) }}
               onFocus={() => setOpen(true)}
               placeholder="Buscar seller..."
-              className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+              className="w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
             />
-            <ChevronDown className="pointer-events-none absolute right-3 top-2.5 h-4 w-4 text-slate-500" />
+            <ChevronDown className="pointer-events-none absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
           </div>
 
           {open && (
-            <div className="absolute z-50 mt-1 max-h-56 w-full overflow-y-auto rounded-md border border-slate-700 bg-slate-800 shadow-lg">
+            <div className="absolute z-50 mt-1 max-h-56 w-full overflow-y-auto rounded-md border border-border bg-card shadow-lg">
               {filtered.length === 0 ? (
-                <div className="px-3 py-2 text-xs text-slate-500">Sin resultados</div>
+                <div className="px-3 py-2 text-xs text-muted-foreground">Sin resultados</div>
               ) : (
                 filtered.map((s) => {
                   const isSelected = selected.some((sel) => sel.seller_id === s.seller_id)
@@ -152,18 +151,18 @@ export function ScopeSelector({ onChange }) {
                       key={s.seller_id}
                       onClick={() => toggleSeller(s)}
                       className={[
-                        "flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-slate-700",
-                        isSelected ? "text-slate-100 bg-slate-700/50" : "text-slate-300",
+                        "flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-accent",
+                        isSelected ? "text-foreground bg-accent/50" : "text-foreground/80",
                       ].join(" ")}
                     >
                       {mode === "lista" && (
                         <span className={[
                           "h-3.5 w-3.5 shrink-0 rounded-sm border",
-                          isSelected ? "bg-slate-100 border-slate-100" : "border-slate-500",
+                          isSelected ? "bg-foreground border-foreground" : "border-border",
                         ].join(" ")} />
                       )}
                       <span className="flex-1 truncate">{s.seller_name}</span>
-                      <span className="shrink-0 font-mono text-xs text-slate-500">{s.seller_id}</span>
+                      <span className="shrink-0 font-mono text-xs text-muted-foreground">{s.seller_id}</span>
                     </button>
                   )
                 })

@@ -44,7 +44,7 @@ function PasswordField({ label, value, onChange, disabled, placeholder, required
   const [show, setShow] = useState(false)
   return (
     <div className="space-y-1.5">
-      <Label className="text-slate-300">{label}{required && " *"}</Label>
+      <Label className="text-foreground/80">{label}{required && " *"}</Label>
       <div className="relative">
         <Input
           type={show ? "text" : "password"}
@@ -53,12 +53,12 @@ function PasswordField({ label, value, onChange, disabled, placeholder, required
           disabled={disabled}
           placeholder={placeholder}
           required={required}
-          className="border-slate-600 bg-slate-800 pr-9 text-slate-100 placeholder:text-slate-500"
+          className="border-border bg-muted pr-9 text-foreground placeholder:text-muted-foreground"
         />
         <button
           type="button"
           onClick={() => setShow((s) => !s)}
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
           tabIndex={-1}
         >
           {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -71,13 +71,12 @@ function PasswordField({ label, value, onChange, disabled, placeholder, required
 function Field({ label, children }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-slate-300">{label}</Label>
+      <Label className="text-foreground/80">{label}</Label>
       {children}
     </div>
   )
 }
 
-// Inline "nueva opción" input dentro de un select
 function NewOptionInput({ placeholder, onConfirm, onCancel }) {
   const [value, setValue] = useState("")
   return (
@@ -87,7 +86,7 @@ function NewOptionInput({ placeholder, onConfirm, onCancel }) {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder={placeholder}
-        className="h-7 border-slate-600 bg-slate-900 text-xs text-slate-100"
+        className="h-7 border-border bg-background text-xs text-foreground"
         onKeyDown={(e) => {
           if (e.key === "Enter") { e.preventDefault(); if (value.trim()) onConfirm(value.trim()) }
           if (e.key === "Escape") onCancel()
@@ -95,7 +94,7 @@ function NewOptionInput({ placeholder, onConfirm, onCancel }) {
       />
       <Button
         type="button" size="sm"
-        className="h-7 px-2 text-xs bg-slate-600 hover:bg-slate-500"
+        className="h-7 px-2 text-xs bg-primary text-primary-foreground hover:bg-primary/90"
         onClick={() => value.trim() && onConfirm(value.trim())}
       >
         <Plus className="h-3 w-3" />
@@ -117,14 +116,12 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
   const [showNewIntegracion, setShowNewIntegracion] = useState(false)
   const [showNewSpec, setShowNewSpec] = useState(false)
 
-  // Fetch analistas e integraciones al abrir
   useEffect(() => {
     if (!open) return
     client.get("/sellers/analistas").then(({ data }) => setAnalistas(data)).catch(() => {})
     client.get("/sellers/integraciones").then(({ data }) => setIntegraciones(data)).catch(() => {})
   }, [open])
 
-  // Fetch specs cuando cambia la integración seleccionada
   useEffect(() => {
     const integracion = form.integracion
     if (!integracion || !SPECS_VISIBLE_FOR.includes(integracion)) {
@@ -249,9 +246,9 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="border-slate-700 bg-[#1e293b] text-slate-100 sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="border-border bg-card text-card-foreground sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-slate-100">
+          <DialogTitle className="text-card-foreground">
             {isEdit ? "Editar seller" : "Nuevo seller"}
           </DialogTitle>
         </DialogHeader>
@@ -263,7 +260,7 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
                 value={form.id_ecommerce}
                 onChange={(e) => set("id_ecommerce", e.target.value)}
                 required disabled={loading}
-                className="border-slate-600 bg-slate-800 text-slate-100"
+                className="border-border bg-muted text-foreground"
               />
             </Field>
             <Field label="Nombre de Fantasía *">
@@ -271,7 +268,7 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
                 value={form.seller_name}
                 onChange={(e) => set("seller_name", e.target.value)}
                 required disabled={loading}
-                className="border-slate-600 bg-slate-800 text-slate-100"
+                className="border-border bg-muted text-foreground"
               />
             </Field>
           </div>
@@ -282,7 +279,7 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
               onChange={(e) => set("seller_id", e.target.value)}
               required
               disabled={loading}
-              className="border-slate-600 bg-slate-800 text-slate-100"
+              className="border-border bg-muted text-foreground"
             />
             {isEdit && (
               <p className="text-xs text-amber-500/80 mt-1">Cambiar el Seller ID puede afectar la conexión con VTEX</p>
@@ -312,20 +309,19 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
           </p>
 
           <div className="grid grid-cols-2 gap-4">
-            {/* Analista — select */}
             <Field label="Analista">
               <Select
                 value={form.analista}
                 onValueChange={(v) => set("analista", v === "__none__" ? "" : v)}
                 disabled={loading}
               >
-                <SelectTrigger className="border-slate-600 bg-slate-800 text-slate-100">
+                <SelectTrigger className="border-border bg-muted text-foreground">
                   <SelectValue placeholder="Sin asignar" />
                 </SelectTrigger>
-                <SelectContent className="border-slate-700 bg-slate-800 text-slate-100">
-                  <SelectItem value="__none__" className="focus:bg-slate-700 text-slate-400">Sin asignar</SelectItem>
+                <SelectContent className="border-border bg-card text-foreground">
+                  <SelectItem value="__none__" className="text-muted-foreground">Sin asignar</SelectItem>
                   {analistas.map((a) => (
-                    <SelectItem key={a.username} value={a.username} className="focus:bg-slate-700">
+                    <SelectItem key={a.username} value={a.username}>
                       {a.full_name || a.username}
                     </SelectItem>
                   ))}
@@ -333,14 +329,13 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
               </Select>
             </Field>
 
-            {/* Fecha de creación — date picker nativo */}
             <Field label="Fecha de creación">
               <input
                 type="date"
                 value={form.fecha_creacion}
                 onChange={(e) => set("fecha_creacion", e.target.value)}
                 disabled={loading}
-                className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-slate-500 disabled:opacity-60"
+                className="w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-60"
               />
             </Field>
           </div>
@@ -352,13 +347,13 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
                 onValueChange={(v) => set("estado_keys", v)}
                 disabled={loading}
               >
-                <SelectTrigger className="border-slate-600 bg-slate-800 text-slate-100">
+                <SelectTrigger className="border-border bg-muted text-foreground">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="border-slate-700 bg-slate-800 text-slate-100">
-                  <SelectItem value="activo" className="focus:bg-slate-700">Activo</SelectItem>
-                  <SelectItem value="inactivo" className="focus:bg-slate-700">Inactivo</SelectItem>
-                  <SelectItem value="vencido" className="focus:bg-slate-700">Vencido</SelectItem>
+                <SelectContent className="border-border bg-card text-foreground">
+                  <SelectItem value="activo">Activo</SelectItem>
+                  <SelectItem value="inactivo">Inactivo</SelectItem>
+                  <SelectItem value="vencido">Vencido</SelectItem>
                 </SelectContent>
               </Select>
             </Field>
@@ -369,23 +364,22 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
                 onValueChange={(v) => set("vendiendo", v === "si")}
                 disabled={loading}
               >
-                <SelectTrigger className="border-slate-600 bg-slate-800 text-slate-100">
+                <SelectTrigger className="border-border bg-muted text-foreground">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="border-slate-700 bg-slate-800 text-slate-100">
-                  <SelectItem value="si" className="focus:bg-slate-700">Sí</SelectItem>
-                  <SelectItem value="no" className="focus:bg-slate-700">No</SelectItem>
+                <SelectContent className="border-border bg-card text-foreground">
+                  <SelectItem value="si">Sí</SelectItem>
+                  <SelectItem value="no">No</SelectItem>
                 </SelectContent>
               </Select>
             </Field>
 
-            {/* Creado por */}
             <Field label="Creado por">
               <Input
                 value={form.creado_por}
                 onChange={(e) => set("creado_por", e.target.value)}
                 disabled={loading}
-                className="border-slate-600 bg-slate-800 text-slate-100"
+                className="border-border bg-muted text-foreground"
               />
             </Field>
           </div>
@@ -408,14 +402,14 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
                   }}
                   disabled={loading}
                 >
-                  <SelectTrigger className="border-slate-600 bg-slate-800 text-slate-100">
+                  <SelectTrigger className="border-border bg-muted text-foreground">
                     <SelectValue placeholder="Seleccionar..." />
                   </SelectTrigger>
-                  <SelectContent className="border-slate-700 bg-slate-800 text-slate-100 max-h-56">
+                  <SelectContent className="border-border bg-card text-foreground max-h-56">
                     {integraciones.map((i) => (
-                      <SelectItem key={i} value={i} className="focus:bg-slate-700">{i}</SelectItem>
+                      <SelectItem key={i} value={i}>{i}</SelectItem>
                     ))}
-                    <SelectItem value="__nueva__" className="focus:bg-slate-700 text-blue-400">
+                    <SelectItem value="__nueva__" className="text-primary">
                       + Nueva integración...
                     </SelectItem>
                   </SelectContent>
@@ -423,7 +417,6 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
               )}
             </Field>
 
-            {/* Especificación — solo para Manual o Propia */}
             {showSpecs && (
               <Field label="Especificación">
                 {showNewSpec ? (
@@ -441,14 +434,14 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
                     }}
                     disabled={loading || loadingSpecs}
                   >
-                    <SelectTrigger className="border-slate-600 bg-slate-800 text-slate-100">
+                    <SelectTrigger className="border-border bg-muted text-foreground">
                       <SelectValue placeholder={loadingSpecs ? "Cargando..." : "Seleccionar..."} />
                     </SelectTrigger>
-                    <SelectContent className="border-slate-700 bg-slate-800 text-slate-100">
+                    <SelectContent className="border-border bg-card text-foreground">
                       {specs.map((s) => (
-                        <SelectItem key={s.id} value={s.spec} className="focus:bg-slate-700">{s.spec}</SelectItem>
+                        <SelectItem key={s.id} value={s.spec}>{s.spec}</SelectItem>
                       ))}
-                      <SelectItem value="__nueva__" className="focus:bg-slate-700 text-blue-400">
+                      <SelectItem value="__nueva__" className="text-primary">
                         + Nueva especificación...
                       </SelectItem>
                     </SelectContent>
@@ -460,7 +453,7 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
 
           {isEdit && (
             <div className="flex items-center justify-between pt-1">
-              <Label className="text-slate-300">Activo</Label>
+              <Label className="text-foreground/80">Activo</Label>
               <Switch
                 checked={form.is_active}
                 onCheckedChange={(v) => set("is_active", v)}
@@ -475,20 +468,20 @@ export function SellerFormModal({ open, onClose, seller, onSaved }) {
               onChange={(e) => set("notas", e.target.value)}
               disabled={loading}
               rows={3}
-              className="border-slate-600 bg-slate-800 text-slate-100 resize-none"
+              className="border-border bg-muted text-foreground resize-none"
             />
           </Field>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button
               type="button" variant="ghost" onClick={onClose} disabled={loading}
-              className="text-slate-400 hover:text-slate-200"
+              className="text-muted-foreground hover:text-foreground"
             >
               Cancelar
             </Button>
             <Button
               type="submit" disabled={loading}
-              className="bg-slate-100 text-slate-900 hover:bg-slate-200"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Guardar"}
             </Button>

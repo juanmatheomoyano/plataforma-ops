@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Loader2, ShieldCheck } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -30,29 +30,30 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0f172a]">
+    <div className="flex min-h-screen items-center justify-center bg-background">
       <div className="w-full max-w-sm space-y-6 px-4">
         {/* Logo / título */}
-        <div className="flex flex-col items-center gap-2 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-700">
-            <ShieldCheck className="h-6 w-6 text-slate-200" />
-          </div>
-          <h1 className="text-xl font-semibold text-slate-100">Plataforma Operativa</h1>
-          <p className="text-sm text-slate-400">Provincia Compras</p>
+        <div className="flex flex-col items-center gap-3 text-center">
+          <img
+            src="/logo_provincia_compras-02.svg"
+            alt="Provincia Compras"
+            className="h-12 w-auto"
+          />
+          <p className="text-sm text-muted-foreground">Plataforma Operativa</p>
         </div>
 
         {/* Card de login */}
-        <Card className="border-slate-700 bg-[#1e293b] text-slate-100 shadow-xl">
+        <Card className="border-border bg-card text-card-foreground shadow-xl">
           <CardHeader className="pb-4">
-            <CardTitle className="text-base text-slate-100">Iniciar sesión</CardTitle>
-            <CardDescription className="text-slate-400">
+            <CardTitle className="text-base text-card-foreground">Iniciar sesión</CardTitle>
+            <CardDescription className="text-muted-foreground">
               Ingresá tus credenciales para continuar
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="username" className="text-slate-300">
+                <Label htmlFor="username" className="text-foreground/80">
                   Usuario
                 </Label>
                 <Input
@@ -62,12 +63,12 @@ export default function Login() {
                   onChange={(e) => setUsername(e.target.value)}
                   required
                   disabled={loading}
-                  className="border-slate-600 bg-slate-800 text-slate-100 placeholder:text-slate-500 focus-visible:ring-slate-500"
+                  className="border-border bg-muted text-foreground placeholder:text-muted-foreground"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="password" className="text-slate-300">
+                <Label htmlFor="password" className="text-foreground/80">
                   Contraseña
                 </Label>
                 <Input
@@ -78,7 +79,7 @@ export default function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={loading}
-                  className="border-slate-600 bg-slate-800 text-slate-100 placeholder:text-slate-500 focus-visible:ring-slate-500"
+                  className="border-border bg-muted text-foreground placeholder:text-muted-foreground"
                 />
               </div>
 
@@ -91,7 +92,7 @@ export default function Login() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-slate-100 text-slate-900 hover:bg-slate-200"
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 {loading ? (
                   <>

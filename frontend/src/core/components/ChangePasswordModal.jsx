@@ -43,46 +43,46 @@ export function ChangePasswordModal({ onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="w-full max-w-sm rounded-xl border border-slate-700 bg-[#1e293b] p-6 shadow-2xl">
-        <h2 className="mb-5 text-base font-semibold text-slate-100">Cambiar contraseña</h2>
+      <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-2xl">
+        <h2 className="mb-5 text-base font-semibold text-card-foreground">Cambiar contraseña</h2>
 
         {success ? (
           <p className="py-4 text-center text-sm text-emerald-400">Contraseña actualizada correctamente</p>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs text-slate-400">Contraseña actual</Label>
+              <Label className="text-xs text-muted-foreground">Contraseña actual</Label>
               <Input
                 type="password"
                 value={form.current_password}
                 onChange={(e) => set("current_password", e.target.value)}
                 required
                 autoComplete="current-password"
-                className="border-slate-600 bg-slate-800 text-slate-100 placeholder:text-slate-500"
+                className="border-border bg-muted text-foreground placeholder:text-muted-foreground"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs text-slate-400">Nueva contraseña</Label>
+              <Label className="text-xs text-muted-foreground">Nueva contraseña</Label>
               <Input
                 type="password"
                 value={form.new_password}
                 onChange={(e) => set("new_password", e.target.value)}
                 required
                 autoComplete="new-password"
-                className="border-slate-600 bg-slate-800 text-slate-100 placeholder:text-slate-500"
+                className="border-border bg-muted text-foreground placeholder:text-muted-foreground"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs text-slate-400">Confirmar nueva contraseña</Label>
+              <Label className="text-xs text-muted-foreground">Confirmar nueva contraseña</Label>
               <Input
                 type="password"
                 value={form.confirm_password}
                 onChange={(e) => set("confirm_password", e.target.value)}
                 required
                 autoComplete="new-password"
-                className="border-slate-600 bg-slate-800 text-slate-100 placeholder:text-slate-500"
+                className="border-border bg-muted text-foreground placeholder:text-muted-foreground"
               />
             </div>
 
@@ -92,7 +92,7 @@ export function ChangePasswordModal({ onClose }) {
               <Button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-slate-600 text-slate-100 hover:bg-slate-500"
+                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 {loading ? "Guardando..." : "Guardar"}
               </Button>
@@ -100,7 +100,7 @@ export function ChangePasswordModal({ onClose }) {
                 type="button"
                 variant="ghost"
                 onClick={onClose}
-                className="flex-1 text-slate-400 hover:bg-slate-700 hover:text-slate-200"
+                className="flex-1 text-muted-foreground hover:bg-accent hover:text-foreground"
               >
                 Cancelar
               </Button>

@@ -93,9 +93,9 @@ export function UserFormModal({ open, onClose, user, onSaved }) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="border-slate-700 bg-[#1e293b] text-slate-100 sm:max-w-md">
+      <DialogContent className="border-border bg-card text-card-foreground sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-slate-100">
+          <DialogTitle className="text-card-foreground">
             {isEdit ? "Editar usuario" : "Nuevo usuario"}
           </DialogTitle>
         </DialogHeader>
@@ -108,7 +108,7 @@ export function UserFormModal({ open, onClose, user, onSaved }) {
                 onChange={(e) => set("username", e.target.value)}
                 required
                 disabled={loading}
-                className="border-slate-600 bg-slate-800 text-slate-100"
+                className="border-border bg-muted text-foreground"
               />
             </Field>
           )}
@@ -118,7 +118,7 @@ export function UserFormModal({ open, onClose, user, onSaved }) {
               value={form.full_name}
               onChange={(e) => set("full_name", e.target.value)}
               disabled={loading}
-              className="border-slate-600 bg-slate-800 text-slate-100"
+              className="border-border bg-muted text-foreground"
             />
           </Field>
 
@@ -129,7 +129,7 @@ export function UserFormModal({ open, onClose, user, onSaved }) {
               onChange={(e) => set("email", e.target.value)}
               required
               disabled={loading}
-              className="border-slate-600 bg-slate-800 text-slate-100"
+              className="border-border bg-muted text-foreground"
             />
           </Field>
 
@@ -141,7 +141,7 @@ export function UserFormModal({ open, onClose, user, onSaved }) {
                 onChange={(e) => set("password", e.target.value)}
                 required
                 disabled={loading}
-                className="border-slate-600 bg-slate-800 text-slate-100"
+                className="border-border bg-muted text-foreground"
               />
             </Field>
           )}
@@ -152,16 +152,12 @@ export function UserFormModal({ open, onClose, user, onSaved }) {
               onValueChange={(v) => set("role", v)}
               disabled={loading}
             >
-              <SelectTrigger className="border-slate-600 bg-slate-800 text-slate-100">
+              <SelectTrigger className="border-border bg-muted text-foreground">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="border-slate-700 bg-slate-800 text-slate-100">
+              <SelectContent className="border-border bg-card text-foreground">
                 {ROLES.map((r) => (
-                  <SelectItem
-                    key={r.value}
-                    value={r.value}
-                    className="focus:bg-slate-700"
-                  >
+                  <SelectItem key={r.value} value={r.value}>
                     {r.label}
                   </SelectItem>
                 ))}
@@ -171,7 +167,7 @@ export function UserFormModal({ open, onClose, user, onSaved }) {
 
           {isEdit && (
             <div className="flex items-center justify-between">
-              <Label className="text-slate-300">Activo</Label>
+              <Label className="text-foreground/80">Activo</Label>
               <Switch
                 checked={form.is_active}
                 onCheckedChange={(v) => set("is_active", v)}
@@ -186,14 +182,14 @@ export function UserFormModal({ open, onClose, user, onSaved }) {
               variant="ghost"
               onClick={onClose}
               disabled={loading}
-              className="text-slate-400 hover:text-slate-200"
+              className="text-muted-foreground hover:text-foreground"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               disabled={loading}
-              className="bg-slate-100 text-slate-900 hover:bg-slate-200"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Guardar"}
             </Button>
@@ -207,7 +203,7 @@ export function UserFormModal({ open, onClose, user, onSaved }) {
 function Field({ label, children }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-slate-300">{label}</Label>
+      <Label className="text-foreground/80">{label}</Label>
       {children}
     </div>
   )

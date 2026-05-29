@@ -19,7 +19,7 @@ import { ImportResultModal } from "./ImportResultModal"
 
 const ESTADO_BADGE = {
   activo: "border-emerald-700 bg-emerald-900/40 text-emerald-400",
-  inactivo: "border-slate-600 bg-slate-800 text-slate-500",
+  inactivo: "border-border bg-muted text-muted-foreground",
   vencido: "border-orange-700 bg-orange-900/40 text-orange-400",
 }
 
@@ -91,7 +91,7 @@ export default function SellersPage() {
       } else {
         toast.error(`Conexión fallida: ${data.error}`)
       }
-    } catch (err) {
+    } catch {
       toast.dismiss(toastId)
       toast.error("Error al probar conexión")
     }
@@ -129,7 +129,7 @@ export default function SellersPage() {
         await writeFile(filePath, new Uint8Array(data))
         toast.success("Exportación guardada")
       }
-    } catch (err) {
+    } catch {
       toast.error("Error al exportar sellers")
     }
   }
@@ -169,21 +169,21 @@ export default function SellersPage() {
       accessorKey: "id_ecommerce",
       header: "Id Ecommerce",
       cell: ({ getValue }) => (
-        <span className="font-mono text-xs text-slate-300">{getValue()}</span>
+        <span className="font-mono text-xs text-foreground/80">{getValue()}</span>
       ),
     },
     {
       accessorKey: "seller_name",
       header: "Nombre",
       cell: ({ getValue }) => (
-        <span className="font-medium text-slate-200">{getValue()}</span>
+        <span className="font-medium text-foreground">{getValue()}</span>
       ),
     },
     { accessorKey: "seller_id", header: "Seller ID" },
     {
       accessorKey: "analista",
       header: "Analista",
-      cell: ({ getValue }) => getValue() ?? <span className="text-slate-500">—</span>,
+      cell: ({ getValue }) => getValue() ?? <span className="text-muted-foreground">—</span>,
     },
     {
       accessorKey: "estado_keys",
@@ -206,7 +206,7 @@ export default function SellersPage() {
         getValue() ? (
           <Badge className="border-blue-700 bg-blue-900/40 text-blue-400">Sí</Badge>
         ) : (
-          <Badge className="border-slate-600 bg-slate-800 text-slate-500">No</Badge>
+          <Badge className="border-border bg-muted text-muted-foreground">No</Badge>
         ),
     },
     {
@@ -216,7 +216,7 @@ export default function SellersPage() {
         getValue() ? (
           <Badge className="border-emerald-700 bg-emerald-900/40 text-emerald-400">Activo</Badge>
         ) : (
-          <Badge className="border-slate-600 bg-slate-800 text-slate-500">Inactivo</Badge>
+          <Badge className="border-border bg-muted text-muted-foreground">Inactivo</Badge>
         ),
     },
     {
@@ -229,7 +229,7 @@ export default function SellersPage() {
             {isAdmin && (
               <Button
                 size="icon" variant="ghost" title="Editar"
-                className="h-8 w-8 text-slate-400 hover:text-slate-100"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
                 onClick={() => { setEditSeller(s); setFormOpen(true) }}
               >
                 <Pencil className="h-4 w-4" />
@@ -238,7 +238,7 @@ export default function SellersPage() {
             {isAdmin && (
               <Button
                 size="icon" variant="ghost" title="Probar conexión"
-                className="h-8 w-8 text-slate-400 hover:text-blue-400"
+                className="h-8 w-8 text-muted-foreground hover:text-blue-400"
                 onClick={() => handleTestConnection(s)}
               >
                 <Plug className="h-4 w-4" />
@@ -248,7 +248,7 @@ export default function SellersPage() {
               <Button
                 size="icon" variant="ghost" title="Desactivar"
                 disabled={!s.is_active}
-                className="h-8 w-8 text-slate-400 hover:text-red-400 disabled:opacity-30"
+                className="h-8 w-8 text-muted-foreground hover:text-red-400 disabled:opacity-30"
                 onClick={() => handleDeactivate(s)}
               >
                 <UserX className="h-4 w-4" />
@@ -270,8 +270,8 @@ export default function SellersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-100">Sellers</h1>
-          <p className="text-sm text-slate-400">Gestión de sellers y credenciales VTEX</p>
+          <h1 className="text-2xl font-semibold text-foreground">Sellers</h1>
+          <p className="text-sm text-muted-foreground">Gestión de sellers y credenciales VTEX</p>
         </div>
         <div className="flex gap-2">
           <input
@@ -285,7 +285,7 @@ export default function SellersPage() {
             <Button
               variant="outline"
               onClick={handleExport}
-              className="border-slate-600 bg-transparent text-slate-300 hover:bg-slate-700 hover:text-slate-100"
+              className="border-border bg-transparent text-foreground/80 hover:bg-accent hover:text-foreground"
             >
               <Download className="mr-2 h-4 w-4" />
               Exportar Excel
@@ -296,7 +296,7 @@ export default function SellersPage() {
               variant="outline"
               disabled={importing}
               onClick={() => fileInputRef.current?.click()}
-              className="border-slate-600 bg-transparent text-slate-300 hover:bg-slate-700 hover:text-slate-100"
+              className="border-border bg-transparent text-foreground/80 hover:bg-accent hover:text-foreground"
             >
               <Upload className="mr-2 h-4 w-4" />
               {importing ? "Importando…" : "Importar Excel"}
@@ -304,7 +304,7 @@ export default function SellersPage() {
           )}
           {isAdmin && (
             <Button
-              className="bg-slate-100 text-slate-900 hover:bg-slate-200"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
               onClick={() => { setEditSeller(null); setFormOpen(true) }}
             >
               + Nuevo seller
@@ -316,18 +316,18 @@ export default function SellersPage() {
       {/* Search + filters */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="pointer-events-none absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-500" />
+          <Search className="pointer-events-none absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar por nombre, seller ID, id ecommerce, analista..."
-            className="border-slate-600 bg-slate-800 pl-9 text-slate-100 placeholder:text-slate-500 h-8 text-xs"
+            className="border-border bg-muted pl-9 text-foreground placeholder:text-muted-foreground h-8 text-xs"
           />
         </div>
         <select
           value={filterEstadoKeys}
           onChange={(e) => setFilterEstadoKeys(e.target.value)}
-          className="rounded-md border border-slate-600 bg-slate-800 px-2 py-1.5 text-xs text-slate-300 focus:outline-none"
+          className="rounded-md border border-border bg-muted px-2 py-1.5 text-xs text-foreground focus:outline-none"
         >
           <option value="todos">Estado Keys: todos</option>
           <option value="activo">Activo</option>
@@ -337,7 +337,7 @@ export default function SellersPage() {
         <select
           value={filterVendiendo}
           onChange={(e) => setFilterVendiendo(e.target.value)}
-          className="rounded-md border border-slate-600 bg-slate-800 px-2 py-1.5 text-xs text-slate-300 focus:outline-none"
+          className="rounded-md border border-border bg-muted px-2 py-1.5 text-xs text-foreground focus:outline-none"
         >
           <option value="todos">Vendiendo: todos</option>
           <option value="si">Sí</option>
@@ -346,7 +346,7 @@ export default function SellersPage() {
         <select
           value={filterEstado}
           onChange={(e) => setFilterEstado(e.target.value)}
-          className="rounded-md border border-slate-600 bg-slate-800 px-2 py-1.5 text-xs text-slate-300 focus:outline-none"
+          className="rounded-md border border-border bg-muted px-2 py-1.5 text-xs text-foreground focus:outline-none"
         >
           <option value="todos">Estado: todos</option>
           <option value="activo">Activo</option>
@@ -355,7 +355,7 @@ export default function SellersPage() {
         <select
           value={filterAnalista}
           onChange={(e) => setFilterAnalista(e.target.value)}
-          className="rounded-md border border-slate-600 bg-slate-800 px-2 py-1.5 text-xs text-slate-300 focus:outline-none"
+          className="rounded-md border border-border bg-muted px-2 py-1.5 text-xs text-foreground focus:outline-none"
         >
           <option value="todos">Analista: todos</option>
           {analistasUnicos.map((a) => (
@@ -363,25 +363,25 @@ export default function SellersPage() {
           ))}
         </select>
         {filteredSellers.length !== sellers.length && (
-          <span className="text-xs text-slate-500">{filteredSellers.length} de {sellers.length}</span>
+          <span className="text-xs text-muted-foreground">{filteredSellers.length} de {sellers.length}</span>
         )}
       </div>
 
-      <Card className="border-slate-700 bg-[#1e293b] overflow-hidden p-0">
+      <Card className="border-border bg-card overflow-hidden p-0">
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-600 border-t-slate-200" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-foreground" />
           </div>
         ) : (
           <div style={{ height: "calc(100vh - 220px)", overflowY: "auto", overflowX: "auto" }}>
-            <table className="w-full text-sm text-slate-300">
+            <table className="w-full text-sm text-foreground/80">
               <thead>
                 {table.getHeaderGroups().map((hg) => (
-                  <tr key={hg.id} className="border-b border-slate-700">
+                  <tr key={hg.id} className="border-b border-border">
                     {hg.headers.map((h) => (
                       <th
                         key={h.id}
-                        className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500"
+                        className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground"
                       >
                         {flexRender(h.column.columnDef.header, h.getContext())}
                       </th>
@@ -393,7 +393,7 @@ export default function SellersPage() {
                 {table.getRowModel().rows.map((row) => (
                   <tr
                     key={row.id}
-                    className="border-b border-slate-700/50 transition-colors hover:bg-slate-700/20"
+                    className="border-b border-border/50 transition-colors hover:bg-accent/20"
                   >
                     {row.getVisibleCells().map((cell) => (
                       <td key={cell.id} className="px-4 py-3">
@@ -404,7 +404,7 @@ export default function SellersPage() {
                 ))}
                 {sellers.length === 0 && (
                   <tr>
-                    <td colSpan={columns.length} className="py-12 text-center text-slate-500">
+                    <td colSpan={columns.length} className="py-12 text-center text-muted-foreground">
                       No hay sellers registrados
                     </td>
                   </tr>

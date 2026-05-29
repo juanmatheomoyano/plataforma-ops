@@ -49,7 +49,7 @@ export const EMPTY_FILTROS = {
 
 function ToggleGroup({ value, onChange, options }) {
   return (
-    <div className="flex rounded-md border border-slate-700 overflow-hidden">
+    <div className="flex rounded-md border border-border overflow-hidden">
       {options.map((opt) => (
         <button
           key={opt.value}
@@ -57,8 +57,8 @@ function ToggleGroup({ value, onChange, options }) {
           className={[
             "flex-1 px-2.5 py-1 text-xs font-medium transition-colors",
             value === opt.value
-              ? "bg-slate-700 text-slate-100"
-              : "bg-slate-800 text-slate-500 hover:text-slate-300",
+              ? "bg-accent text-foreground"
+              : "bg-muted text-muted-foreground hover:text-foreground",
           ].join(" ")}
         >
           {opt.label}
@@ -71,7 +71,7 @@ function ToggleGroup({ value, onChange, options }) {
 function FieldRow({ label, children }) {
   return (
     <div className="space-y-2">
-      <Label className="text-xs font-medium text-slate-400">{label}</Label>
+      <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
       {children}
     </div>
   )
@@ -129,16 +129,16 @@ export function FiltrosPanel({ filtros, onChange }) {
     filtros.horario_fin
 
   return (
-    <div className="rounded-lg border border-slate-700 bg-slate-800/50">
+    <div className="rounded-lg border border-border bg-muted/50">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-slate-300 hover:text-slate-100 transition-colors"
+        className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-foreground/80 hover:text-foreground transition-colors"
       >
         <div className="flex items-center gap-2">
           <SlidersHorizontal className="h-4 w-4" />
           <span>Filtros</span>
           {hasActiveFilters && (
-            <span className="rounded-full bg-blue-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+            <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
               activos
             </span>
           )}
@@ -147,7 +147,7 @@ export function FiltrosPanel({ filtros, onChange }) {
       </button>
 
       {open && (
-        <div className="border-t border-slate-700 px-4 pb-5 pt-4 space-y-5">
+        <div className="border-t border-border px-4 pb-5 pt-4 space-y-5">
 
           {/* Row 1: Brand + Estado + Nombre */}
           <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
@@ -161,9 +161,9 @@ export function FiltrosPanel({ filtros, onChange }) {
                       type="checkbox"
                       checked={isBrandChecked(brand, filtros.brands)}
                       onChange={() => toggleBrand(brand)}
-                      className="h-3.5 w-3.5 rounded border-slate-600 accent-blue-500"
+                      className="h-3.5 w-3.5 rounded border-border accent-primary"
                     />
-                    <span className="text-xs text-slate-300">{brand}</span>
+                    <span className="text-xs text-foreground/80">{brand}</span>
                   </label>
                 ))}
               </div>
@@ -172,10 +172,10 @@ export function FiltrosPanel({ filtros, onChange }) {
             {/* Estado */}
             <FieldRow label="Estado">
               <Select value={filtros.estado} onValueChange={(v) => set("estado", v)}>
-                <SelectTrigger className="border-slate-600 bg-slate-900 text-slate-100 h-9 text-xs">
+                <SelectTrigger className="border-border bg-background text-foreground h-9 text-xs">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="border-slate-700 bg-slate-800 text-slate-100">
+                <SelectContent className="border-border bg-card text-foreground">
                   <SelectItem value="todos">Todos</SelectItem>
                   <SelectItem value="activo">Activa</SelectItem>
                   <SelectItem value="inactivo">Inactiva</SelectItem>
@@ -189,7 +189,7 @@ export function FiltrosPanel({ filtros, onChange }) {
                 value={filtros.nombre}
                 onChange={(e) => set("nombre", e.target.value)}
                 placeholder="ej: Visa x6"
-                className="border-slate-600 bg-slate-900 text-slate-100 placeholder:text-slate-600 h-9 text-xs"
+                className="border-border bg-background text-foreground placeholder:text-muted-foreground h-9 text-xs"
               />
             </FieldRow>
           </div>
@@ -206,8 +206,8 @@ export function FiltrosPanel({ filtros, onChange }) {
                     className={[
                       "rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors",
                       selected
-                        ? "border-blue-600 bg-blue-900/50 text-blue-300"
-                        : "border-slate-600 bg-slate-800 text-slate-500 hover:text-slate-300",
+                        ? "border-primary bg-primary/20 text-primary"
+                        : "border-border bg-muted text-muted-foreground hover:text-foreground",
                     ].join(" ")}
                   >
                     {label}
@@ -231,10 +231,10 @@ export function FiltrosPanel({ filtros, onChange }) {
             {/* Conector */}
             <FieldRow label="Conector">
               <Select value={filtros.connector} onValueChange={(v) => set("connector", v)}>
-                <SelectTrigger className="border-slate-600 bg-slate-900 text-slate-100 h-9 text-xs">
+                <SelectTrigger className="border-border bg-background text-foreground h-9 text-xs">
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent className="border-slate-700 bg-slate-800 text-slate-100">
+                <SelectContent className="border-border bg-card text-foreground">
                   <SelectItem value="todos">Todos</SelectItem>
                   <SelectItem value="Payway">Payway</SelectItem>
                   <SelectItem value="Decidir">Decidir</SelectItem>
@@ -248,7 +248,7 @@ export function FiltrosPanel({ filtros, onChange }) {
                 value={filtros.cuotas}
                 onChange={(e) => set("cuotas", e.target.value)}
                 placeholder="ej: 1, 3, 6, 9, 12"
-                className="border-slate-600 bg-slate-900 text-slate-100 placeholder:text-slate-600 h-9 text-xs"
+                className="border-border bg-background text-foreground placeholder:text-muted-foreground h-9 text-xs"
               />
               <ToggleGroup
                 value={filtros.cuotas_mode}
@@ -263,10 +263,10 @@ export function FiltrosPanel({ filtros, onChange }) {
             {/* Fecha */}
             <FieldRow label="Filtro de fecha">
               <Select value={filtros.fecha_mode} onValueChange={(v) => set("fecha_mode", v)}>
-                <SelectTrigger className="border-slate-600 bg-slate-900 text-slate-100 h-9 text-xs">
+                <SelectTrigger className="border-border bg-background text-foreground h-9 text-xs">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="border-slate-700 bg-slate-800 text-slate-100">
+                <SelectContent className="border-border bg-card text-foreground">
                   <SelectItem value="todos">Todos</SelectItem>
                   <SelectItem value="entre">Rango</SelectItem>
                   <SelectItem value="sin_fecha">Sin fecha</SelectItem>
@@ -278,13 +278,13 @@ export function FiltrosPanel({ filtros, onChange }) {
                     type="date"
                     value={filtros.fecha_ini_date}
                     onChange={(e) => set("fecha_ini_date", e.target.value)}
-                    className="border-slate-600 bg-slate-900 text-slate-100 h-8 text-xs"
+                    className="border-border bg-background text-foreground h-8 text-xs"
                   />
                   <Input
                     type="date"
                     value={filtros.fecha_fin_date}
                     onChange={(e) => set("fecha_fin_date", e.target.value)}
-                    className="border-slate-600 bg-slate-900 text-slate-100 h-8 text-xs"
+                    className="border-border bg-background text-foreground h-8 text-xs"
                   />
                 </div>
               )}
@@ -300,7 +300,7 @@ export function FiltrosPanel({ filtros, onChange }) {
                 value={filtros.horario_ini}
                 onChange={(e) => set("horario_ini", e.target.value)}
                 placeholder="ej: 08:00"
-                className="border-slate-600 bg-slate-900 text-slate-100 placeholder:text-slate-600 h-9 text-xs"
+                className="border-border bg-background text-foreground placeholder:text-muted-foreground h-9 text-xs"
               />
               <ToggleGroup
                 value={filtros.horario_ini_mode}
@@ -318,7 +318,7 @@ export function FiltrosPanel({ filtros, onChange }) {
                 value={filtros.horario_fin}
                 onChange={(e) => set("horario_fin", e.target.value)}
                 placeholder="ej: 20:00"
-                className="border-slate-600 bg-slate-900 text-slate-100 placeholder:text-slate-600 h-9 text-xs"
+                className="border-border bg-background text-foreground placeholder:text-muted-foreground h-9 text-xs"
               />
               <ToggleGroup
                 value={filtros.horario_fin_mode}
@@ -336,7 +336,7 @@ export function FiltrosPanel({ filtros, onChange }) {
               variant="ghost"
               size="sm"
               onClick={() => onChange(EMPTY_FILTROS)}
-              className="text-xs text-slate-500 hover:text-slate-200"
+              className="text-xs text-muted-foreground hover:text-foreground"
             >
               Limpiar filtros
             </Button>

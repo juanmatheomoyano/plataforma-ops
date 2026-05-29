@@ -45,12 +45,12 @@ export function ResetPasswordModal({ open, onClose, user }) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="border-slate-700 bg-[#1e293b] text-slate-100 sm:max-w-sm">
+      <DialogContent className="border-border bg-card text-card-foreground sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle className="text-slate-100">
+          <DialogTitle className="text-card-foreground">
             Resetear contraseña
             {user && (
-              <span className="ml-2 text-sm font-normal text-slate-400">
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
                 — {user.username}
               </span>
             )}
@@ -59,26 +59,26 @@ export function ResetPasswordModal({ open, onClose, user }) {
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           <div className="space-y-1.5">
-            <Label className="text-slate-300">Nueva contraseña</Label>
+            <Label className="text-foreground/80">Nueva contraseña</Label>
             <Input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               required
               disabled={loading}
-              className="border-slate-600 bg-slate-800 text-slate-100"
+              className="border-border bg-muted text-foreground"
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-slate-300">Confirmar contraseña</Label>
+            <Label className="text-foreground/80">Confirmar contraseña</Label>
             <Input
               type="password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               required
               disabled={loading}
-              className="border-slate-600 bg-slate-800 text-slate-100"
+              className="border-border bg-muted text-foreground"
             />
           </div>
 
@@ -88,14 +88,14 @@ export function ResetPasswordModal({ open, onClose, user }) {
               variant="ghost"
               onClick={onClose}
               disabled={loading}
-              className="text-slate-400 hover:text-slate-200"
+              className="text-muted-foreground hover:text-foreground"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               disabled={loading}
-              className="bg-slate-100 text-slate-900 hover:bg-slate-200"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

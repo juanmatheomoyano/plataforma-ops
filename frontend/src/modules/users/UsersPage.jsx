@@ -21,7 +21,7 @@ const ROLE_BADGE = {
   admin: "bg-violet-900/60 text-violet-300 border-violet-700",
   analista_senior: "bg-blue-900/60 text-blue-300 border-blue-700",
   analista: "bg-emerald-900/60 text-emerald-300 border-emerald-700",
-  viewer: "bg-slate-700/60 text-slate-300 border-slate-600",
+  viewer: "bg-muted text-muted-foreground border-border",
 }
 
 const ROLE_LABEL = {
@@ -146,8 +146,8 @@ export default function UsersPage() {
       accessorKey: "full_name",
       header: "Nombre",
       cell: ({ row }) => (
-        <span className="font-medium text-slate-200">
-          {row.original.full_name || <span className="text-slate-500">—</span>}
+        <span className="font-medium text-foreground">
+          {row.original.full_name || <span className="text-muted-foreground">—</span>}
         </span>
       ),
     },
@@ -167,7 +167,7 @@ export default function UsersPage() {
             Activo
           </Badge>
         ) : (
-          <Badge className="border-slate-600 bg-slate-800 text-slate-500">
+          <Badge className="border-border bg-muted text-muted-foreground">
             Inactivo
           </Badge>
         ),
@@ -176,7 +176,7 @@ export default function UsersPage() {
       accessorKey: "last_login",
       header: "Último login",
       cell: ({ getValue }) => (
-        <span className="text-slate-400 text-sm">{fmt(getValue())}</span>
+        <span className="text-muted-foreground text-sm">{fmt(getValue())}</span>
       ),
     },
     {
@@ -190,7 +190,7 @@ export default function UsersPage() {
               size="icon"
               variant="ghost"
               title="Editar"
-              className="h-8 w-8 text-slate-400 hover:text-slate-100"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
               onClick={() => { setEditUser(u); setFormOpen(true) }}
             >
               <Pencil className="h-4 w-4" />
@@ -199,7 +199,7 @@ export default function UsersPage() {
               size="icon"
               variant="ghost"
               title="Resetear contraseña"
-              className="h-8 w-8 text-slate-400 hover:text-blue-400"
+              className="h-8 w-8 text-muted-foreground hover:text-blue-400"
               onClick={() => { setResetUser(u); setResetOpen(true) }}
             >
               <KeyRound className="h-4 w-4" />
@@ -209,7 +209,7 @@ export default function UsersPage() {
               variant="ghost"
               title="Desactivar"
               disabled={u.id === me?.id || !u.is_active}
-              className="h-8 w-8 text-slate-400 hover:text-red-400 disabled:opacity-30"
+              className="h-8 w-8 text-muted-foreground hover:text-red-400 disabled:opacity-30"
               onClick={() => handleDeactivate(u)}
             >
               <UserX className="h-4 w-4" />
@@ -230,8 +230,8 @@ export default function UsersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-100">Usuarios</h1>
-          <p className="text-sm text-slate-400">Gestión de accesos — solo admins</p>
+          <h1 className="text-2xl font-semibold text-foreground">Usuarios</h1>
+          <p className="text-sm text-muted-foreground">Gestión de accesos — solo admins</p>
         </div>
         <div className="flex gap-2">
           <input
@@ -244,7 +244,7 @@ export default function UsersPage() {
           <Button
             variant="outline"
             onClick={handleExport}
-            className="border-slate-600 bg-transparent text-slate-300 hover:bg-slate-700 hover:text-slate-100"
+            className="border-border bg-transparent text-foreground/80 hover:bg-accent hover:text-foreground"
           >
             <Download className="mr-2 h-4 w-4" />
             Exportar Excel
@@ -253,13 +253,13 @@ export default function UsersPage() {
             variant="outline"
             disabled={importing}
             onClick={() => fileInputRef.current?.click()}
-            className="border-slate-600 bg-transparent text-slate-300 hover:bg-slate-700 hover:text-slate-100"
+            className="border-border bg-transparent text-foreground/80 hover:bg-accent hover:text-foreground"
           >
             <Upload className="mr-2 h-4 w-4" />
             {importing ? "Importando…" : "Importar Excel"}
           </Button>
           <Button
-            className="bg-slate-100 text-slate-900 hover:bg-slate-200"
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
             onClick={() => { setEditUser(null); setFormOpen(true) }}
           >
             + Nuevo usuario
@@ -267,53 +267,53 @@ export default function UsersPage() {
         </div>
       </div>
 
-      <Card className="border-slate-700 bg-[#1e293b] overflow-hidden p-0">
+      <Card className="border-border bg-card overflow-hidden p-0">
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-600 border-t-slate-200" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-foreground" />
           </div>
         ) : (
           <div style={{ height: "calc(100vh - 180px)", overflowY: "auto", overflowX: "auto" }}>
-          <table className="w-full text-sm text-slate-300">
-            <thead>
-              {table.getHeaderGroups().map((hg) => (
-                <tr key={hg.id} className="border-b border-slate-700">
-                  {hg.headers.map((h) => (
-                    <th
-                      key={h.id}
-                      className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500"
-                    >
-                      {flexRender(h.column.columnDef.header, h.getContext())}
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody>
-              {table.getRowModel().rows.map((row) => (
-                <tr
-                  key={row.id}
-                  className="border-b border-slate-700/50 transition-colors hover:bg-slate-700/20"
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-4 py-3">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-              {users.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={columns.length}
-                    className="py-12 text-center text-slate-500"
+            <table className="w-full text-sm text-foreground/80">
+              <thead>
+                {table.getHeaderGroups().map((hg) => (
+                  <tr key={hg.id} className="border-b border-border">
+                    {hg.headers.map((h) => (
+                      <th
+                        key={h.id}
+                        className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+                      >
+                        {flexRender(h.column.columnDef.header, h.getContext())}
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              <tbody>
+                {table.getRowModel().rows.map((row) => (
+                  <tr
+                    key={row.id}
+                    className="border-b border-border/50 transition-colors hover:bg-accent/20"
                   >
-                    No hay usuarios registrados
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id} className="px-4 py-3">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+                {users.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={columns.length}
+                      className="py-12 text-center text-muted-foreground"
+                    >
+                      No hay usuarios registrados
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         )}
       </Card>

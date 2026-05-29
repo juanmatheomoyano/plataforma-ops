@@ -57,9 +57,9 @@ const LEVEL_CHIPS_CREATE = [
 function FieldRow({ label, children, hint }) {
   return (
     <div className="space-y-1">
-      <Label className="text-xs font-medium text-slate-400">{label}</Label>
+      <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
       {children}
-      {hint && <p className="text-[10px] text-slate-600">{hint}</p>}
+      {hint && <p className="text-[10px] text-muted-foreground/60">{hint}</p>}
     </div>
   )
 }
@@ -164,8 +164,8 @@ export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdat
 
       {/* Create subform */}
       {operacion === "C" && (
-        <div className="rounded-lg border border-slate-700 bg-slate-800/40 p-4 space-y-4">
-          <p className="text-sm font-semibold text-slate-300">Nueva regla de pago</p>
+        <div className="rounded-lg border border-border bg-muted/40 p-4 space-y-4">
+          <p className="text-sm font-semibold text-foreground/80">Nueva regla de pago</p>
 
           {/* Prefix */}
           <FieldRow label="Prefijo del nombre" hint="Se agrega antes del nombre generado automáticamente (opcional)">
@@ -173,15 +173,15 @@ export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdat
               value={accionCreate?.rule_name_prefix ?? ""}
               onChange={(e) => setCreate("rule_name_prefix", e.target.value)}
               placeholder="ej: PROMO"
-              className="border-slate-600 bg-slate-900 text-slate-100 h-8 text-xs"
+              className="border-border bg-background text-foreground h-8 text-xs"
             />
           </FieldRow>
 
           {/* Name preview */}
           {namePreview && (
-            <div className="rounded-md border border-slate-700 bg-slate-900/60 px-3 py-2">
-              <p className="text-[10px] text-slate-500 mb-0.5">Nombre(s) generado(s):</p>
-              <p className="text-xs text-slate-300 font-mono">{namePreview}</p>
+            <div className="rounded-md border border-border bg-background/60 px-3 py-2">
+              <p className="text-[10px] text-muted-foreground mb-0.5">Nombre(s) generado(s):</p>
+              <p className="text-xs text-foreground/80 font-mono">{namePreview}</p>
             </div>
           )}
 
@@ -199,7 +199,7 @@ export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdat
                       "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
                       selected
                         ? "border-emerald-600 bg-emerald-900/50 text-emerald-300"
-                        : "border-slate-600 bg-slate-800 text-slate-500 hover:text-slate-300",
+                        : "border-border bg-muted text-muted-foreground hover:text-foreground",
                     ].join(" ")}
                   >
                     {label}
@@ -223,7 +223,7 @@ export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdat
                       "rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors",
                       selected
                         ? "border-emerald-600 bg-emerald-900/50 text-emerald-300"
-                        : "border-slate-600 bg-slate-800 text-slate-500 hover:text-slate-300",
+                        : "border-border bg-muted text-muted-foreground hover:text-foreground",
                     ].join(" ")}
                   >
                     {label}
@@ -240,7 +240,7 @@ export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdat
                 value={accionCreate?.cuotas ?? ""}
                 onChange={(e) => setCreate("cuotas", e.target.value)}
                 placeholder="1,3,6,9,12"
-                className="border-slate-600 bg-slate-900 text-slate-100 h-8 text-xs"
+                className="border-border bg-background text-foreground h-8 text-xs"
               />
             </FieldRow>
             <FieldRow label="Fecha inicio">
@@ -249,13 +249,13 @@ export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdat
                   type="date"
                   value={accionCreate?.begin_date ?? ""}
                   onChange={(e) => setCreate("begin_date", e.target.value || "")}
-                  className="border-slate-600 bg-slate-900 text-slate-100 h-8 text-xs flex-1"
+                  className="border-border bg-background text-foreground h-8 text-xs flex-1"
                 />
                 <Input
                   type="time"
                   value={accionCreate?.begin_time ?? ""}
                   onChange={(e) => setCreate("begin_time", e.target.value || "")}
-                  className="border-slate-600 bg-slate-900 text-slate-100 h-8 text-xs w-24"
+                  className="border-border bg-background text-foreground h-8 text-xs w-24"
                 />
               </div>
             </FieldRow>
@@ -265,13 +265,13 @@ export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdat
                   type="date"
                   value={accionCreate?.end_date ?? ""}
                   onChange={(e) => setCreate("end_date", e.target.value || "")}
-                  className="border-slate-600 bg-slate-900 text-slate-100 h-8 text-xs flex-1"
+                  className="border-border bg-background text-foreground h-8 text-xs flex-1"
                 />
                 <Input
                   type="time"
                   value={accionCreate?.end_time ?? ""}
                   onChange={(e) => setCreate("end_time", e.target.value || "")}
-                  className="border-slate-600 bg-slate-900 text-slate-100 h-8 text-xs w-24"
+                  className="border-border bg-background text-foreground h-8 text-xs w-24"
                 />
               </div>
             </FieldRow>
@@ -282,17 +282,17 @@ export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdat
               checked={accionCreate?.enabled ?? true}
               onCheckedChange={(v) => setCreate("enabled", v)}
             />
-            <Label className="text-xs text-slate-400">Habilitada</Label>
+            <Label className="text-xs text-muted-foreground">Habilitada</Label>
           </div>
         </div>
       )}
 
       {/* Update subform */}
       {operacion === "U" && (
-        <div className="rounded-lg border border-slate-700 bg-slate-800/40 p-4 space-y-4">
-          <p className="text-sm font-semibold text-slate-300">
+        <div className="rounded-lg border border-border bg-muted/40 p-4 space-y-4">
+          <p className="text-sm font-semibold text-foreground/80">
             Cambios a aplicar{" "}
-            <span className="font-normal text-slate-500 text-xs">(solo los campos completados se actualizan)</span>
+            <span className="font-normal text-muted-foreground text-xs">(solo los campos completados se actualizan)</span>
           </p>
 
           {/* Level chips */}
@@ -309,7 +309,7 @@ export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdat
                       "rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors",
                       selected
                         ? "border-amber-600 bg-amber-900/50 text-amber-300"
-                        : "border-slate-600 bg-slate-800 text-slate-500 hover:text-slate-300",
+                        : "border-border bg-muted text-muted-foreground hover:text-foreground",
                     ].join(" ")}
                   >
                     {label}
@@ -317,7 +317,7 @@ export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdat
                 )
               })}
             </div>
-            <p className="text-[10px] text-slate-600">Click para seleccionar, click nuevamente para deseleccionar</p>
+            <p className="text-[10px] text-muted-foreground/60">Click para seleccionar, click nuevamente para deseleccionar</p>
           </FieldRow>
 
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
@@ -326,7 +326,7 @@ export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdat
                 value={accionUpdate?.cuotas ?? ""}
                 onChange={(e) => setUpdate("cuotas", e.target.value)}
                 placeholder="1,3,6,9"
-                className="border-slate-600 bg-slate-900 text-slate-100 h-8 text-xs"
+                className="border-border bg-background text-foreground h-8 text-xs"
               />
             </FieldRow>
             <FieldRow label="Fecha inicio">
@@ -334,7 +334,7 @@ export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdat
                 type="date"
                 value={accionUpdate?.begin_date ?? ""}
                 onChange={(e) => setUpdate("begin_date", e.target.value || "")}
-                className="border-slate-600 bg-slate-900 text-slate-100 h-8 text-xs"
+                className="border-border bg-background text-foreground h-8 text-xs"
               />
             </FieldRow>
             <FieldRow label="Fecha fin">
@@ -342,14 +342,14 @@ export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdat
                 type="date"
                 value={accionUpdate?.end_date ?? ""}
                 onChange={(e) => setUpdate("end_date", e.target.value || "")}
-                className="border-slate-600 bg-slate-900 text-slate-100 h-8 text-xs"
+                className="border-border bg-background text-foreground h-8 text-xs"
               />
             </FieldRow>
             <FieldRow label="Estado">
               <select
                 value={accionUpdate?.enabled === undefined ? "" : String(accionUpdate.enabled)}
                 onChange={(e) => setUpdate("enabled", e.target.value === "" ? undefined : e.target.value === "true")}
-                className="w-full rounded-md border border-slate-600 bg-slate-900 px-2 py-1.5 text-xs text-slate-100 focus:outline-none"
+                className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground focus:outline-none"
               >
                 <option value="">No cambiar</option>
                 <option value="true">Habilitar</option>

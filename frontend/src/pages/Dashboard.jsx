@@ -28,15 +28,15 @@ const MODULES = [
 
 function StatCard({ icon: Icon, label, value, alert }) {
   return (
-    <Card className="border-slate-700 bg-[#1e293b]">
+    <Card className="border-border bg-card">
       <CardContent className="flex items-center gap-4 p-5">
-        <div className="rounded-lg border border-slate-700 bg-slate-800 p-2.5">
-          <Icon className="h-5 w-5 text-slate-400" />
+        <div className="rounded-lg border border-border bg-muted p-2.5">
+          <Icon className="h-5 w-5 text-muted-foreground" />
         </div>
         <div>
-          <p className="text-xs text-slate-500 uppercase tracking-wide">{label}</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wide">{label}</p>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-2xl font-semibold text-slate-100">{value ?? "—"}</span>
+            <span className="text-2xl font-semibold text-foreground">{value ?? "—"}</span>
             {alert && (
               <AlertTriangle className="h-4 w-4 text-red-400" />
             )}
@@ -71,14 +71,14 @@ export default function Dashboard() {
       {/* Header */}
       <div className="space-y-1">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-semibold text-slate-100">
+          <h1 className="text-2xl font-semibold text-foreground">
             Bienvenido, {user?.full_name || user?.username}
           </h1>
-          <Badge variant="secondary" className="bg-slate-700 text-slate-300 border-slate-600">
+          <Badge variant="secondary" className="bg-muted text-foreground/80 border-border">
             {ROLE_LABELS[user?.role] ?? user?.role}
           </Badge>
         </div>
-        <p className="text-sm text-slate-400">Panel de control — Provincia Compras</p>
+        <p className="text-sm text-muted-foreground">Panel de control — Provincia Compras</p>
       </div>
 
       {/* Métricas — solo admin/analista_senior */}
@@ -97,10 +97,10 @@ export default function Dashboard() {
             <>
               <StatCard icon={Users} label="Usuarios activos" value={stats.total_usuarios_activos} />
               {stats.ultimo_operador && (
-                <Card className="border-slate-700 bg-[#1e293b] col-span-2 sm:col-span-3">
+                <Card className="border-border bg-card col-span-2 sm:col-span-3">
                   <CardContent className="p-5">
-                    <p className="text-xs text-slate-500 uppercase tracking-wide">Último operador</p>
-                    <p className="mt-0.5 text-slate-200 font-medium">{stats.ultimo_operador}</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Último operador</p>
+                    <p className="mt-0.5 text-foreground/80 font-medium">{stats.ultimo_operador}</p>
                   </CardContent>
                 </Card>
               )}
@@ -111,13 +111,13 @@ export default function Dashboard() {
 
       {/* Accesos rápidos */}
       <div>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500">Módulos</h2>
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Módulos</h2>
         <div className="flex flex-wrap gap-2">
           {accessibleModules.map((m) => (
             <button
               key={m.path}
               onClick={() => navigate(m.path)}
-              className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-medium text-slate-300 transition-colors hover:border-slate-500 hover:bg-slate-700 hover:text-slate-100"
+              className="rounded-lg border border-border bg-muted px-4 py-2.5 text-sm font-medium text-foreground/80 transition-colors hover:border-primary/50 hover:bg-accent hover:text-foreground"
             >
               {m.label}
             </button>
@@ -127,29 +127,29 @@ export default function Dashboard() {
 
       {/* Últimas 5 operaciones */}
       <div>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           Últimas operaciones
         </h2>
         {operations.length === 0 ? (
-          <p className="text-sm text-slate-500">Sin operaciones registradas</p>
+          <p className="text-sm text-muted-foreground">Sin operaciones registradas</p>
         ) : (
-          <Card className="border-slate-700 bg-[#1e293b] overflow-hidden p-0">
+          <Card className="border-border bg-card overflow-hidden p-0">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-700 bg-slate-800/60">
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Fecha</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Op.</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Sellers</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Matched</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Errores</th>
+                <tr className="border-b border-border bg-muted/60">
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Fecha</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Op.</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Sellers</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Matched</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Errores</th>
                 </tr>
               </thead>
               <tbody>
                 {operations.map((op) => {
                   const badge = OP_BADGE[op.operacion] ?? OP_BADGE.R
                   return (
-                    <tr key={op.id} className="border-b border-slate-700/40 hover:bg-slate-700/20">
-                      <td className="px-4 py-2.5 text-xs text-slate-400">
+                    <tr key={op.id} className="border-b border-border/40 hover:bg-accent/30">
+                      <td className="px-4 py-2.5 text-xs text-muted-foreground">
                         {new Date(op.started_at).toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" })}
                       </td>
                       <td className="px-4 py-2.5">
@@ -157,16 +157,16 @@ export default function Dashboard() {
                           {badge.label}
                         </span>
                         {op.dry_run && (
-                          <span className="ml-1 text-xs text-slate-500">DRY</span>
+                          <span className="ml-1 text-xs text-muted-foreground">DRY</span>
                         )}
                       </td>
-                      <td className="px-4 py-2.5 text-xs text-slate-300">{op.total_sellers}</td>
-                      <td className="px-4 py-2.5 text-xs text-slate-300">{op.total_matched}</td>
+                      <td className="px-4 py-2.5 text-xs text-foreground/80">{op.total_sellers}</td>
+                      <td className="px-4 py-2.5 text-xs text-foreground/80">{op.total_matched}</td>
                       <td className="px-4 py-2.5 text-xs">
                         {op.total_errors > 0 ? (
                           <span className="text-red-400">{op.total_errors}</span>
                         ) : (
-                          <span className="text-slate-500">0</span>
+                          <span className="text-muted-foreground">0</span>
                         )}
                       </td>
                     </tr>

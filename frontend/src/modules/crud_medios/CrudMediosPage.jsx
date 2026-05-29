@@ -191,28 +191,28 @@ export default function CrudMediosPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-100">CRUD Medios de Pago</h1>
-        <p className="text-sm text-slate-400">Gestión masiva de reglas de pago VTEX</p>
+        <h1 className="text-2xl font-semibold text-foreground">CRUD Medios de Pago</h1>
+        <p className="text-sm text-muted-foreground">Gestión masiva de reglas de pago VTEX</p>
       </div>
 
       <Tabs defaultValue="ejecutar">
-        <TabsList className="bg-slate-800 border border-slate-700">
+        <TabsList className="bg-muted border border-border">
           <TabsTrigger value="ejecutar">Ejecutar</TabsTrigger>
           <TabsTrigger value="historial">Historial</TabsTrigger>
         </TabsList>
 
         {/* ── Tab Ejecutar ── */}
         <TabsContent value="ejecutar" className="space-y-4">
-          <Card className="border-slate-700 bg-[#1e293b] p-5 space-y-5">
+          <Card className="border-border bg-card p-5 space-y-5">
             <ScopeSelector onChange={setSellerIds} />
-            <div className="border-t border-slate-700/60" />
+            <div className="border-t border-border" />
 
             {/* 1. Selector de operación */}
             <OperacionSelector
               {...opConfig}
               onChange={setOpConfig}
             />
-            <div className="border-t border-slate-700/60" />
+            <div className="border-t border-border" />
 
             {/* 2. Filtros — deshabilitados para C/U/D */}
             <div className="relative">
@@ -231,11 +231,11 @@ export default function CrudMediosPage() {
             {/* 3. Dry Run (solo para operaciones de escritura) */}
             {opConfig.operacion && opConfig.operacion !== "R" && (
               <>
-                <div className="border-t border-slate-700/60" />
-                <div className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3">
+                <div className="border-t border-border" />
+                <div className="flex items-center justify-between rounded-lg border border-border bg-muted/60 px-4 py-3">
                   <div>
-                    <p className="text-sm font-medium text-slate-200">Dry Run</p>
-                    <p className="text-xs text-slate-500">Simulación — no realiza cambios reales en VTEX</p>
+                    <p className="text-sm font-medium text-foreground">Dry Run</p>
+                    <p className="text-xs text-muted-foreground">Simulación — no realiza cambios reales en VTEX</p>
                   </div>
                   <Switch
                     checked={opConfig.dryRun}
@@ -252,7 +252,7 @@ export default function CrudMediosPage() {
             </div>
           )}
 
-          <Card className="border-slate-700 bg-[#1e293b] p-5">
+          <Card className="border-border bg-card p-5">
             <ExecutionPanel
               canExecute={canExecute}
               loading={loading}
@@ -263,7 +263,7 @@ export default function CrudMediosPage() {
           </Card>
 
           <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-            <DialogContent className="border-red-800 bg-[#1e293b] text-slate-100 sm:max-w-md">
+            <DialogContent className="border-red-800 bg-card text-card-foreground sm:max-w-md">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2 text-red-400">
                   <AlertTriangle className="h-5 w-5" />
@@ -271,7 +271,7 @@ export default function CrudMediosPage() {
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-3 py-2">
-                <p className="text-sm text-slate-300">
+                <p className="text-sm text-foreground/80">
                   Estás por <strong className="text-red-400">eliminar reglas de pago en producción</strong>.
                   Esta acción no se puede deshacer.
                 </p>
@@ -284,7 +284,7 @@ export default function CrudMediosPage() {
               <DialogFooter className="gap-2 sm:gap-2">
                 <Button
                   variant="outline"
-                  className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                  className="border-border text-foreground/80 hover:bg-accent"
                   onClick={() => setConfirmOpen(false)}
                 >
                   Cancelar
@@ -300,7 +300,7 @@ export default function CrudMediosPage() {
           </Dialog>
 
           {result && (result.rows.length > 0 || result.dashboard?.length > 0) && (
-            <Card className="border-slate-700 bg-[#1e293b] p-5">
+            <Card className="border-border bg-card p-5">
               <ResultsTable
                 rows={result.rows}
                 dashboard={result.dashboard}
@@ -313,7 +313,7 @@ export default function CrudMediosPage() {
 
         {/* ── Tab Historial ── */}
         <TabsContent value="historial">
-          <Card className="border-slate-700 bg-[#1e293b] p-5">
+          <Card className="border-border bg-card p-5">
             <HistorialTable />
           </Card>
         </TabsContent>

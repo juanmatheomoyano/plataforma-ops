@@ -22,7 +22,7 @@ export function ExecutionPanel({ canExecute, loading, result, error, onExecute }
       <Button
         onClick={onExecute}
         disabled={!canExecute || loading}
-        className="w-full h-11 text-sm font-semibold bg-slate-100 text-slate-900 hover:bg-slate-200 disabled:opacity-40"
+        className="w-full h-11 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
       >
         {loading ? (
           <>
@@ -47,36 +47,36 @@ export function ExecutionPanel({ canExecute, loading, result, error, onExecute }
 
       {/* Result summary */}
       {result && !loading && (
-        <div className="rounded-lg border border-slate-700 bg-slate-800/60 p-4">
+        <div className="rounded-lg border border-border bg-muted/60 p-4">
           <div className="flex items-center gap-2 mb-3">
             <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-            <span className="text-sm font-medium text-slate-200">
+            <span className="text-sm font-medium text-foreground/80">
               Completado en {result.duration_secs.toFixed(2)}s
             </span>
             {result.dry_run && (
-              <span className="rounded-full border border-slate-600 bg-slate-800 px-2 py-0.5 text-xs text-slate-400">
+              <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                 DRY RUN
               </span>
             )}
           </div>
           <div className="grid grid-cols-4 gap-3">
             <div className="text-center">
-              <p className="text-2xl font-bold text-slate-100">{result.total_sellers}</p>
-              <p className="text-xs text-slate-500">Sellers</p>
+              <p className="text-2xl font-bold text-foreground">{result.total_sellers}</p>
+              <p className="text-xs text-muted-foreground">Sellers</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-slate-100">{result.total_matched}</p>
-              <p className="text-xs text-slate-500">Matched</p>
+              <p className="text-2xl font-bold text-foreground">{result.total_matched}</p>
+              <p className="text-xs text-muted-foreground">Matched</p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-bold text-emerald-400">{result.total_success}</p>
-              <p className="text-xs text-slate-500">Éxitos</p>
+              <p className="text-xs text-muted-foreground">Éxitos</p>
             </div>
             <div className="text-center">
-              <p className={`text-2xl font-bold ${result.total_errors > 0 ? "text-red-400" : "text-slate-400"}`}>
+              <p className={`text-2xl font-bold ${result.total_errors > 0 ? "text-red-400" : "text-muted-foreground"}`}>
                 {result.total_errors}
               </p>
-              <p className="text-xs text-slate-500">Errores</p>
+              <p className="text-xs text-muted-foreground">Errores</p>
             </div>
           </div>
         </div>
