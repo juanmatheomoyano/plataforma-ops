@@ -3,6 +3,7 @@ import { toast } from "sonner"
 import * as XLSX from "xlsx"
 import { save } from "@tauri-apps/plugin-dialog"
 import { writeFile } from "@tauri-apps/plugin-fs"
+import client from "@/core/api/client"
 import {
   flexRender,
   getCoreRowModel,
@@ -69,36 +70,21 @@ const RESULTADOS = [
   { value: "error", label: "ERROR" },
 ]
 
-async function exportDashboardCompleto(dashboard, grupos, eventoColumns, rows) {
-  // Sheet 1: Dashboard — solo grupos y eventos seleccionados + Motivos al final
-  const eventoHeaders = eventoColumns.map((c) => c.evento.nombre)
-  const dashHeaders = [
-    "Seller ID", "Seller", "Total reglas", "Activas", "Max cuotas",
-    ...grupos.map((g) => g.replace("Tarjetas en ", "")),
-    ...eventoHeaders,
-    "Motivos",
-  ]
-  const dashRows = dashboard.map((d) => {
-    const grupoVals = grupos.map((g) => d.grupos?.[g]?.estado || "No configurado")
-    const eventoVals = eventoColumns.map(({ evento, resultMap }) => resultMap[d.seller_id] || "No configurado")
-    const motivos = grupos.flatMap((g) => d.grupos?.[g]?.motivos || []).join("; ")
-    return [d.seller_id, d.seller_name, d.totales, d.activas, d.max_cuotas_activas, ...grupoVals, ...eventoVals, motivos]
-  })
-
-  // Sheet 2: Detalle de reglas
-  const detalleHeaders = ["seller_id", "rule_id", "rule_name", "brand", "level", "estado", "detalle"]
-  const detalleRows = rows.map((r) => detalleHeaders.map((h) => r[h] ?? ""))
-
-  const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([dashHeaders, ...dashRows]), "Dashboard")
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([detalleHeaders, ...detalleRows]), "Detalle")
-
-  const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" })
+async function downloadBackendExcel(scope, grupos, eventoColumns) {
+  const body = {
+    scope: scope || { seller_ids: [] },
+    grupos_seleccionados: grupos ?? [],
+    evento_resultados: (eventoColumns ?? []).map(({ evento, resultMap }) => ({
+      nombre: evento.nombre,
+      result_map: resultMap,
+    })),
+  }
+  const { data } = await client.post("/crud-medios/export", body, { responseType: "arraybuffer" })
   const filePath = await save({
     filters: [{ name: "Excel", extensions: ["xlsx"] }],
-    defaultPath: `dashboard_${new Date().toISOString().slice(0, 10)}.xlsx`,
+    defaultPath: `vtex_payments_${new Date().toISOString().slice(0, 10)}.xlsx`,
   })
-  if (filePath) await writeFile(filePath, new Uint8Array(buf))
+  if (filePath) await writeFile(filePath, new Uint8Array(data))
 }
 
 export function ResultsTable({ rows, dashboard, operacion, scope, onFilterErrors, eventoColumns = [], loadingEventos = false, selectedGrupos }) {
@@ -110,10 +96,10 @@ export function ResultsTable({ rows, dashboard, operacion, scope, onFilterErrors
   async function handleExportDashboard() {
     setExporting(true)
     try {
-      await exportDashboardCompleto(dashboard ?? [], selectedGrupos ?? [], eventoColumns, rows ?? [])
+      await downloadBackendExcel(scope, selectedGrupos, eventoColumns)
     } catch (err) {
       console.error("Export error:", err)
-      toast.error(`Error al generar el Excel: ${err?.message ?? String(err)}`)
+      toast.error(`Error al exportar: ${err?.message ?? String(err)}`)
     } finally {
       setExporting(false)
     }

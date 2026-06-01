@@ -51,6 +51,19 @@ VALIDATION_FONTS = {
 
 VALIDATION_COLS = {cfg[0] for cfg in CUOTA_CONFIGS}
 
+EVENTO_FILLS = {
+    "Ok":             PatternFill("solid", start_color="E2EFDA"),
+    "A corregir":     PatternFill("solid", start_color="FFE0E0"),
+    "No configurado": PatternFill("solid", start_color="FFFFFF"),
+    "Error":          PatternFill("solid", start_color="FFF0CC"),
+}
+EVENTO_FONTS = {
+    "Ok":             Font(name="Arial", size=9, bold=True, color="375623"),
+    "A corregir":     Font(name="Arial", size=9, bold=True, color="C00000"),
+    "No configurado": Font(name="Arial", size=9, color="AAAAAA"),
+    "Error":          Font(name="Arial", size=9, bold=True, color="BF5700"),
+}
+
 COL_WIDTHS = {
     "vendedor": 24, "cuenta": 24, "id_regla": 38, "nombre_regla": 35,
     "id_sistema_pago": 18, "sistema_pago": 18, "nivel_tarjeta": 18,
@@ -124,7 +137,11 @@ def _write_header_row(ws, columns: list[str], header_fill):
         )
 
 
-def _write_data_rows(ws, columns: list[str], rows: list[dict]):
+def _write_data_rows(ws, columns: list[str], rows: list[dict],
+                     validation_cols: set | None = None,
+                     evento_cols: set | None = None):
+    vc = VALIDATION_COLS if validation_cols is None else validation_cols
+    ec = evento_cols or set()
     for r_idx, row_dict in enumerate(rows, 2):
         base_fill = C["fila_par"] if r_idx % 2 == 0 else None
         for c_idx, col_name in enumerate(columns, 1):
@@ -132,9 +149,13 @@ def _write_data_rows(ws, columns: list[str], rows: list[dict]):
             val = "" if val is None else str(val)
             cell = ws.cell(row=r_idx, column=c_idx, value=val)
             cell.border = _BORDE
-            if col_name in VALIDATION_COLS:
+            if col_name in vc:
                 cell.fill = VALIDATION_FILLS.get(val, PatternFill())
                 cell.font = VALIDATION_FONTS.get(val, C["celda"])
+                cell.alignment = C["centro"]
+            elif col_name in ec:
+                cell.fill = EVENTO_FILLS.get(val, PatternFill())
+                cell.font = EVENTO_FONTS.get(val, C["celda"])
                 cell.alignment = C["centro"]
             else:
                 cell.font = C["celda"]
@@ -153,9 +174,24 @@ def _write_pagos_sheet(wb, all_rows: list[dict]):
     _write_data_rows(ws, PAGOS_COLS, all_rows)
 
 
-def _write_dashboard_sheet(wb, dashboards: list[SellerDashboard]):
+def _write_dashboard_sheet(wb, dashboards: list[SellerDashboard],
+                           grupos_seleccionados: list[str] | None = None,
+                           evento_resultados: list[dict] | None = None):
+    grupos_cols = grupos_seleccionados if grupos_seleccionados is not None else [cfg[0] for cfg in CUOTA_CONFIGS]
+    evento_names = [e["nombre"] for e in (evento_resultados or [])]
+    evento_maps  = {e["nombre"]: e.get("result_map", {}) for e in (evento_resultados or [])}
+
+    dynamic_cols = (
+        ["Seller", "Seller ID",
+         "Tarjetas totales", "Tarjetas activas", "Tarjetas inactivas",
+         "Vigentes hoy", "Firmas", "Max cuotas activas", "Conectores", "Emisores"]
+        + grupos_cols
+        + evento_names
+        + ["Motivo"]
+    )
+
     ws = wb.create_sheet("DASHBOARD_VENDEDORES")
-    _write_header_row(ws, DASHBOARD_COLS, C["naranja"])
+    _write_header_row(ws, dynamic_cols, C["naranja"])
 
     rows: list[dict] = []
     for d in sorted(dashboards, key=lambda x: x.seller_name):
@@ -172,12 +208,16 @@ def _write_dashboard_sheet(wb, dashboards: list[SellerDashboard]):
             "Emisores":           ", ".join(d.emisores),
             "Motivo":             d.motivos_all,
         }
-        for col_name, _, _ in CUOTA_CONFIGS:
+        for col_name in grupos_cols:
             grupo = d.grupos.get(col_name)
             row[col_name] = grupo.estado if grupo else "No configurado"
+        for nombre in evento_names:
+            row[nombre] = evento_maps[nombre].get(d.seller_id, "No configurado")
         rows.append(row)
 
-    _write_data_rows(ws, DASHBOARD_COLS, rows)
+    _write_data_rows(ws, dynamic_cols, rows,
+                     validation_cols=set(grupos_cols),
+                     evento_cols=set(evento_names))
 
 
 def _write_errores_sheet(wb, error_rows: list[dict]):
@@ -265,6 +305,8 @@ def build_excel(
     error_rows: list[dict],
     elapsed: float,
     zero_rules: int = 0,
+    grupos_seleccionados: list[str] | None = None,
+    evento_resultados: list[dict] | None = None,
 ) -> bytes:
     """
     Genera el Excel en memoria y retorna los bytes.
@@ -277,7 +319,9 @@ def build_excel(
         _write_pagos_sheet(wb, all_rows)
 
     if dashboards:
-        _write_dashboard_sheet(wb, dashboards)
+        _write_dashboard_sheet(wb, dashboards,
+                               grupos_seleccionados=grupos_seleccionados,
+                               evento_resultados=evento_resultados)
 
     if error_rows:
         _write_errores_sheet(wb, error_rows)
@@ -295,19 +339,6 @@ def build_excel(
     wb.save(buf)
     return buf.getvalue()
 
-
-EVENTO_FILLS = {
-    "Ok":             PatternFill("solid", start_color="E2EFDA"),
-    "A corregir":     PatternFill("solid", start_color="FFE0E0"),
-    "No configurado": PatternFill("solid", start_color="FFFFFF"),
-    "Error":          PatternFill("solid", start_color="FFF0CC"),
-}
-EVENTO_FONTS = {
-    "Ok":             Font(name="Arial", size=9, bold=True, color="375623"),
-    "A corregir":     Font(name="Arial", size=9, bold=True, color="C00000"),
-    "No configurado": Font(name="Arial", size=9, color="AAAAAA"),
-    "Error":          Font(name="Arial", size=9, bold=True, color="BF5700"),
-}
 
 EVENTO_COLS = ["Seller", "Seller ID", "Estado evento", "Reglas evento", "Motivos evento"]
 COL_WIDTHS.update({

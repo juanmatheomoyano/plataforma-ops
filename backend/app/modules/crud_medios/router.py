@@ -19,6 +19,7 @@ from .schemas import (
     CrudResponse,
     EventoValidateRequest,
     EventoValidateResponse,
+    ExportRequest,
     OperationSummary,
     SellerScopeOut,
 )
@@ -199,13 +200,13 @@ async def cleanup_history(
 
 @router.post("/export")
 async def export_excel(
-    body: CrudRequest,
+    body: ExportRequest,
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
     """
-    Genera y descarga un Excel con RESUMEN, DASHBOARD_VENDEDORES,
-    PAGOS_CONSOLIDADO, ERRORES. Siempre fetches todas las reglas sin filtrar.
+    Genera Excel con RESUMEN (gráfico de torta), DASHBOARD_VENDEDORES,
+    PAGOS_CONSOLIDADO, ERRORES. Incluye solo los grupos y eventos seleccionados.
     """
     import time as _time
     t0 = _time.monotonic()
@@ -214,7 +215,15 @@ async def export_excel(
     all_enriched, dashboards, error_rows = await fetch_enriched_for_export(db, scope_ids)
 
     elapsed = _time.monotonic() - t0
-    xlsx_bytes = build_excel(all_enriched, dashboards, error_rows, elapsed)
+    evento_resultados = [
+        {"nombre": e.nombre, "result_map": e.result_map}
+        for e in body.evento_resultados
+    ]
+    xlsx_bytes = build_excel(
+        all_enriched, dashboards, error_rows, elapsed,
+        grupos_seleccionados=body.grupos_seleccionados,
+        evento_resultados=evento_resultados,
+    )
 
     filename = f"vtex_payments_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
     return Response(

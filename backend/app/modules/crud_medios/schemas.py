@@ -140,6 +140,17 @@ class EventoValidateRequest(BaseModel):
     evento: EventoConfig
 
 
+class EventoResultadoExport(BaseModel):
+    nombre: str
+    result_map: dict[str, str] = Field(default_factory=dict)  # seller_id -> estado
+
+
+class ExportRequest(BaseModel):
+    scope: ScopeRequest = Field(default_factory=ScopeRequest)
+    grupos_seleccionados: list[str] | None = None   # None = todos los grupos
+    evento_resultados: list[EventoResultadoExport] = Field(default_factory=list)
+
+
 class GrupoEventoResult(BaseModel):
     estado: str
     motivos: list[str] = []
