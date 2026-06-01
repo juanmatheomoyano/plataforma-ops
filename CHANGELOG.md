@@ -5,6 +5,14 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [1.6.4] — 2026-06-01 — Fix: manejo de errores en export Excel
+
+### Frontend
+- Export Excel: agrega fallback `rows ?? []` para evitar crash cuando rows es undefined.
+- Error en export ahora muestra el mensaje real en el toast en lugar de texto genérico.
+
+---
+
 ## [1.6.3] — 2026-06-01 — Fix: restaurar botón "Exportar Excel completo"
 
 ### Frontend
