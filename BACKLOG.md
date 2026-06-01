@@ -56,7 +56,7 @@
 
 ## Próximos pasos — Sprint 2
 
-### 1. Módulo Eventos (reemplaza Validación de Eventos) ✓ (v1.6.2, 2026-06-01)
+### 1. Módulo Eventos (reemplaza Validación de Eventos) ✓ (v1.6.3, 2026-06-01)
 - [x] Renombrar "Validación de Eventos" → "Eventos", acceso solo admin
 - [x] Tab "Crear evento": formulario simple que guarda en BD sin validar (nombre, cuotas, fechas, scope)
 - [x] Tab "Administrar eventos": tabla con badge VIGENTE, editar / activar-desactivar / eliminar

@@ -5,6 +5,14 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [1.6.3] — 2026-06-01 — Fix: restaurar botón "Exportar Excel completo"
+
+### Frontend
+- Restaurado el label "Exportar Excel completo" que había quedado como solo "Excel" en v1.6.2.
+- El botón genera el mismo archivo multi-hoja: Dashboard (grupos + eventos + motivos) + Detalle.
+
+---
+
 ## [1.6.2] — 2026-06-01 — Fix: export Excel Dashboard respeta grupos y eventos seleccionados
 
 ### Frontend
