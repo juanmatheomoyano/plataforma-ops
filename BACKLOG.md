@@ -62,7 +62,7 @@
 - [x] Tab "Administrar eventos": tabla con badge VIGENTE, editar / activar-desactivar / eliminar
 - [x] Modelo BD: tabla `eventos` (nombre, fecha_ini, fecha_fin, cuotas_requeridas, max_cuota, scope_seller_ids, creado_por, is_active)
 - [x] CRUD Read — panel de validación: chips de grupos de cuotas (1p/6c/9c/12c/18c/24c) seleccionables; chips de eventos vigentes y próximos seleccionables → columnas adicionales en Dashboard por seller
-- [x] CRUD Read — export Excel: un único botón genera Dashboard (grupos + eventos + motivos) + Detalle (reglas), respetando exactamente lo que el usuario activó
+- [x] CRUD Read — export Excel completo (openpyxl): RESUMEN con gráfico de torta, DASHBOARD_VENDEDORES con colores y solo los grupos/eventos seleccionados, PAGOS_CONSOLIDADO, ERRORES
 
 ### 2. Filtro de analista en CRUD Read
 - [ ] En el módulo CRUD Medios de Pago, operación Read: agregar filtro "Analista" al scope selector

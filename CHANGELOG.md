@@ -5,6 +5,19 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [1.6.5] — 2026-06-01 — Fix: restaurar export Excel completo con colores y gráfico
+
+### Backend
+- Endpoint `POST /crud-medios/export` ahora acepta `grupos_seleccionados` y `evento_resultados`.
+- Hoja **DASHBOARD_VENDEDORES**: muestra solo los grupos de cuotas activados + columnas de eventos con colores (Ok=verde, A corregir=rojo, No configurado=gris).
+- Hojas **RESUMEN** (gráfico de torta + KPIs), **PAGOS_CONSOLIDADO** y **ERRORES** intactas.
+
+### Frontend
+- "Exportar Excel completo" vuelve a usar el export por backend (openpyxl) en lugar del export frontend básico sin colores ni gráfico.
+- Pasa `grupos_seleccionados` y resultados de eventos al backend para que el Excel refleje exactamente lo que el usuario configuró.
+
+---
+
 ## [1.6.4] — 2026-06-01 — Fix: manejo de errores en export Excel
 
 ### Frontend
