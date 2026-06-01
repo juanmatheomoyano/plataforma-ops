@@ -110,9 +110,10 @@ export function ResultsTable({ rows, dashboard, operacion, scope, onFilterErrors
   async function handleExportDashboard() {
     setExporting(true)
     try {
-      await exportDashboardCompleto(dashboard ?? [], selectedGrupos ?? [], eventoColumns, rows)
-    } catch {
-      toast.error("Error al generar el Excel")
+      await exportDashboardCompleto(dashboard ?? [], selectedGrupos ?? [], eventoColumns, rows ?? [])
+    } catch (err) {
+      console.error("Export error:", err)
+      toast.error(`Error al generar el Excel: ${err?.message ?? String(err)}`)
     } finally {
       setExporting(false)
     }
