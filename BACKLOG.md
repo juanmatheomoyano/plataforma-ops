@@ -56,12 +56,13 @@
 
 ## Próximos pasos — Sprint 2
 
-### 1. Módulo Eventos (reemplaza Validación de Eventos) ✓ (v1.6.1, 2026-05-29)
+### 1. Módulo Eventos (reemplaza Validación de Eventos) ✓ (v1.6.2, 2026-06-01)
 - [x] Renombrar "Validación de Eventos" → "Eventos", acceso solo admin
 - [x] Tab "Crear evento": formulario simple que guarda en BD sin validar (nombre, cuotas, fechas, scope)
 - [x] Tab "Administrar eventos": tabla con badge VIGENTE, editar / activar-desactivar / eliminar
 - [x] Modelo BD: tabla `eventos` (nombre, fecha_ini, fecha_fin, cuotas_requeridas, max_cuota, scope_seller_ids, creado_por, is_active)
-- [x] CRUD Read — panel de validación: chips de grupos de cuotas (1p/6c/9c/12c/18c/24c) seleccionables; chips de eventos vigentes seleccionables → columnas adicionales en Dashboard por seller
+- [x] CRUD Read — panel de validación: chips de grupos de cuotas (1p/6c/9c/12c/18c/24c) seleccionables; chips de eventos vigentes y próximos seleccionables → columnas adicionales en Dashboard por seller
+- [x] CRUD Read — export Excel: un único botón genera Dashboard (grupos + eventos + motivos) + Detalle (reglas), respetando exactamente lo que el usuario activó
 
 ### 2. Filtro de analista en CRUD Read
 - [ ] En el módulo CRUD Medios de Pago, operación Read: agregar filtro "Analista" al scope selector

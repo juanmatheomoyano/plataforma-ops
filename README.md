@@ -26,8 +26,8 @@ Reemplaza el script Python de consola `crud_medios_de_pago_v6.py` con una interf
 |---|---|---|
 | **Dashboard** | todos | Métricas por rol, últimas operaciones, accesos rápidos |
 | **Sellers** | todos (ABM: admin) | Gestión de sellers y credenciales VTEX encriptadas |
-| **CRUD Medios de Pago** | todos | Operaciones R/C/U/D masivas sobre reglas de pago VTEX. Read incluye validación por grupos de cuotas y eventos |
-| **Eventos** | solo admin | Crear y administrar eventos planificados (Hot Sale, Cyber Monday, etc.). La validación por seller se ejecuta desde CRUD Read |
+| **CRUD Medios de Pago** | todos | Operaciones R/C/U/D masivas sobre reglas de pago VTEX. Read incluye validación por grupos de cuotas (1p/6c/9c/12c/18c/24c) y eventos vigentes/próximos; export Excel multi-hoja con Dashboard + Detalle |
+| **Eventos** | solo admin | Crear y administrar eventos planificados (Hot Sale, Cyber Monday, etc.). Muestra eventos vigentes y próximos. La validación por seller se ejecuta desde CRUD Read |
 | **Usuarios** | solo admin | ABM de usuarios y roles |
 | **Configuración** | todos | Toggle dark/light mode, cambio de contraseña |
 

@@ -5,6 +5,17 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [1.6.2] — 2026-06-01 — Fix: export Excel Dashboard respeta grupos y eventos seleccionados
+
+### Frontend
+- **Un único botón Excel** reemplaza los dos anteriores (backend-export y DashboardTable-export)
+- El export genera un archivo multi-hoja:
+  - **Dashboard**: columnas exactas según grupos de cuotas activados + columnas de eventos seleccionados + columna Motivos
+  - **Detalle**: todas las reglas procesadas con seller, brand, level, estado, resultado
+- El botón queda deshabilitado mientras carga la validación de eventos para evitar exportar datos incompletos
+
+---
+
 ## [1.6.1] — 2026-05-29 — Fix: eventos próximos visibles en CRUD Read
 
 ### Backend
