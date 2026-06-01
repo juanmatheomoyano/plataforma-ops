@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DashboardTable } from "./DashboardTable"
-import client from "@/core/api/client"
 
 const DETALLE_BADGE = {
   matched: { label: "OK", cls: "border-emerald-700 bg-emerald-900/40 text-emerald-400" },
@@ -70,18 +69,36 @@ const RESULTADOS = [
   { value: "error", label: "ERROR" },
 ]
 
-async function downloadBackendExcel(scope) {
-  const { data } = await client.post(
-    "/crud-medios/export",
-    { operacion: "R", scope, dry_run: true },
-    { responseType: "blob" },
-  )
-  const url = URL.createObjectURL(new Blob([data]))
-  const a = document.createElement("a")
-  a.href = url
-  a.download = `vtex_payments_${new Date().toISOString().slice(0, 10)}.xlsx`
-  a.click()
-  URL.revokeObjectURL(url)
+async function exportDashboardCompleto(dashboard, grupos, eventoColumns, rows) {
+  // Sheet 1: Dashboard — solo grupos y eventos seleccionados + Motivos al final
+  const eventoHeaders = eventoColumns.map((c) => c.evento.nombre)
+  const dashHeaders = [
+    "Seller ID", "Seller", "Total reglas", "Activas", "Max cuotas",
+    ...grupos.map((g) => g.replace("Tarjetas en ", "")),
+    ...eventoHeaders,
+    "Motivos",
+  ]
+  const dashRows = dashboard.map((d) => {
+    const grupoVals = grupos.map((g) => d.grupos?.[g]?.estado || "No configurado")
+    const eventoVals = eventoColumns.map(({ evento, resultMap }) => resultMap[d.seller_id] || "No configurado")
+    const motivos = grupos.flatMap((g) => d.grupos?.[g]?.motivos || []).join("; ")
+    return [d.seller_id, d.seller_name, d.totales, d.activas, d.max_cuotas_activas, ...grupoVals, ...eventoVals, motivos]
+  })
+
+  // Sheet 2: Detalle de reglas
+  const detalleHeaders = ["seller_id", "rule_id", "rule_name", "brand", "level", "estado", "detalle"]
+  const detalleRows = rows.map((r) => detalleHeaders.map((h) => r[h] ?? ""))
+
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([dashHeaders, ...dashRows]), "Dashboard")
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([detalleHeaders, ...detalleRows]), "Detalle")
+
+  const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" })
+  const filePath = await save({
+    filters: [{ name: "Excel", extensions: ["xlsx"] }],
+    defaultPath: `dashboard_${new Date().toISOString().slice(0, 10)}.xlsx`,
+  })
+  if (filePath) await writeFile(filePath, new Uint8Array(buf))
 }
 
 export function ResultsTable({ rows, dashboard, operacion, scope, onFilterErrors, eventoColumns = [], loadingEventos = false, selectedGrupos }) {
@@ -90,10 +107,10 @@ export function ResultsTable({ rows, dashboard, operacion, scope, onFilterErrors
   const [colFilters, setColFilters] = useState({ seller: "", brand: "", level: "", estado: "", resultado: "" })
   const [exporting, setExporting] = useState(false)
 
-  async function handleBackendExport() {
+  async function handleExportDashboard() {
     setExporting(true)
     try {
-      await downloadBackendExcel(scope || { seller_ids: [] })
+      await exportDashboardCompleto(dashboard ?? [], selectedGrupos ?? [], eventoColumns, rows)
     } catch {
       toast.error("Error al generar el Excel")
     } finally {
@@ -377,15 +394,15 @@ export function ResultsTable({ rows, dashboard, operacion, scope, onFilterErrors
           <Button
             size="sm"
             variant="outline"
-            onClick={handleBackendExport}
-            disabled={exporting}
+            onClick={handleExportDashboard}
+            disabled={exporting || loadingEventos}
             className="h-8 border-border bg-transparent text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
           >
             {exporting
               ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
               : <Download className="mr-1.5 h-3.5 w-3.5" />
             }
-            Exportar Excel completo
+            Excel
           </Button>
         </div>
         <Tabs defaultValue="dashboard">
