@@ -402,7 +402,7 @@ export function ResultsTable({ rows, dashboard, operacion, scope, onFilterErrors
               ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
               : <Download className="mr-1.5 h-3.5 w-3.5" />
             }
-            Excel
+            Exportar Excel completo
           </Button>
         </div>
         <Tabs defaultValue="dashboard">
