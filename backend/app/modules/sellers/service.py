@@ -243,9 +243,15 @@ async def import_sellers_from_file(
 
 
 _EXPORT_COLS = [
-    "id_ecommerce", "seller_name", "seller_id", "analista", "estado_keys",
-    "integracion", "integracion_spec", "vendiendo", "creado_por", "fecha_creacion",
-    "notas", "is_active",
+    "id_ecommerce", "seller_name", "seller_id", "app_key", "app_token",
+    "analista", "estado_keys", "integracion", "integracion_spec",
+    "vendiendo", "creado_por", "fecha_creacion", "notas", "is_active",
+]
+
+_EXPORT_HEADERS = [
+    "id_ecommerce", "seller_name", "seller_id", "App Key", "App Token",
+    "analista", "estado_keys", "integracion", "integracion_spec",
+    "vendiendo", "creado_por", "fecha_creacion", "notas", "is_active",
 ]
 
 
@@ -267,12 +273,18 @@ async def export_sellers_xlsx(db: AsyncSession) -> bytes:
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Sellers"
-    ws.append(_EXPORT_COLS)
+    ws.append(_EXPORT_HEADERS)
     for s in sellers:
+        try:
+            app_key, app_token = get_decrypted_credentials(s) if s.app_key_enc else ("", "")
+        except Exception:
+            app_key, app_token = "", ""
         ws.append([
             s.id_ecommerce,
             s.seller_name,
             s.seller_id,
+            app_key,
+            app_token,
             s.analista,
             s.estado_keys.value if s.estado_keys else "",
             s.integracion,
@@ -327,6 +339,12 @@ async def import_update_sellers(
                     existing.vendiendo = _parse_bool(row_dict["vendiendo"])
                 if "is_active" in row_dict:
                     existing.is_active = _parse_active(row_dict["is_active"])
+                ak = str(row_dict.get("app_key") or "").strip()
+                at = str(row_dict.get("app_token") or "").strip()
+                if ak:
+                    existing.app_key_enc = encrypt(ak)
+                if at:
+                    existing.app_token_enc = encrypt(at)
                 existing.updated_at = datetime.now(timezone.utc)
                 await db.commit()
                 await db.refresh(existing)
@@ -337,12 +355,14 @@ async def import_update_sellers(
                 if not id_ecommerce or not seller_name:
                     errors.append(ImportError(fila=row_idx, seller_id=sid, motivo="id_ecommerce y seller_name son requeridos para crear"))
                     continue
+                ak = str(row_dict.get("app_key") or "").strip()
+                at = str(row_dict.get("app_token") or "").strip()
                 new_seller = Seller(
                     id_ecommerce=id_ecommerce,
                     seller_name=seller_name,
                     seller_id=sid,
-                    app_key_enc=None,
-                    app_token_enc=None,
+                    app_key_enc=encrypt(ak) if ak else None,
+                    app_token_enc=encrypt(at) if at else None,
                     analista=str(row_dict.get("analista") or "").strip() or None,
                     estado_keys=_parse_estado(row_dict.get("estado_keys")),
                     integracion=str(row_dict.get("integracion") or "").strip() or None,

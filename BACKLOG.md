@@ -69,12 +69,10 @@
 - [x] Al seleccionar un analista, el scope se limita automáticamente a los sellers asignados a ese analista
 - [x] El filtro muestra solo analistas con sellers activos asignados, con conteo y preview de sellers
 
-### 3. Desencriptar y exponer credenciales VTEX (solo admin)
-- [ ] Agregar endpoint `GET /api/sellers/{id}/credentials` (solo admin) que devuelva `app_key` y `app_token` desencriptados
-- [ ] En la UI de Sellers: solo admins ven botón "Ver credenciales" que abre un modal con las keys visibles (con advertencia de confidencialidad)
-- [ ] El export de Excel de Sellers (solo admin) debe incluir opción de exportar con o sin credenciales desencriptadas
-- [ ] Registrar en auditoría cada acceso a credenciales (quién, cuándo, qué seller)
-- [ ] Roles no-admin: sin cambios, solo lectura de datos no sensibles
+### 3. Credenciales VTEX en export/import sellers ✓ (v1.7.1, 2026-06-05)
+- [x] Export de sellers restringido a solo admin; incluye App Key y App Token desencriptadas
+- [x] Import actualiza credenciales si vienen en el Excel (sellers existentes y nuevos)
+- [x] Botón "Exportar Excel" en Sellers visible solo para admin
 
 ### 4. Dashboard personalizado por rol con gráficos
 - [ ] Reemplazar el dashboard actual por uno con gráficos dinámicos según el rol del usuario

@@ -52,7 +52,7 @@ async def create_seller(data: SellerCreate, db: AsyncSession = Depends(get_db)):
     return await service.create_seller(data, db)
 
 
-@router.get("/export", dependencies=[_admin_senior])
+@router.get("/export", dependencies=[_admin])
 async def export_sellers(db: AsyncSession = Depends(get_db)):
     buf = await service.export_sellers_xlsx(db)
     return StreamingResponse(

@@ -5,6 +5,18 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [1.7.1] — 2026-06-05 — Export/import sellers con credenciales VTEX (solo admin)
+
+### Backend
+- `GET /sellers/export` ahora restringido a **solo admin** (antes: admin + analista_senior).
+- El Excel exportado incluye columnas **App Key** y **App Token** desencriptadas.
+- `POST /sellers/import-update`: si el Excel trae `App Key` / `App Token`, las encripta y actualiza en BD (tanto para sellers existentes como para sellers nuevos).
+
+### Frontend
+- Botón "Exportar Excel" en Sellers visible solo para admin.
+
+---
+
 ## [1.7.0] — 2026-06-05 — Filtro por analista en scope selector (todo el CRUD)
 
 ### Frontend

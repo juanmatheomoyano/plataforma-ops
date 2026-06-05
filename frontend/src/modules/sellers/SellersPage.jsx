@@ -26,7 +26,7 @@ const ESTADO_BADGE = {
 export default function SellersPage() {
   const { hasRole } = useAuth()
   const isAdmin = hasRole(["admin"])
-  const canExport = hasRole(["admin", "analista_senior"])
+  const canExport = hasRole(["admin"])
 
   const [sellers, setSellers] = useState([])
   const [loading, setLoading] = useState(true)
