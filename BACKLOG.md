@@ -64,10 +64,10 @@
 - [x] CRUD Read — panel de validación: chips de grupos de cuotas (1p/6c/9c/12c/18c/24c) seleccionables; chips de eventos vigentes y próximos seleccionables → columnas adicionales en Dashboard por seller
 - [x] CRUD Read — export Excel completo (openpyxl): RESUMEN con gráfico de torta, DASHBOARD_VENDEDORES con colores y solo los grupos/eventos seleccionados, PAGOS_CONSOLIDADO, ERRORES
 
-### 2. Filtro de analista en CRUD Read
-- [ ] En el módulo CRUD Medios de Pago, operación Read: agregar filtro "Analista" al scope selector
-- [ ] Al seleccionar un analista, el scope se limita automáticamente a los sellers asignados a ese analista
-- [ ] El filtro debe mostrar solo analistas con sellers activos asignados
+### 2. Filtro de analista en scope selector ✓ (v1.7.0, 2026-06-05)
+- [x] En el módulo CRUD Medios de Pago: agregar modo "Por analista" al scope selector (aplica a C/R/U/D)
+- [x] Al seleccionar un analista, el scope se limita automáticamente a los sellers asignados a ese analista
+- [x] El filtro muestra solo analistas con sellers activos asignados, con conteo y preview de sellers
 
 ### 3. Desencriptar y exponer credenciales VTEX (solo admin)
 - [ ] Agregar endpoint `GET /api/sellers/{id}/credentials` (solo admin) que devuelva `app_key` y `app_token` desencriptados

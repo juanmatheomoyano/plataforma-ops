@@ -5,6 +5,7 @@ import client from "@/core/api/client"
 
 const MODES = [
   { value: "todos", label: "Todos los sellers activos" },
+  { value: "analista", label: "Por analista" },
   { value: "uno", label: "Seller específico" },
   { value: "lista", label: "Lista de sellers" },
 ]
@@ -13,6 +14,7 @@ export function ScopeSelector({ onChange }) {
   const [sellers, setSellers] = useState([])
   const [mode, setMode] = useState("todos")
   const [selected, setSelected] = useState([])
+  const [selectedAnalista, setSelectedAnalista] = useState("")
   const [search, setSearch] = useState("")
   const [open, setOpen] = useState(false)
   const dropRef = useRef(null)
@@ -32,12 +34,28 @@ export function ScopeSelector({ onChange }) {
   useEffect(() => {
     if (mode === "todos") {
       onChange([])
+    } else if (mode === "analista") {
+      // scope se actualiza al seleccionar analista
+      onChange([])
     } else {
       onChange(selected.map((s) => s.seller_id))
     }
     setSelected([])
+    setSelectedAnalista("")
     setSearch("")
   }, [mode]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function handleAnalistaChange(analista) {
+    setSelectedAnalista(analista)
+    if (!analista) {
+      onChange([])
+      return
+    }
+    const ids = sellers
+      .filter((s) => s.analista === analista)
+      .map((s) => s.seller_id)
+    onChange(ids)
+  }
 
   function toggleSeller(seller) {
     if (mode === "uno") {
@@ -67,7 +85,18 @@ export function ScopeSelector({ onChange }) {
       s.seller_id.toLowerCase().includes(search.toLowerCase())
   )
 
-  const scopeCount = mode === "todos" ? sellers.length : selected.length
+  const analistas = [...new Set(sellers.map((s) => s.analista).filter(Boolean))].sort()
+
+  const analistaSellers = selectedAnalista
+    ? sellers.filter((s) => s.analista === selectedAnalista)
+    : []
+
+  const scopeCount =
+    mode === "todos"
+      ? sellers.length
+      : mode === "analista"
+      ? analistaSellers.length
+      : selected.length
 
   return (
     <div className="space-y-3">
@@ -79,7 +108,7 @@ export function ScopeSelector({ onChange }) {
       </div>
 
       {/* Mode tabs */}
-      <div className="flex gap-1">
+      <div className="flex flex-wrap gap-1">
         {MODES.map((m) => (
           <button
             key={m.value}
@@ -96,8 +125,46 @@ export function ScopeSelector({ onChange }) {
         ))}
       </div>
 
+      {/* Analista mode */}
+      {mode === "analista" && (
+        <div className="space-y-2">
+          <select
+            value={selectedAnalista}
+            onChange={(e) => handleAnalistaChange(e.target.value)}
+            className="w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          >
+            <option value="">Seleccioná un analista...</option>
+            {analistas.map((a) => {
+              const count = sellers.filter((s) => s.analista === a).length
+              return (
+                <option key={a} value={a}>
+                  {a} ({count} seller{count !== 1 ? "s" : ""})
+                </option>
+              )
+            })}
+          </select>
+          {selectedAnalista && analistaSellers.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {analistaSellers.slice(0, 8).map((s) => (
+                <span
+                  key={s.seller_id}
+                  className="rounded-full bg-accent/60 px-2.5 py-0.5 text-xs text-foreground/80"
+                >
+                  {s.seller_name}
+                </span>
+              ))}
+              {analistaSellers.length > 8 && (
+                <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
+                  +{analistaSellers.length - 8} más
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Dropdown for uno/lista modes */}
-      {mode !== "todos" && (
+      {(mode === "uno" || mode === "lista") && (
         <div className="relative" ref={dropRef}>
           {/* Chips (lista mode) */}
           {mode === "lista" && selected.length > 0 && (

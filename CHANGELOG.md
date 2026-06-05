@@ -5,6 +5,16 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [1.7.0] — 2026-06-05 — Filtro por analista en scope selector (todo el CRUD)
+
+### Frontend
+- Nuevo modo **"Por analista"** en el selector de scope del CRUD Medios de Pago (aplica a todas las operaciones: C/R/U/D).
+- Al seleccionar un analista, el scope se limita automáticamente a los sellers asignados a ese analista.
+- El dropdown muestra solo analistas con sellers activos asignados, con el conteo de sellers de cada uno.
+- Se muestran chips de preview con los primeros 8 sellers del analista seleccionado (y "+N más" si hay más).
+
+---
+
 ## [1.6.5] — 2026-06-01 — Fix: restaurar export Excel completo con colores y gráfico
 
 ### Backend
