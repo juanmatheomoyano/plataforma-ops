@@ -34,7 +34,8 @@ from .service import (
 
 router = APIRouter(prefix="/crud-medios", tags=["crud-medios"])
 
-_WRITE_ROLES = {"admin", "analista_senior"}
+_WRITE_ROLES = {"admin"}
+_ALL_HISTORY_ROLES = {"admin", "supervisor"}
 
 
 @router.post("/execute", response_model=CrudResponse)
@@ -54,7 +55,7 @@ async def list_operations(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    is_admin = current_user.role.value == "admin"
+    sees_all = current_user.role.value in _ALL_HISTORY_ROLES
 
     q = (
         select(CrudOperation, User.username)
@@ -62,7 +63,7 @@ async def list_operations(
         .order_by(CrudOperation.started_at.desc())
         .limit(200)
     )
-    if not is_admin:
+    if not sees_all:
         q = q.where(CrudOperation.user_id == current_user.id)
 
     result = await db.execute(q)
@@ -92,14 +93,14 @@ async def get_operation(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    is_admin = current_user.role.value == "admin"
+    sees_all = current_user.role.value in _ALL_HISTORY_ROLES
 
     q = (
         select(CrudOperation)
         .where(CrudOperation.id == operation_id)
         .options(selectinload(CrudOperation.rows))
     )
-    if not is_admin:
+    if not sees_all:
         q = q.where(CrudOperation.user_id == current_user.id)
 
     result = await db.execute(q)
@@ -166,18 +167,10 @@ async def get_stats(
     )
 
     total_usuarios_activos = None
-    ultimo_operador = None
-    if current_user.role.value == "admin":
+    if current_user.role.value in _ALL_HISTORY_ROLES:
         total_usuarios_activos = await db.scalar(
             select(func.count()).select_from(User).where(User.is_active.is_(True))
         )
-        row = await db.execute(
-            select(User.username)
-            .join(CrudOperation, CrudOperation.user_id == User.id)
-            .order_by(CrudOperation.started_at.desc())
-            .limit(1)
-        )
-        ultimo_operador = row.scalar_one_or_none()
 
     return {
         "total_sellers_activos": total_activos,
@@ -185,7 +178,6 @@ async def get_stats(
         "total_sellers_keys_vencidas": total_vencidas,
         "total_operaciones_hoy": total_ops_hoy,
         "total_usuarios_activos": total_usuarios_activos,
-        "ultimo_operador": ultimo_operador,
     }
 
 

@@ -14,14 +14,15 @@ from .schemas import ChangePassword, SelfChangePassword, UserCreate, UserImportU
 router = APIRouter(prefix="/users", tags=["users"])
 
 _admin = Depends(require_role(["admin"]))
+_admin_supervisor = Depends(require_role(["admin", "supervisor"]))
 
 
-@router.get("", response_model=list[UserOut], dependencies=[_admin])
+@router.get("", response_model=list[UserOut], dependencies=[_admin_supervisor])
 async def list_users(db: AsyncSession = Depends(get_db)):
     return await service.get_all_users(db)
 
 
-@router.get("/export", dependencies=[_admin])
+@router.get("/export", dependencies=[_admin_supervisor])
 async def export_users(db: AsyncSession = Depends(get_db)):
     buf = await service.export_users_xlsx(db)
     return StreamingResponse(

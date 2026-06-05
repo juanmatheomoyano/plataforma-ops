@@ -22,7 +22,7 @@ import client from "@/core/api/client"
 
 const ROLES = [
   { value: "admin", label: "Administrador" },
-  { value: "analista_senior", label: "Analista Senior" },
+  { value: "supervisor", label: "Supervisor" },
   { value: "analista", label: "Analista" },
   { value: "viewer", label: "Viewer" },
 ]

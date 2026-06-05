@@ -33,7 +33,7 @@ Reemplaza el script Python de consola `crud_medios_de_pago_v6.py` con una interf
 
 ### Roles
 
-`admin` > `analista_senior` > `analista` > `viewer`
+`admin` > `supervisor` > `analista` > `viewer`
 
 ---
 

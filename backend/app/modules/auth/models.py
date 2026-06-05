@@ -11,7 +11,7 @@ from app.core.database import Base
 
 class UserRole(str, PyEnum):
     admin = "admin"
-    analista_senior = "analista_senior"
+    supervisor = "supervisor"
     analista = "analista"
     viewer = "viewer"
 

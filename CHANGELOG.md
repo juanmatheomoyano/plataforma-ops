@@ -5,6 +5,25 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [1.7.2] — 2026-06-05 — Rediseño de roles: supervisor reemplaza analista_senior
+
+### Backend
+- Rol `analista_senior` renombrado a `supervisor` en el enum PostgreSQL (migración Alembic).
+- Permisos reorganizados por módulo según nueva jerarquía `admin > supervisor > analista > viewer`.
+- Sellers: crear/editar/desactivar ahora permitido a admin + supervisor + analista. Export/import solo admin + supervisor.
+- CRUD: C/U/D real restringido a **solo admin**. Historial completo visible a admin + supervisor.
+- Usuarios: listar y exportar permitido a admin + supervisor.
+- Eventos: gestión completa (crear/editar/toggle/eliminar) permitida a admin + supervisor.
+- Stats: `ultimo_operador` eliminado. `total_usuarios_activos` visible a admin + supervisor.
+
+### Frontend
+- Sidebar: Sellers visible a admin + supervisor + analista; Usuarios y Eventos a admin + supervisor.
+- Sellers: botones de acción actualizados según rol.
+- Usuarios: badges y select de rol actualizados (`supervisor` en lugar de `analista_senior`).
+- CRUD: `WRITE_ROLES` ahora solo `admin`.
+
+---
+
 ## [1.7.1] — 2026-06-05 — Export/import sellers con credenciales VTEX (solo admin)
 
 ### Backend

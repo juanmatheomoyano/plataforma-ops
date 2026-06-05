@@ -28,7 +28,7 @@ async def _enrich(db: AsyncSession, evento) -> EventoOut:
 async def create_evento(
     body: EventoCreate,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(require_role(["admin"])),
+    current_user=Depends(require_role(["admin", "supervisor"])),
 ):
     evento = await service.create_evento(db, current_user.id, body)
     return await _enrich(db, evento)
@@ -37,7 +37,7 @@ async def create_evento(
 @router.get("/", response_model=list[EventoOut])
 async def list_eventos(
     db: AsyncSession = Depends(get_db),
-    _=Depends(require_role(["admin"])),
+    _=Depends(require_role(["admin", "supervisor"])),
 ):
     eventos = await service.list_eventos(db)
     return [await _enrich(db, e) for e in eventos]
@@ -56,7 +56,7 @@ async def update_evento(
     evento_id: uuid.UUID,
     body: EventoUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(require_role(["admin"])),
+    current_user=Depends(require_role(["admin", "supervisor"])),
 ):
     evento = await service.update_evento(db, evento_id, body)
     if not evento:
@@ -68,7 +68,7 @@ async def update_evento(
 async def toggle_active(
     evento_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _=Depends(require_role(["admin"])),
+    _=Depends(require_role(["admin", "supervisor"])),
 ):
     evento = await service.toggle_active(db, evento_id)
     if not evento:
@@ -80,7 +80,7 @@ async def toggle_active(
 async def delete_evento(
     evento_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _=Depends(require_role(["admin"])),
+    _=Depends(require_role(["admin", "supervisor"])),
 ):
     ok = await service.delete_evento(db, evento_id)
     if not ok:

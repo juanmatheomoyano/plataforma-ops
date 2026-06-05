@@ -26,7 +26,9 @@ const ESTADO_BADGE = {
 export default function SellersPage() {
   const { hasRole } = useAuth()
   const isAdmin = hasRole(["admin"])
-  const canExport = hasRole(["admin"])
+  const isSupervisor = hasRole(["supervisor"])
+  const canExport = hasRole(["admin", "supervisor"])
+  const canManage = hasRole(["admin", "supervisor", "analista"])
 
   const [sellers, setSellers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -226,7 +228,7 @@ export default function SellersPage() {
         const s = row.original
         return (
           <div className="flex items-center justify-end gap-1">
-            {isAdmin && (
+            {canManage && (
               <Button
                 size="icon" variant="ghost" title="Editar"
                 className="h-8 w-8 text-muted-foreground hover:text-foreground"
@@ -235,7 +237,7 @@ export default function SellersPage() {
                 <Pencil className="h-4 w-4" />
               </Button>
             )}
-            {isAdmin && (
+            {(isAdmin || isSupervisor) && (
               <Button
                 size="icon" variant="ghost" title="Probar conexión"
                 className="h-8 w-8 text-muted-foreground hover:text-blue-400"
@@ -244,7 +246,7 @@ export default function SellersPage() {
                 <Plug className="h-4 w-4" />
               </Button>
             )}
-            {isAdmin && (
+            {canManage && (
               <Button
                 size="icon" variant="ghost" title="Desactivar"
                 disabled={!s.is_active}
@@ -291,7 +293,7 @@ export default function SellersPage() {
               Exportar Excel
             </Button>
           )}
-          {isAdmin && (
+          {canExport && (
             <Button
               variant="outline"
               disabled={importing}
@@ -302,7 +304,7 @@ export default function SellersPage() {
               {importing ? "Importando…" : "Importar Excel"}
             </Button>
           )}
-          {isAdmin && (
+          {canManage && (
             <Button
               className="bg-primary text-primary-foreground hover:bg-primary/90"
               onClick={() => { setEditSeller(null); setFormOpen(true) }}

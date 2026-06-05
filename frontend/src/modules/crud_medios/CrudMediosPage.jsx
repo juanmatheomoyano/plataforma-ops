@@ -22,7 +22,7 @@ import { ReadValidacionConfig, TODOS_GRUPOS } from "./components/ReadValidacionC
 import { ResultsTable } from "./components/ResultsTable"
 import { ScopeSelector } from "./components/ScopeSelector"
 
-const WRITE_ROLES = ["admin", "analista_senior"]
+const WRITE_ROLES = ["admin"]
 
 const EMPTY_CREATE = {
   rule_name_prefix: "",
