@@ -74,7 +74,18 @@
 - [x] Import actualiza credenciales si vienen en el Excel (sellers existentes y nuevos)
 - [x] Botón "Exportar Excel" en Sellers visible solo para admin
 
-### 4. Dashboard personalizado por rol con gráficos
+### 4. Seguridad — items pendientes del hardening (v1.7.3 parcial)
+- [x] Eliminar bootstrap endpoint con credenciales hardcodeadas
+- [x] CORS restringido a orígenes específicos (tauri://localhost, localhost:5173)
+- [x] CSP habilitado en Tauri
+- [x] Guards de ruta App.jsx corregidos para coincidir con backend
+- [x] setup-server.sh: removido password en claro
+- [x] httpx: cliente compartido en lugar de instancia por request
+- [ ] **Updater sin firma**: generar keypair con `npm run tauri signer generate`, guardar clave privada en env de build, poner pubkey en `tauri.conf.json`
+- [ ] **Rate limiting**: agregar `slowapi` en el backend — limitar `/auth/login` a 10 req/min por IP como mínimo
+- [ ] **Tests unitarios**: `matches_filters`, `check_cuota_group`, `_normalize_to_ar` — proteger contra regresiones en lógica de filtros VTEX
+
+### 6. Dashboard personalizado por rol con gráficos
 - [ ] Reemplazar el dashboard actual por uno con gráficos dinámicos según el rol del usuario
 - [ ] Implementar gráficos de torta y métricas actualizadas (frecuencia a definir: horaria o diaria)
 - [ ] Admin: visión completa — sellers activos/inactivos, operaciones por módulo, usuarios activos, actividad reciente
@@ -84,7 +95,7 @@
 - [ ] Definir librería de gráficos (Recharts ya disponible en el stack)
 - [ ] Las actualizaciones automáticas (polling o WebSocket) se definirán en iteración siguiente
 
-### 5. Optimización de almacenamiento — historial ligero
+### 7. Optimización de almacenamiento — historial ligero
 - [ ] Cambiar modelo de historial: dejar de guardar el detalle de cada regla procesada (tabla `crud_operation_rows` o similar)
 - [ ] Solo persistir: quién ejecutó, qué operación, qué módulo, cuándo, scope utilizado, cantidad de registros afectados, resultado general (ok / error / parcial)
 - [ ] Los resultados detallados se muestran en frontend en el momento y se pueden exportar — no se persisten
@@ -92,7 +103,7 @@
 - [ ] Revisar y ajustar retención: el log de auditoría liviano puede mantenerse indefinidamente
 - [ ] Aplica también al módulo Eventos (reemplaza Validación de Eventos)
 
-### 6. Revisión de accesibilidad visual — colores ✓ (v1.5.1, 2026-05-29)
+### 8. Revisión de accesibilidad visual — colores ✓ (v1.5.1, 2026-05-29)
 - [x] Auditar componentes con bajo contraste
 - [x] Badges de estado (Dashboard, Users, Sellers): dual `dark:`/light — light usa `bg-*-50 text-*-700`, dark mantiene el look neon
 - [x] CRUD OperacionSelector: botones C/R/U/D legibles en light, neon en dark; chips de firmas/levels y aviso destructivo corregidos

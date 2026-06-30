@@ -5,6 +5,24 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [1.7.3] — 2026-06-30 — Hardening de seguridad
+
+### Backend
+- Eliminado endpoint `POST /auth/bootstrap` que tenía credenciales admin hardcodeadas en el código fuente (repo público). Usar `seed.py` para el seed inicial.
+- CORS restringido de `allow_origins=["*"]` a `tauri://localhost` y `http://localhost:5173`. Ya no acepta requests de orígenes arbitrarios.
+- `vtex_client.py`: cliente `httpx.AsyncClient` ahora es compartido a nivel módulo en lugar de crear una instancia por request. Se cierra correctamente en el lifespan de la app.
+
+### Frontend
+- CSP habilitado en Tauri (antes `"csp": null`): `default-src 'self'`, scripts solo `'self'`, `connect-src` restringido al backend de Railway.
+- Corregidos guards de ruta en `App.jsx` que no coincidían con los permisos del backend:
+  - `/users` y `/eventos`: abiertos a `admin` + `supervisor` (antes solo `admin`)
+  - `/sellers`: abierto a `admin` + `supervisor` + `analista` (antes solo `admin`)
+
+### Deploy
+- `deploy/setup-server.sh`: removido curl de verificación que tenía una contraseña en texto claro en el código fuente del repo.
+
+---
+
 ## [1.7.2] — 2026-06-05 — Rediseño de roles: supervisor reemplaza analista_senior
 
 ### Backend
