@@ -33,6 +33,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 _ALLOWED_ORIGINS = [
     "tauri://localhost",
+    "https://tauri.localhost",
     "http://localhost:5173",
     "http://localhost:1420",
 ]
