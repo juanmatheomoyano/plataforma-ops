@@ -1,9 +1,12 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from app.core.config import settings
+from app.core.limiter import limiter
 from app.core.database import AsyncSessionLocal
 from app.modules.auth.router import router as auth_router
 from app.modules.crud_medios.router import router as crud_medios_router
@@ -25,6 +28,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Provincia Ops", lifespan=lifespan)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 _ALLOWED_ORIGINS = [
     "tauri://localhost",
