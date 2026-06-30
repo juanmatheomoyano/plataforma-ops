@@ -31,16 +31,9 @@ app = FastAPI(title="Provincia Ops", lifespan=lifespan)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-_ALLOWED_ORIGINS = [
-    "tauri://localhost",
-    "https://tauri.localhost",
-    "http://localhost:5173",
-    "http://localhost:1420",
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_ALLOWED_ORIGINS,
+    allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
