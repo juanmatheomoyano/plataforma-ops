@@ -154,6 +154,8 @@ async def get_latest_version():
     pub_date = os.getenv("RELEASE_DATE", "2026-05-25T00:00:00Z")
     notes = os.getenv("RELEASE_NOTES", "Nueva versión disponible")
 
+    signature = os.getenv("RELEASE_SIGNATURE", "")
+
     return {
         "version": version,
         "notes": notes,
@@ -161,7 +163,7 @@ async def get_latest_version():
         "platforms": {
             "windows-x86_64": {
                 "url": release_url,
-                "signature": "",
+                "signature": signature,
             }
         },
     }
