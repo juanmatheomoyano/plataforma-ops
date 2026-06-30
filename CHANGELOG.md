@@ -5,6 +5,18 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [1.7.4] — 2026-06-30 — Rate limiting + tests unitarios
+
+### Backend
+- Rate limiting en `POST /auth/login`: máximo 10 requests/minuto por IP (slowapi). Retorna HTTP 429 al superar el límite.
+- Limiter extraído a `app/core/limiter.py` para evitar import circular entre `main.py` y `auth/router.py`.
+- 38 tests unitarios sin dependencia de BD ni VTEX (`backend/tests/test_crud_service.py`):
+  - `_normalize_to_ar`: 7 casos — sufijo Z, sin TZ, UTC midnight, offset explícito, string inválido
+  - `matches_filters`: 23 casos — estado, nombre, brand, level include/exclude, cuotas exacta/contiene, fechas, connector
+  - `check_cuota_group`: 8 casos — Ok, No configurado, A corregir por cuotas/firma/deshabilitada
+
+---
+
 ## [1.7.3] — 2026-06-30 — Hardening de seguridad
 
 ### Backend

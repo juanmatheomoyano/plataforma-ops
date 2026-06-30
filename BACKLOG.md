@@ -82,8 +82,8 @@
 - [x] setup-server.sh: removido password en claro
 - [x] httpx: cliente compartido en lugar de instancia por request
 - [ ] **Updater sin firma**: generar keypair con `npm run tauri signer generate`, guardar clave privada en env de build, poner pubkey en `tauri.conf.json`
-- [ ] **Rate limiting**: agregar `slowapi` en el backend — limitar `/auth/login` a 10 req/min por IP como mínimo
-- [ ] **Tests unitarios**: `matches_filters`, `check_cuota_group`, `_normalize_to_ar` — proteger contra regresiones en lógica de filtros VTEX
+- [x] **Rate limiting**: slowapi en `/auth/login` — 10 req/min por IP (v1.7.4)
+- [x] **Tests unitarios**: 38 tests para `matches_filters`, `check_cuota_group`, `_normalize_to_ar` — todos verdes (v1.7.4)
 
 ### 6. Dashboard personalizado por rol con gráficos
 - [ ] Reemplazar el dashboard actual por uno con gráficos dinámicos según el rol del usuario
