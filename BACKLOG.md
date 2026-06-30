@@ -81,7 +81,7 @@
 - [x] Guards de ruta App.jsx corregidos para coincidir con backend
 - [x] setup-server.sh: removido password en claro
 - [x] httpx: cliente compartido en lugar de instancia por request
-- [ ] **Updater sin firma**: generar keypair con `npm run tauri signer generate`, guardar clave privada en env de build, poner pubkey en `tauri.conf.json`
+- [x] **Updater firmado**: keypair Ed25519 generado, pubkey en `tauri.conf.json`, firma en `RELEASE_SIGNATURE` env var de Railway (v1.7.5)
 - [x] **Rate limiting**: slowapi en `/auth/login` — 10 req/min por IP (v1.7.4)
 - [x] **Tests unitarios**: 38 tests para `matches_filters`, `check_cuota_group`, `_normalize_to_ar` — todos verdes (v1.7.4)
 

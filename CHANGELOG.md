@@ -5,6 +5,16 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [1.7.5] — 2026-06-30 — Firma de actualizaciones automáticas
+
+### Desktop
+- Updater firmado con Ed25519: cada actualización automática es verificada criptográficamente antes de instalarse.
+- Pubkey embebida en el binario. A partir de esta versión los clientes verifican la firma del instalador antes de aplicar cualquier update.
+- `GET /api/updates/latest` ahora incluye el campo `signature` (leído de env var `RELEASE_SIGNATURE`).
+- **Requiere re-descarga manual una única vez**. Desde v1.7.5 en adelante las actualizaciones son automáticas y verificadas.
+
+---
+
 ## [1.7.4] — 2026-06-30 — Rate limiting + tests unitarios
 
 ### Backend
