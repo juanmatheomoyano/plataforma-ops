@@ -48,7 +48,7 @@ export default function App() {
               <Route
                 path="users"
                 element={
-                  <RoleRoute roles={["admin"]}>
+                  <RoleRoute roles={["admin", "supervisor"]}>
                     <UsersPage />
                   </RoleRoute>
                 }
@@ -56,7 +56,7 @@ export default function App() {
               <Route
                 path="sellers"
                 element={
-                  <RoleRoute roles={["admin"]}>
+                  <RoleRoute roles={["admin", "supervisor", "analista"]}>
                     <SellersPage />
                   </RoleRoute>
                 }
@@ -65,7 +65,7 @@ export default function App() {
               <Route
                 path="eventos"
                 element={
-                  <RoleRoute roles={["admin"]}>
+                  <RoleRoute roles={["admin", "supervisor"]}>
                     <EventosPage />
                   </RoleRoute>
                 }

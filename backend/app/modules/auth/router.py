@@ -30,24 +30,3 @@ async def logout(data: RefreshRequest, db: AsyncSession = Depends(get_db)):
     await service.logout(data.refresh_token, db)
 
 
-@router.post("/bootstrap", include_in_schema=False)
-async def bootstrap_admin(db: AsyncSession = Depends(get_db)):
-    """Crea el primer usuario admin. Solo funciona si la BD está vacía."""
-    from sqlalchemy import select, func
-    from app.modules.auth.models import User
-
-    count = await db.scalar(select(func.count()).select_from(User))
-    if count > 0:
-        raise HTTPException(status_code=403, detail="Bootstrap already done")
-
-    from app.modules.users.service import create_user
-    from app.modules.users.schemas import UserCreate
-
-    user = await create_user(UserCreate(
-        username="jmoyano",
-        email="jmoyano@provincianet.com.ar",
-        full_name="Juan Matheo Moyano",
-        password="Admin.2026!",
-        role="admin"
-    ), db)
-    return {"ok": True, "user_id": str(user.id)}

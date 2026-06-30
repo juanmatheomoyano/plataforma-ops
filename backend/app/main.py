@@ -8,6 +8,7 @@ from app.core.database import AsyncSessionLocal
 from app.modules.auth.router import router as auth_router
 from app.modules.crud_medios.router import router as crud_medios_router
 from app.modules.crud_medios.service import cleanup_old_operations
+from app.modules.crud_medios.vtex_client import close_client as close_vtex_client
 from app.modules.eventos.router import router as eventos_router
 from app.modules.sellers.router import router as sellers_router
 from app.modules.updates.router import public_router as updates_public_router
@@ -20,13 +21,20 @@ async def lifespan(app: FastAPI):
     async with AsyncSessionLocal() as db:
         await cleanup_old_operations(db)
     yield
+    await close_vtex_client()
 
 
 app = FastAPI(title="Provincia Ops", lifespan=lifespan)
 
+_ALLOWED_ORIGINS = [
+    "tauri://localhost",
+    "http://localhost:5173",
+    "http://localhost:1420",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_ALLOWED_ORIGINS,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],

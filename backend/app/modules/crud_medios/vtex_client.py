@@ -14,6 +14,22 @@ _BASE = "https://{account}.vtexcommercestable.com.br/api/payments/pvt/rules"
 _TIMEOUT = httpx.Timeout(15.0)
 _RETRIES = 3
 
+_client: httpx.AsyncClient | None = None
+
+
+def get_client() -> httpx.AsyncClient:
+    global _client
+    if _client is None or _client.is_closed:
+        _client = httpx.AsyncClient(timeout=_TIMEOUT)
+    return _client
+
+
+async def close_client() -> None:
+    global _client
+    if _client and not _client.is_closed:
+        await _client.aclose()
+        _client = None
+
 
 def _url(seller_id: str, rule_id: int | None = None) -> str:
     base = _BASE.format(account=seller_id)
@@ -33,8 +49,7 @@ async def _request(method: str, url: str, headers: dict, **kwargs) -> dict | lis
     last_exc: Exception | None = None
     for attempt in range(_RETRIES):
         try:
-            async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
-                resp = await client.request(method, url, headers=headers, **kwargs)
+            resp = await get_client().request(method, url, headers=headers, **kwargs)
             if resp.status_code == 404:
                 return []
             resp.raise_for_status()

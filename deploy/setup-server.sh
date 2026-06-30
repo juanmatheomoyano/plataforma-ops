@@ -32,9 +32,4 @@ echo "=== 5/5 Verificando ==="
 sleep 2
 curl -s http://localhost/api/health
 echo ""
-TOKEN=$(curl -s -X POST http://localhost/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"MiPassword123"}' | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'][:40])...")
-echo "Login token: $TOKEN"
-
 echo "=== Setup completado. App disponible en http://192.168.1.96 ==="
