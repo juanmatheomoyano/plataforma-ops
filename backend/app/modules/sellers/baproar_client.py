@@ -39,13 +39,36 @@ def _headers(app_key: str, app_token: str) -> dict:
 
 
 async def list_sellers(app_key: str, app_token: str) -> list[dict]:
-    """Devuelve todos los sellers registrados en el marketplace BaproAR."""
-    resp = await get_client().get(_BASE, headers=_headers(app_key, app_token))
-    resp.raise_for_status()
-    data = resp.json()
-    if isinstance(data, dict):
-        return data.get("items", [])
-    return data if isinstance(data, list) else []
+    """Devuelve todos los sellers del marketplace BaproAR iterando todas las páginas."""
+    all_items: list[dict] = []
+    page = 1
+
+    while True:
+        resp = await get_client().get(
+            _BASE,
+            params={"page": page, "pageSize": 50},
+            headers=_headers(app_key, app_token),
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+        if isinstance(data, list):
+            # La API devolvió una lista plana — no hay paginación
+            return data
+
+        items = data.get("items") or data.get("sellers") or []
+        all_items.extend(items)
+
+        paging = data.get("paging", {})
+        total_pages = paging.get("pages", 1)
+
+        logger.debug("BaproAR sellers page %d/%d — %d items", page, total_pages, len(items))
+
+        if page >= total_pages or not items:
+            break
+        page += 1
+
+    return all_items
 
 
 async def toggle_seller(seller_id: str, is_active: bool, app_key: str, app_token: str) -> None:
