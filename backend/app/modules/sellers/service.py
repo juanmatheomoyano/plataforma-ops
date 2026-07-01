@@ -313,7 +313,7 @@ async def sync_marketplace_sellers(db: AsyncSession) -> dict:
         seller.updated_at = now
 
     await db.commit()
-    logger.info("sync_marketplace_sellers: %d sellers actualizados de %d en marketplace", len(sellers_to_update), len(status_map))
+    logger.info("sync_marketplace_sellers: %d sellers actualizados de %d en marketplace", len(sellers_to_update), len(account_map))
     return {"synced": len(sellers_to_update), "total_marketplace": len(status_map)}
 
 
