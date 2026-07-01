@@ -27,14 +27,22 @@ async def lifespan(app: FastAPI):
     async with AsyncSessionLocal() as db:
         await cleanup_old_operations(db)
 
-    # Sync marketplace al arrancar
-    async with AsyncSessionLocal() as db:
-        await sync_marketplace_sellers(db)
+    # Sync marketplace al arrancar — no fatal si falla
+    try:
+        async with AsyncSessionLocal() as db:
+            await sync_marketplace_sellers(db)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("Startup marketplace sync falló (no fatal): %s", e)
 
     # Sync diario automático
     async def _daily_sync():
-        async with AsyncSessionLocal() as db:
-            await sync_marketplace_sellers(db)
+        try:
+            async with AsyncSessionLocal() as db:
+                await sync_marketplace_sellers(db)
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning("Daily marketplace sync falló: %s", e)
 
     scheduler = AsyncIOScheduler()
     scheduler.add_job(_daily_sync, "interval", hours=24)
