@@ -83,32 +83,6 @@ async def sync_marketplace(db: AsyncSession = Depends(get_db)):
     return await service.sync_marketplace_sellers(db)
 
 
-@router.get("/debug-baproar")
-async def debug_baproar():
-    """Temporal sin auth — se elimina después del diagnóstico."""
-    from app.core.config import settings
-    from . import baproar_client
-    headers = {
-        "X-VTEX-API-AppKey": settings.BAPROAR_APP_KEY,
-        "X-VTEX-API-AppToken": settings.BAPROAR_APP_TOKEN,
-        "Accept": "application/json",
-    }
-    resp = await baproar_client.get_client().get(
-        "https://baproar.vtexcommercestable.com.br/api/seller-register/pvt/sellers",
-        params={"page": 1, "pageSize": 5},
-        headers=headers,
-    )
-    data = resp.json()
-    first_item = (data.get("items") or data if isinstance(data, list) else [data])
-    first_item = first_item[0] if first_item else {}
-    return {
-        "status_code": resp.status_code,
-        "top_level_keys": list(data.keys()) if isinstance(data, dict) else "list",
-        "paging": data.get("paging") if isinstance(data, dict) else None,
-        "first_item_keys": list(first_item.keys()) if first_item else [],
-        "first_item": first_item,
-    }
-
 
 @router.get("/analistas", response_model=list[AnalistaOut], dependencies=[_auth])
 async def list_analistas(db: AsyncSession = Depends(get_db)):

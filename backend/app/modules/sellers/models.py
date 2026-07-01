@@ -42,6 +42,7 @@ class Seller(Base):
     integracion_spec: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     marketplace_activo: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    marketplace_seller_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     marketplace_sync_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

@@ -39,34 +39,34 @@ def _headers(app_key: str, app_token: str) -> dict:
 
 
 async def list_sellers(app_key: str, app_token: str) -> list[dict]:
-    """Devuelve todos los sellers del marketplace BaproAR iterando todas las páginas."""
+    """Devuelve todos los sellers del marketplace BaproAR usando paginación from/to."""
     all_items: list[dict] = []
-    page = 1
+    from_idx = 0
+    page_size = 100
 
     while True:
+        to_idx = from_idx + page_size - 1
         resp = await get_client().get(
             _BASE,
-            params={"page": page, "pageSize": 50},
+            params={"from": from_idx, "to": to_idx},
             headers=_headers(app_key, app_token),
         )
         resp.raise_for_status()
         data = resp.json()
 
         if isinstance(data, list):
-            # La API devolvió una lista plana — no hay paginación
             return data
 
-        items = data.get("items") or data.get("sellers") or []
+        items = data.get("items") or []
         all_items.extend(items)
 
         paging = data.get("paging", {})
-        total_pages = paging.get("pages", 1)
+        total = paging.get("total", 0)
+        logger.debug("BaproAR sellers from=%d to=%d — %d items de %d total", from_idx, to_idx, len(items), total)
 
-        logger.debug("BaproAR sellers page %d/%d — %d items", page, total_pages, len(items))
-
-        if page >= total_pages or not items:
+        if not items or from_idx + page_size >= total:
             break
-        page += 1
+        from_idx += page_size
 
     return all_items
 

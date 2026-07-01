@@ -287,23 +287,28 @@ async def sync_marketplace_sellers(db: AsyncSession) -> dict:
         logger.error("sync_marketplace_sellers: error al llamar BaproAR: %s", e)
         return {"synced": 0, "total_marketplace": 0, "error": str(e)}
 
-    # Construir mapa seller_id → isActive; validar que los campos existan
-    status_map: dict[str, bool] = {}
+    # Construir mapa account → {isActive, baproar_id}
+    # El campo "account" es el nombre de cuenta VTEX del seller (coincide con seller_id en nuestra BD)
+    # El campo "id" es el identificador interno de BaproAR (a veces taxCode, a veces el account)
+    account_map: dict[str, dict] = {}
     for ms in marketplace_sellers:
-        sid = ms.get("id") or ms.get("sellerId")
+        account = ms.get("account")
         is_active = ms.get("isActive")
-        if isinstance(sid, str) and sid and isinstance(is_active, bool):
-            status_map[sid] = is_active
+        baproar_id = ms.get("id")
+        if isinstance(account, str) and account and isinstance(is_active, bool):
+            account_map[account] = {"is_active": is_active, "baproar_id": str(baproar_id) if baproar_id else account}
 
-    if not status_map:
+    if not account_map:
         return {"synced": 0, "total_marketplace": len(marketplace_sellers), "error": "Sin sellers válidos en la respuesta"}
 
     now = datetime.now(timezone.utc)
-    result = await db.execute(select(Seller).where(Seller.seller_id.in_(status_map.keys())))
+    result = await db.execute(select(Seller).where(Seller.seller_id.in_(account_map.keys())))
     sellers_to_update = list(result.scalars().all())
 
     for seller in sellers_to_update:
-        seller.marketplace_activo = status_map[seller.seller_id]
+        entry = account_map[seller.seller_id]
+        seller.marketplace_activo = entry["is_active"]
+        seller.marketplace_seller_id = entry["baproar_id"]
         seller.marketplace_sync_at = now
         seller.updated_at = now
 
@@ -324,9 +329,10 @@ async def toggle_marketplace_seller(seller_id: uuid.UUID, db: AsyncSession) -> S
 
     new_state = not seller.marketplace_activo
 
+    baproar_id = seller.marketplace_seller_id or seller.seller_id
     try:
         await baproar_client.toggle_seller(
-            seller.seller_id, new_state,
+            baproar_id, new_state,
             settings.BAPROAR_APP_KEY, settings.BAPROAR_APP_TOKEN,
         )
     except httpx.HTTPStatusError as e:
