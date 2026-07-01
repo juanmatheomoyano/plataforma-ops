@@ -53,6 +53,8 @@ class SellerOut(BaseModel):
     analista: str | None
     notas: str | None
     is_active: bool
+    marketplace_activo: bool | None = None
+    marketplace_sync_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 

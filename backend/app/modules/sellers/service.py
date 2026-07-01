@@ -1,16 +1,21 @@
 import io
+import logging
 import uuid
 from datetime import datetime, timezone
 
 import httpx
 import openpyxl
+
+logger = logging.getLogger(__name__)
 from fastapi import HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.security import decrypt, encrypt
 
+from . import baproar_client
 from .models import EstadoKeys, Seller
 from .schemas import ImportError, SellerCreate, SellerImportResult, SellerImportUpdateResult, SellerUpdate
 
@@ -266,6 +271,76 @@ def _parse_active(val) -> bool:
     if isinstance(val, bool):
         return val
     return str(val).strip().lower() in {"activo", "active", "true", "1", "sí", "si", "s"}
+
+
+async def sync_marketplace_sellers(db: AsyncSession) -> dict:
+    """Llama a BaproAR, actualiza marketplace_activo en los sellers que coincidan por seller_id."""
+    if not settings.BAPROAR_APP_KEY or not settings.BAPROAR_APP_TOKEN:
+        logger.warning("sync_marketplace_sellers: BAPROAR_APP_KEY/TOKEN no configuradas — sync omitido")
+        return {"synced": 0, "total_marketplace": 0, "error": "Credenciales BaproAR no configuradas"}
+
+    try:
+        marketplace_sellers = await baproar_client.list_sellers(
+            settings.BAPROAR_APP_KEY, settings.BAPROAR_APP_TOKEN
+        )
+    except Exception as e:
+        logger.error("sync_marketplace_sellers: error al llamar BaproAR: %s", e)
+        return {"synced": 0, "total_marketplace": 0, "error": str(e)}
+
+    # Construir mapa seller_id → isActive; validar que los campos existan
+    status_map: dict[str, bool] = {}
+    for ms in marketplace_sellers:
+        sid = ms.get("id") or ms.get("sellerId")
+        is_active = ms.get("isActive")
+        if isinstance(sid, str) and sid and isinstance(is_active, bool):
+            status_map[sid] = is_active
+
+    if not status_map:
+        return {"synced": 0, "total_marketplace": len(marketplace_sellers), "error": "Sin sellers válidos en la respuesta"}
+
+    now = datetime.now(timezone.utc)
+    result = await db.execute(select(Seller).where(Seller.seller_id.in_(status_map.keys())))
+    sellers_to_update = list(result.scalars().all())
+
+    for seller in sellers_to_update:
+        seller.marketplace_activo = status_map[seller.seller_id]
+        seller.marketplace_sync_at = now
+        seller.updated_at = now
+
+    await db.commit()
+    logger.info("sync_marketplace_sellers: %d sellers actualizados de %d en marketplace", len(sellers_to_update), len(status_map))
+    return {"synced": len(sellers_to_update), "total_marketplace": len(status_map)}
+
+
+async def toggle_marketplace_seller(seller_id: uuid.UUID, db: AsyncSession) -> Seller:
+    """Activa/desactiva un seller en BaproAR y luego actualiza la BD solo si la API responde OK."""
+    if not settings.BAPROAR_APP_KEY or not settings.BAPROAR_APP_TOKEN:
+        raise HTTPException(status_code=503, detail="Credenciales BaproAR no configuradas")
+
+    seller = await get_seller_by_id(seller_id, db)
+
+    if seller.marketplace_activo is None:
+        raise HTTPException(status_code=400, detail="Este seller no está registrado en el marketplace BaproAR")
+
+    new_state = not seller.marketplace_activo
+
+    try:
+        await baproar_client.toggle_seller(
+            seller.seller_id, new_state,
+            settings.BAPROAR_APP_KEY, settings.BAPROAR_APP_TOKEN,
+        )
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=502, detail=f"BaproAR rechazó la operación: HTTP {e.response.status_code}")
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Error al contactar BaproAR: {e}")
+
+    # Solo actualizamos la BD después de confirmar que BaproAR respondió OK
+    seller.marketplace_activo = new_state
+    seller.marketplace_sync_at = datetime.now(timezone.utc)
+    seller.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(seller)
+    return seller
 
 
 async def export_sellers_xlsx(db: AsyncSession) -> bytes:

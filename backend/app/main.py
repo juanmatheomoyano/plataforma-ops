@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
@@ -13,7 +14,9 @@ from app.modules.crud_medios.router import router as crud_medios_router
 from app.modules.crud_medios.service import cleanup_old_operations
 from app.modules.crud_medios.vtex_client import close_client as close_vtex_client
 from app.modules.eventos.router import router as eventos_router
+from app.modules.sellers.baproar_client import close_client as close_baproar_client
 from app.modules.sellers.router import router as sellers_router
+from app.modules.sellers.service import sync_marketplace_sellers
 from app.modules.updates.router import public_router as updates_public_router
 from app.modules.updates.router import router as updates_router
 from app.modules.users.router import router as users_router
@@ -23,8 +26,25 @@ from app.modules.users.router import router as users_router
 async def lifespan(app: FastAPI):
     async with AsyncSessionLocal() as db:
         await cleanup_old_operations(db)
+
+    # Sync marketplace al arrancar
+    async with AsyncSessionLocal() as db:
+        await sync_marketplace_sellers(db)
+
+    # Sync diario automático
+    async def _daily_sync():
+        async with AsyncSessionLocal() as db:
+            await sync_marketplace_sellers(db)
+
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(_daily_sync, "interval", hours=24)
+    scheduler.start()
+
     yield
+
+    scheduler.shutdown()
     await close_vtex_client()
+    await close_baproar_client()
 
 
 app = FastAPI(title="Provincia Ops", lifespan=lifespan)

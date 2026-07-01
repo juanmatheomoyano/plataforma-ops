@@ -78,6 +78,11 @@ async def import_update_sellers(
     return await service.import_update_sellers(file, db)
 
 
+@router.post("/sync-marketplace", dependencies=[_admin_supervisor])
+async def sync_marketplace(db: AsyncSession = Depends(get_db)):
+    return await service.sync_marketplace_sellers(db)
+
+
 @router.get("/analistas", response_model=list[AnalistaOut], dependencies=[_auth])
 async def list_analistas(db: AsyncSession = Depends(get_db)):
     result = await db.execute(
@@ -149,3 +154,8 @@ async def deactivate_seller(seller_id: uuid.UUID, db: AsyncSession = Depends(get
 @router.post("/{seller_id}/test-connection", dependencies=[_admin_supervisor])
 async def test_connection(seller_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     return await service.test_connection(seller_id, db)
+
+
+@router.post("/{seller_id}/marketplace-toggle", response_model=SellerOut, dependencies=[_admin_supervisor])
+async def marketplace_toggle(seller_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    return await service.toggle_marketplace_seller(seller_id, db)

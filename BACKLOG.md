@@ -74,6 +74,21 @@
 - [x] Import actualiza credenciales si vienen en el Excel (sellers existentes y nuevos)
 - [x] Botón "Exportar Excel" en Sellers visible solo para admin
 
+### 9. Sync de marketplace BaproAR en módulo Sellers ✓ (v1.7.7, 2026-07-01)
+- [x] Campos `marketplace_activo` y `marketplace_sync_at` en tabla `sellers` (migración)
+- [x] Cliente BaproAR (`baproar_client.py`) con credenciales como env vars
+- [x] Sync automático al startup + cada 24 hs (APScheduler)
+- [x] `POST /sellers/sync-marketplace` — sync manual, solo actualiza BD con respuestas válidas
+- [x] `POST /sellers/{id}/marketplace-toggle` — toggle BaproAR primero, BD solo si 200
+- [x] Columna "Marketplace" en tabla de sellers con toggle clickeable
+- [x] Botón "Sync Marketplace" con spinner y timestamp de última sync
+
+### 5. Id Ecommerce en CRUD + permisos C/U/D por rol ✓ (v1.7.6, 2026-07-01)
+- [x] Agregar `id_ecommerce` a `CrudRowOut` y propagarlo en todas las operaciones R/C/U/D (dry_run, éxito, error)
+- [x] Columna "Id Ecommerce" en tabla de resultados y export Excel
+- [x] Botones C/U/D deshabilitados (no ocultos) para analistas y viewers; R siempre disponible
+- [x] WRITE_ROLES ampliado a admin + supervisor
+
 ### 4. Seguridad — items pendientes del hardening (v1.7.3 parcial)
 - [x] Eliminar bootstrap endpoint con credenciales hardcodeadas
 - [x] CORS restringido a orígenes específicos (tauri://localhost, localhost:5173)

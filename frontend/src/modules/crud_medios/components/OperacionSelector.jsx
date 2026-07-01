@@ -86,7 +86,7 @@ function buildNamePreview(prefix, psBrands, levels, cuotasStr) {
   return examples.join(", ") + suffix
 }
 
-export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdate, onChange }) {
+export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdate, onChange, canWrite = true }) {
   function set(field, value) {
     onChange({ operacion, dryRun, accionCreate, accionUpdate, [field]: value })
   }
@@ -130,16 +130,20 @@ export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdat
       {/* Operation buttons */}
       <div className="grid grid-cols-4 gap-3">
         {OPS.map(({ value, label, icon: Icon, color, activeColor }) => {
+          const isWriteOp = value !== "R"
+          const isDisabled = isWriteOp && !canWrite
           const isActive = operacion === value
           const isDimmed = operacion !== null && !isActive
           return (
             <button
               key={value}
-              onClick={() => set("operacion", operacion === value ? null : value)}
+              onClick={() => !isDisabled && set("operacion", operacion === value ? null : value)}
+              disabled={isDisabled}
+              title={isDisabled ? "Sin permisos para esta operación" : undefined}
               className={[
                 "flex flex-col items-center gap-2 rounded-xl border p-4 transition-all",
                 isActive ? activeColor : color,
-                isDimmed ? "opacity-25" : "hover:opacity-90",
+                isDisabled ? "opacity-30 cursor-not-allowed" : isDimmed ? "opacity-25" : "hover:opacity-90",
               ].join(" ")}
             >
               <Icon className="h-6 w-6" />

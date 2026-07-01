@@ -4,7 +4,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { Download, Pencil, Plug, Search, Upload, UserX } from "lucide-react"
+import { Download, Pencil, Plug, Power, RefreshCw, Search, Upload, UserX } from "lucide-react"
 import { save } from "@tauri-apps/plugin-dialog"
 import { writeFile } from "@tauri-apps/plugin-fs"
 import { Input } from "@/components/ui/input"
@@ -39,6 +39,9 @@ export default function SellersPage() {
   const [importResult, setImportResult] = useState(null)
   const [importOpen, setImportOpen] = useState(false)
   const [importing, setImporting] = useState(false)
+  const [syncing, setSyncing] = useState(false)
+  const [lastSync, setLastSync] = useState(null)
+  const [togglingId, setTogglingId] = useState(null)
 
   const [search, setSearch] = useState("")
   const [filterEstadoKeys, setFilterEstadoKeys] = useState("todos")
@@ -80,6 +83,34 @@ export default function SellersPage() {
       toast.success(`${seller.seller_name} desactivado`)
     } catch (err) {
       toast.error(err.response?.data?.detail ?? "Error al desactivar")
+    }
+  }
+
+  async function handleSyncMarketplace() {
+    setSyncing(true)
+    try {
+      const { data } = await client.post("/sellers/sync-marketplace")
+      setLastSync(new Date())
+      await fetchSellers()
+      toast.success(`Marketplace sincronizado — ${data.synced} sellers actualizados`)
+    } catch (err) {
+      toast.error(err.response?.data?.detail ?? "Error al sincronizar con marketplace")
+    } finally {
+      setSyncing(false)
+    }
+  }
+
+  async function handleMarketplaceToggle(seller) {
+    setTogglingId(seller.id)
+    try {
+      const { data } = await client.post(`/sellers/${seller.id}/marketplace-toggle`)
+      onSaved(data)
+      const estado = data.marketplace_activo ? "activado" : "desactivado"
+      toast.success(`${seller.seller_name} ${estado} en marketplace`)
+    } catch (err) {
+      toast.error(err.response?.data?.detail ?? "Error al cambiar estado en marketplace")
+    } finally {
+      setTogglingId(null)
     }
   }
 
@@ -222,6 +253,35 @@ export default function SellersPage() {
         ),
     },
     {
+      accessorKey: "marketplace_activo",
+      header: "Marketplace",
+      cell: ({ getValue, row }) => {
+        const v = getValue()
+        if (v === null || v === undefined) {
+          return <span className="text-muted-foreground/40 text-xs">—</span>
+        }
+        const s = row.original
+        const isToggling = togglingId === s.id
+        return (
+          <button
+            disabled={!canExport || isToggling}
+            onClick={() => canExport && handleMarketplaceToggle(s)}
+            title={canExport ? (v ? "Desactivar en marketplace" : "Activar en marketplace") : undefined}
+            className={[
+              "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium transition-colors",
+              v
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400"
+                : "border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-700 dark:bg-orange-900/40 dark:text-orange-400",
+              canExport && !isToggling ? "cursor-pointer hover:opacity-80" : "cursor-default",
+            ].join(" ")}
+          >
+            <Power className={`h-3 w-3 ${isToggling ? "animate-spin" : ""}`} />
+            {v ? "Activo" : "Inactivo"}
+          </button>
+        )
+      },
+    },
+    {
       id: "actions",
       header: "",
       cell: ({ row }) => {
@@ -273,7 +333,14 @@ export default function SellersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Sellers</h1>
-          <p className="text-sm text-muted-foreground">Gestión de sellers y credenciales VTEX</p>
+          <p className="text-sm text-muted-foreground">
+            Gestión de sellers y credenciales VTEX
+            {lastSync && (
+              <span className="ml-2 text-muted-foreground/60">
+                · Marketplace sincronizado {lastSync.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
+              </span>
+            )}
+          </p>
         </div>
         <div className="flex gap-2">
           <input
@@ -283,6 +350,17 @@ export default function SellersPage() {
             className="hidden"
             onChange={handleFileChange}
           />
+          {canExport && (
+            <Button
+              variant="outline"
+              disabled={syncing}
+              onClick={handleSyncMarketplace}
+              className="border-border bg-transparent text-foreground/80 hover:bg-accent hover:text-foreground"
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+              {syncing ? "Sincronizando…" : "Sync Marketplace"}
+            </Button>
+          )}
           {canExport && (
             <Button
               variant="outline"

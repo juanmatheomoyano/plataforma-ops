@@ -26,7 +26,7 @@ Reemplaza el script Python de consola `crud_medios_de_pago_v6.py` con una interf
 |---|---|---|
 | **Dashboard** | todos | Métricas por rol, últimas operaciones, accesos rápidos |
 | **Sellers** | todos (ABM: admin) | Gestión de sellers y credenciales VTEX encriptadas |
-| **CRUD Medios de Pago** | todos | Operaciones R/C/U/D masivas sobre reglas de pago VTEX. Scope selector con modos: todos, por analista, seller específico, lista. Read incluye validación por grupos de cuotas (1p/6c/9c/12c/18c/24c) y eventos vigentes/próximos. Export Excel completo: RESUMEN (gráfico de torta), DASHBOARD_VENDEDORES (colores, grupos y eventos seleccionados), PAGOS_CONSOLIDADO, ERRORES |
+| **CRUD Medios de Pago** | todos (C/U/D: admin, supervisor) | Operaciones R/C/U/D masivas sobre reglas de pago VTEX. Scope selector con modos: todos, por analista, seller específico, lista. Resultados incluyen `id_ecommerce` del seller. Read incluye validación por grupos de cuotas (1p/6c/9c/12c/18c/24c) y eventos vigentes/próximos. Export Excel completo: RESUMEN (gráfico de torta), DASHBOARD_VENDEDORES (colores, grupos y eventos seleccionados), PAGOS_CONSOLIDADO, ERRORES |
 | **Eventos** | admin, supervisor | Crear y administrar eventos planificados (Hot Sale, Cyber Monday, etc.). Muestra eventos vigentes y próximos. La validación por seller se ejecuta desde CRUD Read |
 | **Usuarios** | admin, supervisor | ABM de usuarios y roles |
 | **Configuración** | todos | Toggle dark/light mode, cambio de contraseña |
@@ -78,7 +78,7 @@ FERNET_KEY=...          # generado con Fernet.generate_key()
 VTEX_ACCOUNT=...
 THREADS_READ=10         # paralelismo para operaciones Read
 THREADS_WRITE=5         # paralelismo para Create/Update/Delete
-APP_VERSION=1.3.0
+APP_VERSION=1.7.6
 RELEASE_URL=...         # URL del instalador .exe para auto-update
 RELEASE_DATE=...
 RELEASE_NOTES=...

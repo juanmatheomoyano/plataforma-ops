@@ -5,6 +5,34 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [1.7.7] — 2026-07-01 — Sync de marketplace BaproAR en módulo Sellers
+
+### Backend
+- Nuevos campos en tabla `sellers`: `marketplace_activo` (bool nullable) y `marketplace_sync_at` (datetime nullable).
+- Nuevo cliente `baproar_client.py`: llama a `GET /api/seller-register/pvt/sellers` y `PATCH /api/seller-register/pvt/sellers/{id}` usando credenciales del marketplace BaproAR.
+- Credenciales BaproAR como env vars (`BAPROAR_APP_KEY`, `BAPROAR_APP_TOKEN`) — no se guardan en BD.
+- `POST /api/sellers/sync-marketplace`: sincroniza estado activo/inactivo de todos los sellers contra BaproAR. Solo actualiza la BD si la respuesta es 200 y los datos son válidos.
+- `POST /api/sellers/{id}/marketplace-toggle`: activa o desactiva un seller en BaproAR. Solo modifica la BD si BaproAR confirma con 200.
+- Sync automático al iniciar la app y cada 24 hs via APScheduler.
+
+### Frontend
+- Columna "Marketplace" en la tabla de sellers: muestra el estado BaproAR (Activo/Inactivo/—). Clickeable para toggle directo desde la tabla (admin/supervisor).
+- Botón "Sync Marketplace" en el header con spinner y hora de última sincronización.
+
+---
+
+## [1.7.6] — 2026-07-01 — Id Ecommerce en CRUD + permisos C/U/D por rol
+
+### Backend
+- `CrudRowOut` incluye ahora el campo `id_ecommerce` (tomado del seller). Propagado en todas las operaciones: R, C, U, D — dry_run, éxito y error.
+
+### Frontend
+- CRUD Medios de Pago: columna "Id Ecommerce" agregada en la tabla de resultados y en el export Excel.
+- Botones C (Crear), U (Actualizar) y D (Eliminar) deshabilitados visualmente para roles sin permisos de escritura (analista, viewer). El botón R (Leer) sigue disponible para todos.
+- `WRITE_ROLES` ampliado a `["admin", "supervisor"]` — supervisores pueden ejecutar operaciones de escritura.
+
+---
+
 ## [1.7.5] — 2026-06-30 — Firma de actualizaciones automáticas
 
 ### Desktop

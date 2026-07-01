@@ -595,6 +595,7 @@ def execute_read(matched: list[dict]) -> list[CrudRowOut]:
         enriched = parse_rule_enriched(s.seller_id, s.seller_name, r)
         rows.append(CrudRowOut(
             seller_id=s.seller_id,
+            id_ecommerce=getattr(s, "id_ecommerce", None),
             rule_id=enriched["id_regla"],
             rule_name=enriched["nombre_regla"],
             brand=enriched["sistema_pago"],
@@ -659,6 +660,7 @@ async def execute_create(
             for ps, level, rule_name in combinations:
                 rows.append(CrudRowOut(
                     seller_id=seller.seller_id,
+                    id_ecommerce=getattr(seller, "id_ecommerce", None),
                     rule_id=None,
                     rule_name=rule_name,
                     brand=ps["name"],
@@ -672,6 +674,7 @@ async def execute_create(
             if dry_run:
                 rows.append(CrudRowOut(
                     seller_id=seller.seller_id,
+                    id_ecommerce=getattr(seller, "id_ecommerce", None),
                     rule_id=None,
                     rule_name=rule_name,
                     brand=ps["name"],
@@ -713,6 +716,7 @@ async def execute_create(
                 created = await vtex_client.create_rule(seller.seller_id, app_key, app_token, body)
                 rows.append(CrudRowOut(
                     seller_id=seller.seller_id,
+                    id_ecommerce=getattr(seller, "id_ecommerce", None),
                     rule_id=str(created.get("id", "")),
                     rule_name=rule_name,
                     brand=ps["name"],
@@ -723,6 +727,7 @@ async def execute_create(
             except Exception as e:
                 rows.append(CrudRowOut(
                     seller_id=seller.seller_id,
+                    id_ecommerce=getattr(seller, "id_ecommerce", None),
                     rule_id=None,
                     rule_name=rule_name,
                     brand=ps["name"],
@@ -757,6 +762,7 @@ async def execute_update(
         if dry_run:
             rows.append(CrudRowOut(
                 seller_id=seller.seller_id,
+                id_ecommerce=getattr(seller, "id_ecommerce", None),
                 rule_id=str(rule_id),
                 rule_name=rule.get("name"),
                 brand=_rule_brands(rule),
@@ -794,6 +800,7 @@ async def execute_update(
                 )
                 rows.append(CrudRowOut(
                     seller_id=seller.seller_id,
+                    id_ecommerce=getattr(seller, "id_ecommerce", None),
                     rule_id=str(rule_id),
                     rule_name=rule.get("name"),
                     brand=_rule_brands(rule),
@@ -804,6 +811,7 @@ async def execute_update(
             except Exception as e:
                 rows.append(CrudRowOut(
                     seller_id=seller.seller_id,
+                    id_ecommerce=getattr(seller, "id_ecommerce", None),
                     rule_id=str(rule_id),
                     rule_name=rule.get("name"),
                     brand=_rule_brands(rule),
@@ -826,6 +834,7 @@ async def execute_delete(matched: list[dict], dry_run: bool) -> list[CrudRowOut]
         if dry_run:
             rows.append(CrudRowOut(
                 seller_id=seller.seller_id,
+                id_ecommerce=getattr(seller, "id_ecommerce", None),
                 rule_id=str(rule_id),
                 rule_name=rule.get("name"),
                 brand=_rule_brands(rule),
@@ -841,6 +850,7 @@ async def execute_delete(matched: list[dict], dry_run: bool) -> list[CrudRowOut]
                 )
                 rows.append(CrudRowOut(
                     seller_id=seller.seller_id,
+                    id_ecommerce=getattr(seller, "id_ecommerce", None),
                     rule_id=str(rule_id),
                     rule_name=rule.get("name"),
                     brand=_rule_brands(rule),
@@ -851,6 +861,7 @@ async def execute_delete(matched: list[dict], dry_run: bool) -> list[CrudRowOut]
             except Exception as e:
                 rows.append(CrudRowOut(
                     seller_id=seller.seller_id,
+                    id_ecommerce=getattr(seller, "id_ecommerce", None),
                     rule_id=str(rule_id),
                     rule_name=rule.get("name"),
                     brand=_rule_brands(rule),

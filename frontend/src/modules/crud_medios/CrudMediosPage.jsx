@@ -22,7 +22,7 @@ import { ReadValidacionConfig, TODOS_GRUPOS } from "./components/ReadValidacionC
 import { ResultsTable } from "./components/ResultsTable"
 import { ScopeSelector } from "./components/ScopeSelector"
 
-const WRITE_ROLES = ["admin"]
+const WRITE_ROLES = ["admin", "supervisor"]
 
 const EMPTY_CREATE = {
   rule_name_prefix: "",
@@ -265,6 +265,7 @@ export default function CrudMediosPage() {
             <OperacionSelector
               {...opConfig}
               onChange={setOpConfig}
+              canWrite={canRunReal}
             />
 
             {/* 2. Validación (solo Read) — justo después del selector */}

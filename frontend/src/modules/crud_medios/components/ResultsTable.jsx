@@ -39,7 +39,7 @@ function getDetalleBadge(detalle) {
 }
 
 async function exportXLSX(rows) {
-  const headers = ["seller_id", "rule_id", "rule_name", "brand", "level", "estado", "detalle"]
+  const headers = ["seller_id", "id_ecommerce", "rule_id", "rule_name", "brand", "level", "estado", "detalle"]
   const data = [
     headers,
     ...rows.map((r) => headers.map((h) => r[h] ?? "")),
@@ -135,6 +135,14 @@ export function ResultsTable({ rows, dashboard, operacion, scope, onFilterErrors
         cell: ({ getValue }) => (
           <span className="font-mono text-xs text-foreground/80">{getValue()}</span>
         ),
+      },
+      {
+        accessorKey: "id_ecommerce",
+        header: "Id Ecommerce",
+        cell: ({ getValue }) => {
+          const v = getValue()
+          return v ? <span className="font-mono text-xs text-foreground/80">{v}</span> : <span className="text-muted-foreground/40">—</span>
+        },
       },
       {
         accessorKey: "rule_name",

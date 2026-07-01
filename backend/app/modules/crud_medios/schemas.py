@@ -58,6 +58,7 @@ class CrudRequest(BaseModel):
 
 class CrudRowOut(BaseModel):
     seller_id: str
+    id_ecommerce: str | None = None
     rule_id: str | None
     rule_name: str | None
     brand: str | None

@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     VTEX_ACCOUNT: str
     THREADS_READ: int = 4
     THREADS_WRITE: int = 2
+    BAPROAR_APP_KEY: str = ""
+    BAPROAR_APP_TOKEN: str = ""
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
