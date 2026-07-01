@@ -83,6 +83,28 @@ async def sync_marketplace(db: AsyncSession = Depends(get_db)):
     return await service.sync_marketplace_sellers(db)
 
 
+@router.get("/debug-baproar", dependencies=[_admin_supervisor])
+async def debug_baproar():
+    """Temporal: inspecciona la respuesta cruda de BaproAR para diagnóstico."""
+    from app.core.config import settings
+    from . import baproar_client
+    import httpx
+    headers = {
+        "X-VTEX-API-AppKey": settings.BAPROAR_APP_KEY,
+        "X-VTEX-API-AppToken": settings.BAPROAR_APP_TOKEN,
+        "Accept": "application/json",
+    }
+    resp = await baproar_client.get_client().get(
+        "https://baproar.vtexcommercestable.com.br/api/seller-register/pvt/sellers",
+        params={"page": 1, "pageSize": 5},
+        headers=headers,
+    )
+    return {
+        "status_code": resp.status_code,
+        "raw": resp.json(),
+    }
+
+
 @router.get("/analistas", response_model=list[AnalistaOut], dependencies=[_auth])
 async def list_analistas(db: AsyncSession = Depends(get_db)):
     result = await db.execute(
