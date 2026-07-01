@@ -314,7 +314,7 @@ async def sync_marketplace_sellers(db: AsyncSession) -> dict:
 
     await db.commit()
     logger.info("sync_marketplace_sellers: %d sellers actualizados de %d en marketplace", len(sellers_to_update), len(account_map))
-    return {"synced": len(sellers_to_update), "total_marketplace": len(status_map)}
+    return {"synced": len(sellers_to_update), "total_marketplace": len(account_map)}
 
 
 async def toggle_marketplace_seller(seller_id: uuid.UUID, db: AsyncSession) -> Seller:
