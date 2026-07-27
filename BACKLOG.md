@@ -125,3 +125,23 @@
 - [x] Validación de Eventos (ValidacionEventosPage, EventoConfigPanel, EventoResultsTable): migración completa a tokens semánticos
 - [x] DashboardTable (CRUD Read): migración completa, celdas de estado con dual dark:/light
 - [x] `checkbox.jsx` y `tabs.jsx`: migrados a tokens (`border-input`, `bg-background`, `bg-muted`, `data-[state=checked]:bg-primary`)
+
+### 9. Permisos renovados: 
+
+Quiero tener permisos estilo VTEX.
+
+Owner: Acceso máximo
+
+Admin: Acceso a todo menos a los usuarios
+
+Categorías: CRUD SOLO leer, Sellers acceso completo pero sin import y export general, importante que si tengan acceso a nuevo seller asi cargan las credenciales ahí. Eventos solo visual, no editar prender ni apagar, No crear eventos.
+
+Catalogo: Aun no hay modulos para ellos, Eventos solo visual, no editar prender ni apagar, No crear eventos.
+
+Activación: Proximo modulo a crear sobre Proceso de alta de Sellers. Sellers acceso completo pero sin import y export general, importante que si tengan acceso a nuevo seller asi cargan las credenciales ahí, Eventos solo visual, no editar prender ni apagar, No crear eventos.
+
+Administrativo: Proximo modulo a crear sobre Automatización de cambio de contraseñas de payway. Eventos solo visual, no editar prender ni apagar, No crear eventos.
+
+Importante que se pueda tener mas de un rol activo, por ejemplo, que un usuario tenga categorías y activación por ejemplo.
+
+
