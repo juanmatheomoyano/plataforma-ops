@@ -53,9 +53,46 @@ async def create_seller(data: SellerCreate, db: AsyncSession = Depends(get_db)):
     return await service.create_seller(data, db)
 
 
-@router.get("/export", dependencies=[_admin_supervisor])
-async def export_sellers(db: AsyncSession = Depends(get_db)):
+@router.get("/export")
+async def export_sellers(
+    include_credentials: bool = False,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Export sellers.
+
+    - `include_credentials=false` (default): xlsx plano, admin + supervisor.
+    - `include_credentials=true`: solo admin. Devuelve un .zip AES-256 y expone
+      el password en el header `X-Export-Password` (mostrar una sola vez al usuario).
+    """
+    if current_user.role not in (UserRole.admin, UserRole.supervisor):
+        raise HTTPException(status_code=403, detail="Solo admin/supervisor")
+
+    if include_credentials:
+        if current_user.role != UserRole.admin:
+            raise HTTPException(status_code=403, detail="Solo admin puede exportar con credenciales")
+        import logging
+        buf, password = await service.export_sellers_encrypted_zip(db)
+        logging.getLogger("sellers.export").warning(
+            "sellers_export_with_credentials user=%s user_id=%s bytes=%d",
+            current_user.username, current_user.id, len(buf),
+        )
+        return StreamingResponse(
+            io.BytesIO(buf),
+            media_type="application/zip",
+            headers={
+                "Content-Disposition": "attachment; filename=sellers.zip",
+                "X-Export-Password": password,
+                "X-Export-Filename": "sellers.zip",
+            },
+        )
+
     buf = await service.export_sellers_xlsx(db)
+    import logging
+    logging.getLogger("sellers.export").info(
+        "sellers_export user=%s user_id=%s bytes=%d",
+        current_user.username, current_user.id, len(buf),
+    )
     return StreamingResponse(
         io.BytesIO(buf),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

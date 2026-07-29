@@ -45,3 +45,15 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+
+# Credenciales locales — NUNCA subir al repo
+CREDENTIALS.md
+credentials.md
+CREDENCIALES.md
+
+# Claude Code metadata (local)
+.claude/
+frontend/.claude/
+
+# Carpeta destinada a SharePoint (duplicados + PDFs binarios)
+Provincia Ops - Documentación/

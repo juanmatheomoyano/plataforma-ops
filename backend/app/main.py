@@ -1,3 +1,5 @@
+import asyncio
+import logging
 from contextlib import asynccontextmanager
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -9,6 +11,11 @@ from slowapi.errors import RateLimitExceeded
 from app.core.config import settings
 from app.core.limiter import limiter
 from app.core.database import AsyncSessionLocal
+from app.core.observability import init_sentry
+from app.core.scheduler import job_lock
+
+# Sentry debe inicializarse antes de crear la app para capturar todo
+init_sentry()
 from app.modules.auth.router import router as auth_router
 from app.modules.crud_medios.router import router as crud_medios_router
 from app.modules.crud_medios.service import cleanup_old_operations
@@ -21,36 +28,51 @@ from app.modules.updates.router import public_router as updates_public_router
 from app.modules.updates.router import router as updates_router
 from app.modules.users.router import router as users_router
 
+_logger = logging.getLogger(__name__)
+
+
+_MARKETPLACE_SYNC_JOB = "marketplace_sync"
+_MARKETPLACE_SYNC_TTL_SECONDS = 30 * 60  # 30 min — cubre worst case de sync completo
+
+
+async def _run_marketplace_sync(label: str) -> None:
+    """Ejecuta el sync marketplace bajo lock DB. No re-raise: solo loguea."""
+    try:
+        async with AsyncSessionLocal() as db:
+            async with job_lock(db, _MARKETPLACE_SYNC_JOB, _MARKETPLACE_SYNC_TTL_SECONDS) as acquired:
+                if not acquired:
+                    _logger.info("Marketplace sync (%s) skipped: otra réplica corriendo", label)
+                    return
+                await sync_marketplace_sellers(db)
+    except Exception as e:
+        _logger.warning("Marketplace sync (%s) falló (no fatal): %s", label, e)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Limpieza de historial — IO contra BD propia, seguro dentro del lifespan.
     async with AsyncSessionLocal() as db:
         await cleanup_old_operations(db)
 
-    # Sync marketplace al arrancar — no fatal si falla
-    try:
-        async with AsyncSessionLocal() as db:
-            await sync_marketplace_sellers(db)
-    except Exception as e:
-        import logging
-        logging.getLogger(__name__).warning("Startup marketplace sync falló (no fatal): %s", e)
+    # Sync marketplace en background — NO bloquea el startup ni el health check.
+    # Si BaproAR está caído, la app arranca igual y el sync fallará silenciosamente.
+    startup_task = asyncio.create_task(_run_marketplace_sync("startup"))
 
-    # Sync diario automático
-    async def _daily_sync():
-        try:
-            async with AsyncSessionLocal() as db:
-                await sync_marketplace_sellers(db)
-        except Exception as e:
-            import logging
-            logging.getLogger(__name__).warning("Daily marketplace sync falló: %s", e)
-
+    # Sync diario programado.
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(_daily_sync, "interval", hours=24)
+    scheduler.add_job(lambda: asyncio.create_task(_run_marketplace_sync("daily")), "interval", hours=24)
     scheduler.start()
 
     yield
 
     scheduler.shutdown()
+    # Esperamos el startup task si sigue corriendo, con timeout corto — evitamos hang al apagar.
+    if not startup_task.done():
+        startup_task.cancel()
+        try:
+            await asyncio.wait_for(startup_task, timeout=2.0)
+        except (asyncio.CancelledError, asyncio.TimeoutError):
+            pass
     await close_vtex_client()
     await close_baproar_client()
 
@@ -59,12 +81,24 @@ app = FastAPI(title="Provincia Ops", lifespan=lifespan)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+_ALLOWED_ORIGINS = [
+    # Tauri 2 Windows (webview2)
+    "http://tauri.localhost",
+    "https://tauri.localhost",
+    # Tauri 2 macOS/Linux
+    "tauri://localhost",
+    # Dev local (Vite)
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_ALLOWED_ORIGINS,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Export-Password", "X-Export-Filename"],
 )
 
 app.include_router(auth_router, prefix="/api")

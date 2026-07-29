@@ -1,5 +1,6 @@
 import { createContext, useCallback, useEffect, useState } from "react"
 import client, { clearTokens, getAccessToken, setTokens } from "@/core/api/client"
+import { setSentryUser } from "@/core/observability"
 
 export const AuthContext = createContext(null)
 
@@ -15,7 +16,7 @@ export function AuthProvider({ children }) {
     }
     client
       .get("/auth/me")
-      .then(({ data }) => setUser(data))
+      .then(({ data }) => { setUser(data); setSentryUser(data) })
       .catch(() => clearTokens())
       .finally(() => setIsLoading(false))
   }, [])
@@ -24,6 +25,7 @@ export function AuthProvider({ children }) {
     const { data } = await client.post("/auth/login", { username, password })
     setTokens(data.access_token, data.refresh_token)
     setUser(data.user)
+    setSentryUser(data.user)
   }, [])
 
   const logout = useCallback(async () => {
@@ -37,6 +39,7 @@ export function AuthProvider({ children }) {
     } finally {
       clearTokens()
       setUser(null)
+      setSentryUser(null)
     }
   }, [])
 

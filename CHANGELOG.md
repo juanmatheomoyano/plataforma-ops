@@ -5,6 +5,50 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [1.7.8] — 2026-07-30 — Sprint 1: Estabilización crítica
+
+Cierre del Sprint 1 (7 historias de usuario). Foco en tapar los críticos de la auditoría antes de sumar features nuevas.
+
+### Backend
+- **CORS restringido (HU-02)**: whitelist explícita de orígenes (Tauri Windows/macOS/Linux + dev Vite). `allow_credentials=False` mantenido. Header `X-Export-Password` expuesto para que axios pueda leerlo. Test de regresión en `test_cors.py`.
+- **Startup sync no-fatal (HU-03)**: el sync marketplace ahora corre en background (`asyncio.create_task`), no bloquea el arranque de la app. Si BaproAR está caído, la app arranca igual y el sync falla silenciosamente. Timeout explícito `httpx.Timeout(10.0, connect=5.0)` en el cliente BaproAR.
+- **APScheduler con lock DB (HU-04)**: nueva tabla `scheduler_locks` + context manager `job_lock()`. Estrategia atómica con `INSERT ... ON CONFLICT DO UPDATE ... WHERE locked_until < NOW()` de Postgres. Evita jobs duplicados si Railway escala a más de 1 réplica. TTL de 30 min protege contra crashes.
+- **Export sellers con credenciales (HU-05)**: nuevo endpoint que devuelve `.zip` con AES-256 (via `pyzipper`). Password random one-shot generado en el server (`secrets.token_urlsafe(12)`), expuesto en header `X-Export-Password`. Solo admin. Log de auditoría (username + user_id + bytes) por cada export.
+- **Sentry integrado (HU-06)**: nuevo módulo `core/observability.py`. `init_sentry()` gateado por env var `SENTRY_DSN`. Integraciones FastAPI/Starlette/SQLAlchemy. `set_sentry_user()` taggea cada error con el user autenticado.
+- **Matriz de tests de permisos (HU-07)**: nuevo `tests/test_role_permissions.py` — 73 tests declarativos (18 endpoints × 4 roles + 1 no-auth). Regression suite completa para autorización.
+- Nueva migración: `d4e5f6a7b8c9_create_scheduler_locks`.
+- Nuevas dependencias: `pytest-asyncio>=1.0`, `pyzipper>=0.3.6`, `sentry-sdk[fastapi]>=2.0`.
+
+### Frontend
+- **Dashboard con rol correcto (HU-01)**: `Dashboard.jsx` usa `supervisor` (rename desde `analista_senior` en v1.7.2). Bloque `ultimo_operador` removido. Módulos Eventos y Configuración agregados al menú del dashboard. Usuarios abierto a admin + supervisor.
+- **Modal de export con credenciales (HU-05)**: nuevo `ExportSellersModal.jsx` con radio "sin/con credenciales", warning + checkbox "confirmo el riesgo", password mostrado una sola vez con botón Copiar.
+- **Sentry frontend (HU-06)**: nuevo `core/observability.js`. `initSentry()` gateado por `VITE_SENTRY_DSN`. `setSentryUser()` invocado en login/logout con tag de rol.
+- Nueva dependencia: `@sentry/react ^10.63`.
+
+### Infra
+- Nuevos tests de regresión: `test_cors.py`, `test_lifespan.py`, `test_scheduler_lock.py`, `test_role_permissions.py`.
+- Env vars nuevas en Railway: `SENTRY_DSN` (opt), `APP_VERSION` (⚠ obligatoria para updater).
+
+### Docs
+- Nuevo `ARCHITECTURE.md`: cómo funciona la app por dentro (flujos, encriptación, scheduler lock, updater), estructura de código, DB, decisiones de seguridad, testing.
+- Nuevo `API.md`: referencia completa de endpoints REST con request/response, roles, códigos de error, ejemplos curl.
+- Nuevo `RUNBOOK.md`: operar en producción — deploy paso a paso, rollback, migraciones, incidentes, escenarios de emergencia (pérdida de secrets críticos), checklist de release.
+- Nueva metodología Scrum-lite formalizada: `DOD.md`, `SPRINTS.md`, `BACKLOG.md`, `RETRO.md`.
+- Nueva carpeta `Provincia Ops - Documentación/` destinada a SharePoint (Manuales + Estado del proyecto + Retrospectivas + Técnico).
+
+---
+
+## [docs] — 2026-07-29 — Documentación técnica formal
+
+### Documentación
+- Nuevo `ARCHITECTURE.md`: cómo funciona la app por dentro (flujos de auth, encriptación Fernet, CRUD, marketplace sync, scheduler lock, updater Tauri), estructura de código, DB + migraciones, decisiones de seguridad, testing.
+- Nuevo `API.md`: referencia completa de endpoints REST (health, auth, users, sellers, crud-medios, eventos, updates) con request/response, roles, códigos de error y ejemplos curl.
+- Nuevo `RUNBOOK.md`: operar en producción — deploy paso a paso backend + `.exe`, rollback, migraciones Alembic, incidentes típicos, escenarios de emergencia (pérdida de `FERNET_KEY` / `JWT_SECRET_KEY` / `tauri-signing.key` / DB), checklist de release.
+- `README.md`: nueva sección "Documentación" con tabla que enlaza a todos los `.md`.
+- Nueva carpeta `Provincia Ops - Documentación/` en la raíz con la estructura destinada a SharePoint (Manuales / Estado del proyecto / Retrospectivas).
+
+---
+
 ## [1.7.7] — 2026-07-01 — Sync de marketplace BaproAR en módulo Sellers
 
 ### Backend
@@ -297,7 +341,7 @@ Formato: [versión] — fecha — descripción
 
 ### Usuarios
 - Nuevo: Exportar lista de usuarios a Excel (sin contraseñas)
-- Nuevo: Importar usuarios desde Excel (actualiza existentes, crea nuevos con contraseña Provincia.2026)
+- Nuevo: Importar usuarios desde Excel (actualiza existentes, crea nuevos con contraseña default — ver CREDENTIALS.md)
 
 ---
 
@@ -378,10 +422,10 @@ Formato: [versión] — fecha — descripción
 ### Infraestructura
 - Scaffold del proyecto: FastAPI + React + Vite + Tailwind + shadcn + Tauri 2
 - PostgreSQL con SQLAlchemy async + Alembic para migraciones
-- Deploy backend en Railway (plataforma-ops-production.up.railway.app)
+- Deploy backend en Railway
 - EXE instalable para Windows generado con Tauri 2
 - SSH hardened en VM Ubuntu (clave ED25519, puerto 2222, fail2ban)
-- Repositorio privado en GitHub: juanmatheomoyano/plataforma-ops
+- Repositorio en GitHub
 
 ### Autenticación
 - Login con JWT (access token 8hs + refresh token 7 días)

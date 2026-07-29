@@ -25,7 +25,7 @@ Reemplaza el script Python de consola `crud_medios_de_pago_v6.py` con una interf
 | Módulo | Acceso | Descripción |
 |---|---|---|
 | **Dashboard** | todos | Métricas por rol, últimas operaciones, accesos rápidos |
-| **Sellers** | todos (ABM: admin) | Gestión de sellers y credenciales VTEX encriptadas |
+| **Sellers** | todos (ABM: admin/supervisor) | Gestión de sellers y credenciales VTEX encriptadas. Columna Marketplace: muestra estado BaproAR (Activo/Inactivo) y permite toggle directo. Sync automático al startup y cada 24 hs; botón de sync manual (admin/supervisor) |
 | **CRUD Medios de Pago** | todos (C/U/D: admin, supervisor) | Operaciones R/C/U/D masivas sobre reglas de pago VTEX. Scope selector con modos: todos, por analista, seller específico, lista. Resultados incluyen `id_ecommerce` del seller. Read incluye validación por grupos de cuotas (1p/6c/9c/12c/18c/24c) y eventos vigentes/próximos. Export Excel completo: RESUMEN (gráfico de torta), DASHBOARD_VENDEDORES (colores, grupos y eventos seleccionados), PAGOS_CONSOLIDADO, ERRORES |
 | **Eventos** | admin, supervisor | Crear y administrar eventos planificados (Hot Sale, Cyber Monday, etc.). Muestra eventos vigentes y próximos. La validación por seller se ejecuta desde CRUD Read |
 | **Usuarios** | admin, supervisor | ABM de usuarios y roles |
@@ -78,7 +78,10 @@ FERNET_KEY=...          # generado con Fernet.generate_key()
 VTEX_ACCOUNT=...
 THREADS_READ=10         # paralelismo para operaciones Read
 THREADS_WRITE=5         # paralelismo para Create/Update/Delete
-APP_VERSION=1.7.6
+BAPROAR_APP_KEY=...     # credenciales marketplace BaproAR (VTEX)
+BAPROAR_APP_TOKEN=...
+SENTRY_DSN=             # opcional — sin valor, Sentry no se inicializa
+APP_VERSION=1.7.8
 RELEASE_URL=...         # URL del instalador .exe para auto-update
 RELEASE_DATE=...
 RELEASE_NOTES=...
@@ -87,7 +90,9 @@ RELEASE_NOTES=...
 ### Frontend (`frontend/.env.production`)
 
 ```env
-VITE_API_BASE_URL=https://plataforma-ops-production.up.railway.app/api
+VITE_API_BASE_URL=<BASE-URL-BACKEND>/api
+VITE_SENTRY_DSN=            # opcional — sin valor, Sentry no se inicializa
+VITE_APP_VERSION=1.7.8
 ```
 
 ---
@@ -175,7 +180,7 @@ alembic downgrade -1
 El backend se deploya automáticamente desde `main` vía Railway.
 Procfile: `web: uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 
-URL producción: `https://plataforma-ops-production.up.railway.app/api`
+URL producción: `<BASE-URL-BACKEND>/api`
 
 ---
 
@@ -211,10 +216,16 @@ Lógica original de referencia: `frontend/.claude/crud_medios_de_pago_v6.py`
 
 ---
 
-## Changelog
+## Documentación
 
-Ver [CHANGELOG.md](./CHANGELOG.md) para historial completo de versiones.
-
-## Backlog
-
-Ver [BACKLOG.md](./BACKLOG.md) para tareas pendientes y próximos sprints.
+| Archivo | Para qué |
+|---|---|
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | Cómo funciona la app por dentro: flujos, decisiones técnicas, DB, seguridad |
+| [API.md](./API.md) | Referencia de endpoints REST: request/response, roles, ejemplos curl |
+| [RUNBOOK.md](./RUNBOOK.md) | Operar en producción: deploy, rollback, incidentes, emergencias |
+| [MANUAL_USUARIO.md](./MANUAL_USUARIO.md) | Manual para usuario final (no técnico) |
+| [DOD.md](./DOD.md) | Definition of Done por feature |
+| [SPRINTS.md](./SPRINTS.md) | Sprint activo y planificados |
+| [BACKLOG.md](./BACKLOG.md) | Historias de usuario pendientes |
+| [RETRO.md](./RETRO.md) | Lecciones aprendidas |
+| [CHANGELOG.md](./CHANGELOG.md) | Historial versión por versión |

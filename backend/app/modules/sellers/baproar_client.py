@@ -10,7 +10,9 @@ import httpx
 logger = logging.getLogger(__name__)
 
 _BASE = "https://baproar.vtexcommercestable.com.br/api/seller-register/pvt/sellers"
-_TIMEOUT = httpx.Timeout(20.0)
+# Timeout explícito para evitar que el sync bloquee el lifespan si BaproAR está lento.
+# connect corto (falla rápido si no responde), read/write razonables por página.
+_TIMEOUT = httpx.Timeout(10.0, connect=5.0)
 
 _client: httpx.AsyncClient | None = None
 

@@ -349,23 +349,24 @@ async def toggle_marketplace_seller(seller_id: uuid.UUID, db: AsyncSession) -> S
     return seller
 
 
-async def export_sellers_xlsx(db: AsyncSession) -> bytes:
-    sellers = await get_all_sellers(db, limit=10000)
+_EXPORT_HEADERS_NO_CREDS = [h for h in _EXPORT_HEADERS if h not in ("App Key", "App Token")]
+
+
+def _build_sellers_xlsx(sellers: list[Seller], include_credentials: bool) -> bytes:
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Sellers"
-    ws.append(_EXPORT_HEADERS)
+    headers = _EXPORT_HEADERS if include_credentials else _EXPORT_HEADERS_NO_CREDS
+    ws.append(headers)
     for s in sellers:
-        try:
-            app_key, app_token = get_decrypted_credentials(s) if s.app_key_enc else ("", "")
-        except Exception:
-            app_key, app_token = "", ""
-        ws.append([
-            s.id_ecommerce,
-            s.seller_name,
-            s.seller_id,
-            app_key,
-            app_token,
+        row = [s.id_ecommerce, s.seller_name, s.seller_id]
+        if include_credentials:
+            try:
+                app_key, app_token = get_decrypted_credentials(s) if s.app_key_enc else ("", "")
+            except Exception:
+                app_key, app_token = "", ""
+            row.extend([app_key, app_token])
+        row.extend([
             s.analista,
             s.estado_keys.value if s.estado_keys else "",
             s.integracion,
@@ -376,9 +377,36 @@ async def export_sellers_xlsx(db: AsyncSession) -> bytes:
             s.notas,
             "activo" if s.is_active else "inactivo",
         ])
+        ws.append(row)
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()
+
+
+async def export_sellers_xlsx(db: AsyncSession) -> bytes:
+    """Export sin credenciales — devuelve xlsx plano."""
+    sellers = await get_all_sellers(db, limit=10000)
+    return _build_sellers_xlsx(sellers, include_credentials=False)
+
+
+async def export_sellers_encrypted_zip(db: AsyncSession) -> tuple[bytes, str]:
+    """Export CON credenciales — devuelve (bytes_zip_aes, password_random).
+
+    El .xlsx queda dentro de un .zip cifrado con AES-256. Password se genera
+    en el servidor y solo se muestra una vez al usuario.
+    """
+    import secrets
+    import pyzipper
+
+    sellers = await get_all_sellers(db, limit=10000)
+    xlsx_bytes = _build_sellers_xlsx(sellers, include_credentials=True)
+    password = secrets.token_urlsafe(12)
+
+    buf = io.BytesIO()
+    with pyzipper.AESZipFile(buf, "w", compression=pyzipper.ZIP_DEFLATED, encryption=pyzipper.WZ_AES) as zf:
+        zf.setpassword(password.encode("utf-8"))
+        zf.writestr("sellers.xlsx", xlsx_bytes)
+    return buf.getvalue(), password
 
 
 async def import_update_sellers(

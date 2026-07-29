@@ -8,7 +8,7 @@ import client from "@/core/api/client"
 
 const ROLE_LABELS = {
   admin: "Administrador",
-  analista_senior: "Analista Senior",
+  supervisor: "Supervisor",
   analista: "Analista",
   viewer: "Viewer",
 }
@@ -21,9 +21,11 @@ const OP_BADGE = {
 }
 
 const MODULES = [
-  { label: "Sellers", path: "/sellers", roles: ["admin", "analista_senior", "analista", "viewer"] },
-  { label: "CRUD Medios de Pago", path: "/crud-medios", roles: ["admin", "analista_senior", "analista", "viewer"] },
-  { label: "Usuarios", path: "/users", roles: ["admin"] },
+  { label: "Sellers", path: "/sellers", roles: ["admin", "supervisor", "analista"] },
+  { label: "CRUD Medios de Pago", path: "/crud-medios", roles: ["admin", "supervisor", "analista", "viewer"] },
+  { label: "Eventos", path: "/eventos", roles: ["admin", "supervisor"] },
+  { label: "Usuarios", path: "/users", roles: ["admin", "supervisor"] },
+  { label: "Configuración", path: "/configuracion", roles: ["admin", "supervisor", "analista", "viewer"] },
 ]
 
 function StatCard({ icon: Icon, label, value, alert }) {
@@ -51,18 +53,18 @@ export default function Dashboard() {
   const { user, hasRole } = useAuth()
   const navigate = useNavigate()
 
-  const isSenior = hasRole(["admin", "analista_senior"])
+  const isSupervisor = hasRole(["admin", "supervisor"])
   const isAdmin = hasRole(["admin"])
 
   const [stats, setStats] = useState(null)
   const [operations, setOperations] = useState([])
 
   useEffect(() => {
-    if (isSenior) {
+    if (isSupervisor) {
       client.get("/crud-medios/stats").then(({ data }) => setStats(data)).catch(() => {})
     }
     client.get("/crud-medios/operations").then(({ data }) => setOperations(data.slice(0, 5))).catch(() => {})
-  }, [isSenior])
+  }, [isSupervisor])
 
   const accessibleModules = MODULES.filter((m) => hasRole(m.roles))
 
@@ -81,8 +83,8 @@ export default function Dashboard() {
         <p className="text-sm text-muted-foreground">Panel de control — Provincia Compras</p>
       </div>
 
-      {/* Métricas — solo admin/analista_senior */}
-      {isSenior && stats && (
+      {/* Métricas — admin + supervisor */}
+      {isSupervisor && stats && (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <StatCard icon={TrendingUp} label="Sellers activos" value={stats.total_sellers_activos} />
           <StatCard icon={Users} label="Sellers inactivos" value={stats.total_sellers_inactivos} />
@@ -93,18 +95,8 @@ export default function Dashboard() {
             alert={stats.total_sellers_keys_vencidas > 0}
           />
           <StatCard icon={Activity} label="Operaciones hoy" value={stats.total_operaciones_hoy} />
-          {isAdmin && (
-            <>
-              <StatCard icon={Users} label="Usuarios activos" value={stats.total_usuarios_activos} />
-              {stats.ultimo_operador && (
-                <Card className="border-border bg-card col-span-2 sm:col-span-3">
-                  <CardContent className="p-5">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Último operador</p>
-                    <p className="mt-0.5 text-foreground/80 font-medium">{stats.ultimo_operador}</p>
-                  </CardContent>
-                </Card>
-              )}
-            </>
+          {isSupervisor && (
+            <StatCard icon={Users} label="Usuarios activos" value={stats.total_usuarios_activos} />
           )}
         </div>
       )}

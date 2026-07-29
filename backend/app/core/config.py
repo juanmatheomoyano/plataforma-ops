@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     THREADS_WRITE: int = 2
     BAPROAR_APP_KEY: str = ""
     BAPROAR_APP_TOKEN: str = ""
+    SENTRY_DSN: str = ""
+    APP_VERSION: str = "dev"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

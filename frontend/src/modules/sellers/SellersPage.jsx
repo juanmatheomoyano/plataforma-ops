@@ -5,8 +5,6 @@ import {
   useReactTable,
 } from "@tanstack/react-table"
 import { Download, Pencil, Plug, Power, RefreshCw, Search, Upload, UserX } from "lucide-react"
-import { save } from "@tauri-apps/plugin-dialog"
-import { writeFile } from "@tauri-apps/plugin-fs"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
@@ -16,6 +14,7 @@ import { useAuth } from "@/core/auth/useAuth"
 import client from "@/core/api/client"
 import { SellerFormModal } from "./SellerFormModal"
 import { ImportResultModal } from "./ImportResultModal"
+import { ExportSellersModal } from "./ExportSellersModal"
 
 const ESTADO_BADGE = {
   activo:  "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400",
@@ -39,6 +38,7 @@ export default function SellersPage() {
   const [importResult, setImportResult] = useState(null)
   const [importOpen, setImportOpen] = useState(false)
   const [importing, setImporting] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const [lastSync, setLastSync] = useState(null)
   const [togglingId, setTogglingId] = useState(null)
@@ -151,20 +151,8 @@ export default function SellersPage() {
     }
   }
 
-  async function handleExport() {
-    try {
-      const { data } = await client.get("/sellers/export", { responseType: "arraybuffer" })
-      const filePath = await save({
-        filters: [{ name: "Excel", extensions: ["xlsx"] }],
-        defaultPath: `sellers_${new Date().toISOString().slice(0, 10)}.xlsx`,
-      })
-      if (filePath) {
-        await writeFile(filePath, new Uint8Array(data))
-        toast.success("Exportación guardada")
-      }
-    } catch {
-      toast.error("Error al exportar sellers")
-    }
+  function handleExport() {
+    setExportOpen(true)
   }
 
   const analistasUnicos = useMemo(() => {
@@ -506,6 +494,12 @@ export default function SellersPage() {
         open={importOpen}
         onClose={() => setImportOpen(false)}
         result={importResult}
+      />
+
+      <ExportSellersModal
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        isAdmin={isAdmin}
       />
     </div>
   )
