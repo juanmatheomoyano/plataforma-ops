@@ -169,14 +169,22 @@ Historias de usuario. Se agrupan por épica. Cada sprint activo enlaza a las his
 ### HU-11 `[propuesta]`
 **Como** dev, **quiero** que CI corra tests + `alembic check` antes de mergear, **para** no romper prod con model drift.
 
-- Prioridad: 🟡 Alta · Tamaño: M · Estado: 📋
+- Prioridad: 🟡 Alta · Tamaño: M · Estado: ✅ v1.7.9
 - Sprint: 2
 
 **Criterios de aceptación**
-- [ ] GitHub Action en `.github/workflows/ci.yml`.
-- [ ] Corre `pytest`, `alembic check`, `ruff check`, `npm run build`.
-- [ ] Falla el PR si alguno falla.
-- [ ] Badge en README.
+- [x] GitHub Action en `.github/workflows/ci.yml`.
+- [x] Job backend: instala deps, `alembic upgrade head`, `alembic check`, `pytest -v`.
+- [x] Job frontend: instala deps, `npm run build`.
+- [x] Falla el push/PR si alguno falla.
+- [x] Postgres 16 como service para tests que necesitan DB real.
+- [x] Registra los modelos faltantes en `alembic/env.py` (eventos, scheduler).
+- [ ] Ruff/lint como step separado. *(pendiente — HU chica futura)*
+- [ ] Badge de CI en README. *(pendiente)*
+
+**Bugs encontrados al implementar**
+- Migración `c3d4e5f6a7b8` duplicaba columna `marketplace_seller_id` (arreglado convirtiéndola en no-op).
+- Modelo `Evento.created_at` sin `nullable=False` — drift con la migración `f1a2b3c4d5e6` (arreglado).
 
 ---
 
