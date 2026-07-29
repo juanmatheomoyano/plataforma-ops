@@ -6,13 +6,14 @@ Historias de usuario. Se agrupan por épica. Cada sprint activo enlaza a las his
 - **Prioridad:** 🔴 Crítica · 🟡 Alta · 🟢 Media · ⚪ Baja
 - **Tamaño:** XS (<2h) · S (medio día) · M (1-2 días) · L (3-5 días) · XL (partir)
 - **Estado:** 📋 Backlog · 🚧 En curso · ✅ Hecho (con versión) · 🧊 Fría
+- **Origen:** `[usuario]` pedido explícito del usuario · `[propuesta]` sugerencia de la auditoría (Claude, Sprint 1). Toda `[propuesta]` requiere aprobación del usuario antes de arrancarse; se puede descartar sin discusión.
 - La [DoD](DOD.md) aplica a todas.
 
 ---
 
 ## Épica: Estabilización crítica
 
-### HU-01
+### HU-01 `[propuesta]`
 **Como** supervisor, **quiero** ver el dashboard con métricas correctas para mi rol, **para** no tener que pedirle a un admin que me pase los números.
 
 - Prioridad: 🔴 Crítica · Tamaño: S · Estado: ✅ v1.7.8
@@ -28,7 +29,7 @@ Historias de usuario. Se agrupan por épica. Cada sprint activo enlaza a las his
 
 ---
 
-### HU-02
+### HU-02 `[propuesta]`
 **Como** admin de seguridad, **quiero** que la API rechace requests de orígenes no autorizados, **para** que un JWT robado no sea usable desde otro origin.
 
 - Prioridad: 🔴 Crítica · Tamaño: S · Estado: ✅ v1.7.8
@@ -44,7 +45,7 @@ Historias de usuario. Se agrupan por épica. Cada sprint activo enlaza a las his
 
 ---
 
-### HU-03
+### HU-03 `[propuesta]`
 **Como** dev, **quiero** que el sync marketplace no bloquee el startup de la app, **para** que Railway no mate el pod si BaproAR está lento.
 
 - Prioridad: 🔴 Crítica · Tamaño: M · Estado: ✅ v1.7.8
@@ -60,7 +61,7 @@ Historias de usuario. Se agrupan por épica. Cada sprint activo enlaza a las his
 
 ---
 
-### HU-04
+### HU-04 `[propuesta]`
 **Como** dev, **quiero** que el scheduler no dispare tareas duplicadas si Railway escala a >1 réplica, **para** no hacer doble PATCH contra BaproAR.
 
 - Prioridad: 🔴 Crítica · Tamaño: M · Estado: ✅ v1.7.8
@@ -77,7 +78,7 @@ Historias de usuario. Se agrupan por épica. Cada sprint activo enlaza a las his
 
 ---
 
-### HU-05
+### HU-05 `[propuesta]`
 **Como** admin, **quiero** que el export de sellers con credenciales VTEX quede protegido y auditado, **para** que un archivo filtrado no exponga las claves de todos los sellers.
 
 - Prioridad: 🔴 Crítica · Tamaño: M · Estado: ✅ v1.7.8
@@ -92,7 +93,7 @@ Historias de usuario. Se agrupan por épica. Cada sprint activo enlaza a las his
 
 ---
 
-### HU-06
+### HU-06 `[propuesta]`
 **Como** dev, **quiero** ver traces con contexto cuando algo falla en producción, **para** no depender de que el usuario reporte el bug.
 
 - Prioridad: 🟡 Alta · Tamaño: M · Estado: ✅ v1.7.8 (parcial)
@@ -107,7 +108,7 @@ Historias de usuario. Se agrupan por épica. Cada sprint activo enlaza a las his
 
 ---
 
-### HU-07
+### HU-07 `[propuesta]`
 **Como** dev, **quiero** una matriz de tests que verifique permisos de cada endpoint por rol, **para** no romper autorización sin darme cuenta al renombrar un rol.
 
 - Prioridad: 🟡 Alta · Tamaño: L · Estado: ✅ v1.7.8
@@ -125,7 +126,7 @@ Historias de usuario. Se agrupan por épica. Cada sprint activo enlaza a las his
 
 ## Épica: Observabilidad + Auditoría
 
-### HU-08
+### HU-08 `[propuesta]`
 **Como** admin, **quiero** un log auditable de quién hizo qué en el sistema, **para** poder investigar incidentes y cumplir con requisitos internos.
 
 - Prioridad: 🟡 Alta · Tamaño: L · Estado: 📋
@@ -138,7 +139,7 @@ Historias de usuario. Se agrupan por épica. Cada sprint activo enlaza a las his
 
 ---
 
-### HU-09
+### HU-09 `[propuesta]`
 **Como** admin, **quiero** una página `/auditoria` con filtros, **para** buscar acciones específicas rápido.
 
 - Prioridad: 🟡 Alta · Tamaño: M · Estado: 📋
@@ -152,7 +153,7 @@ Historias de usuario. Se agrupan por épica. Cada sprint activo enlaza a las his
 
 ---
 
-### HU-10
+### HU-10 `[propuesta]`
 **Como** dev, **quiero** logs JSON estructurados en el backend, **para** filtrar en Railway sin regex.
 
 - Prioridad: 🟢 Media · Tamaño: S · Estado: 📋
@@ -165,7 +166,7 @@ Historias de usuario. Se agrupan por épica. Cada sprint activo enlaza a las his
 
 ---
 
-### HU-11
+### HU-11 `[propuesta]`
 **Como** dev, **quiero** que CI corra tests + `alembic check` antes de mergear, **para** no romper prod con model drift.
 
 - Prioridad: 🟡 Alta · Tamaño: M · Estado: 📋
@@ -181,7 +182,7 @@ Historias de usuario. Se agrupan por épica. Cada sprint activo enlaza a las his
 
 ## Épica: Dashboard funcional v2
 
-### HU-12
+### HU-12 `[propuesta]`
 **Como** frontend, **quiero** un único endpoint `/dashboard/summary` con toda la data del dashboard, **para** no hacer 5 requests en paralelo.
 
 - Prioridad: 🟢 Media · Tamaño: L · Estado: 📋
@@ -194,7 +195,7 @@ Historias de usuario. Se agrupan por épica. Cada sprint activo enlaza a las his
 
 ---
 
-### HU-13
+### HU-13 `[propuesta]`
 **Como** cualquier usuario, **quiero** un dashboard con gráficos útiles adaptados a mi rol, **para** entender el estado de mi trabajo sin abrir cada módulo.
 
 - Prioridad: 🟢 Media · Tamaño: L · Estado: 📋
@@ -208,7 +209,7 @@ Historias de usuario. Se agrupan por épica. Cada sprint activo enlaza a las his
 
 ---
 
-### HU-14
+### HU-14 `[propuesta]`
 **Como** usuario, **quiero** que los datos del dashboard se actualicen sin tener que recargar, **para** ver estado en tiempo cuasi-real.
 
 - Prioridad: 🟢 Media · Tamaño: M · Estado: 📋
@@ -222,7 +223,7 @@ Historias de usuario. Se agrupan por épica. Cada sprint activo enlaza a las his
 
 ---
 
-### HU-15
+### HU-15 `[propuesta]`
 **Como** admin/supervisor, **quiero** ver alertas accionables desde cualquier página, **para** no perderme cosas importantes.
 
 - Prioridad: 🟢 Media · Tamaño: M · Estado: 📋
@@ -238,46 +239,46 @@ Historias de usuario. Se agrupan por épica. Cada sprint activo enlaza a las his
 
 ## Épica: Sellers pro
 
-### HU-16 — Alertas de keys por vencer
+### HU-16 `[propuesta]` — Alertas de keys por vencer
 Prioridad 🟢 · Tamaño M · Sprint 4 · Estado 📋
 
-### HU-17 — Bulk actions en tabla de sellers
+### HU-17 `[propuesta]` — Bulk actions en tabla de sellers
 Prioridad 🟢 · Tamaño L · Sprint 4 · Estado 📋
 
-### HU-18 — Test-connection agendado + auto-mark vencido
+### HU-18 `[propuesta]` — Test-connection agendado + auto-mark vencido
 Prioridad 🟢 · Tamaño M · Sprint 4 · Estado 📋
 
-### HU-19 — Historial de cambios en seller
+### HU-19 `[propuesta]` — Historial de cambios en seller
 Prioridad 🟢 · Tamaño M · Sprint 4 · Estado 📋
 
 ## Épica: CRUD pro
 
-### HU-20 — Plantillas de filtros guardables por analista
+### HU-20 `[propuesta]` — Plantillas de filtros guardables por analista
 Prioridad 🟢 · Tamaño M · Sprint 5 · Estado 📋
 
-### HU-21 — Diff preview real (no solo dry-run)
+### HU-21 `[propuesta]` — Diff preview real (no solo dry-run)
 Prioridad 🟢 · Tamaño L · Sprint 5 · Estado 📋
 
-### HU-22 — Undo/rollback última operación
+### HU-22 `[propuesta]` — Undo/rollback última operación
 Prioridad 🟢 · Tamaño L · Sprint 5 · Estado 📋
 
-### HU-23 — Programar operaciones diferidas
+### HU-23 `[propuesta]` — Programar operaciones diferidas
 Prioridad 🟢 · Tamaño L · Sprint 5 · Estado 📋
 
 ## Épica: Eventos pro
 
-### HU-24 — Calendario visual mensual/semanal
+### HU-24 `[propuesta]` — Calendario visual mensual/semanal
 Prioridad 🟢 · Tamaño L · Sprint 6 · Estado 📋
 
-### HU-25 — Estado computado del evento
+### HU-25 `[propuesta]` — Estado computado del evento
 Prioridad 🟢 · Tamaño S · Sprint 6 · Estado 📋
 
-### HU-26 — Snapshot post-mortem al finalizar evento
+### HU-26 `[propuesta]` — Snapshot post-mortem al finalizar evento
 Prioridad 🟢 · Tamaño M · Sprint 6 · Estado 📋
 
 ## Épica: UX post-update
 
-### HU-37
+### HU-37 `[usuario]`
 **Como** usuario, **quiero** ver un cartel emergente la primera vez que abro la app después de una actualización, **para** enterarme de qué cambió sin tener que buscar el changelog.
 
 - Prioridad: 🟡 Alta · Tamaño: S · Estado: 📋 Backlog
@@ -301,16 +302,16 @@ Prioridad 🟢 · Tamaño M · Sprint 6 · Estado 📋
 
 ## 🧊 Backlog frío (sin sprint)
 
-- HU-27 API pública con API keys · ⚪ · L
-- HU-28 Multi-tenant / multi-cuenta VTEX · ⚪ · XL
-- HU-29 Módulo Catálogo VTEX · ⚪ · XL
-- HU-30 Módulo Shipping Policies · ⚪ · L
-- HU-31 Módulo Prices Simulator · ⚪ · L
-- HU-32 Panel admin de cron jobs configurables · ⚪ · M
-- HU-33 Webhooks salientes · ⚪ · L
-- HU-34 Forzar cambio de contraseña en primer login · 🟢 · S
-- HU-35 Bloqueo de cuenta tras N intentos fallidos · 🟢 · S
-- HU-36 Dashboard personalizable (reordenar/ocultar cards) · ⚪ · M
+- HU-27 `[propuesta]` API pública con API keys · ⚪ · L
+- HU-28 `[propuesta]` Multi-tenant / multi-cuenta VTEX · ⚪ · XL
+- HU-29 `[propuesta]` Módulo Catálogo VTEX · ⚪ · XL
+- HU-30 `[propuesta]` Módulo Shipping Policies · ⚪ · L
+- HU-31 `[propuesta]` Módulo Prices Simulator · ⚪ · L
+- HU-32 `[propuesta]` Panel admin de cron jobs configurables · ⚪ · M
+- HU-33 `[propuesta]` Webhooks salientes · ⚪ · L
+- HU-34 `[propuesta]` Forzar cambio de contraseña en primer login · 🟢 · S
+- HU-35 `[propuesta]` Bloqueo de cuenta tras N intentos fallidos · 🟢 · S
+- HU-36 `[propuesta]` Dashboard personalizable (reordenar/ocultar cards) · ⚪ · M
 
 ---
 
@@ -380,7 +381,7 @@ Historias completadas antes del formalizar este backlog (v1.0.0 → v1.7.7). Se 
 
 Ideas capturadas del usuario, sin sprint asignado todavía. Cuando maduren se transforman en HU con formato completo (criterios de aceptación, tamaño, sprint).
 
-### HU-38 — Sistema de permisos estilo VTEX con roles múltiples
+### HU-38 `[usuario]` — Sistema de permisos estilo VTEX con roles múltiples
 Propuesto por: `juanmatheomoyano` (commit `76ec65f`, 2026-07-27) · Prioridad tentativa: 🟡 Alta · Tamaño estimado: L-XL · Sprint: por definir
 
 **Idea original**

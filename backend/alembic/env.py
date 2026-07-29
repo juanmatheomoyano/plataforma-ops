@@ -16,6 +16,8 @@ from app.core.database import Base
 import app.modules.auth.models  # noqa: F401 — registers models on Base.metadata
 import app.modules.sellers.models  # noqa: F401
 import app.modules.crud_medios.models  # noqa: F401
+import app.modules.eventos.models  # noqa: F401
+import app.core.scheduler  # noqa: F401 — registers SchedulerLock
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.async_database_url)
