@@ -40,7 +40,7 @@ Sprints de 2 semanas. Un tema de foco por sprint. **No es un commitment rígido*
 - [ ] HU-08 `[propuesta]` Tabla `audit_log` + interceptor SQLAlchemy — L
 - [ ] HU-09 `[propuesta]` Página `/auditoria` (solo admin) con filtros — M
 - [ ] HU-10 `[propuesta]` Logs estructurados JSON en backend — S
-- [ ] HU-11 `[propuesta]` GitHub Action con `alembic check` + `pytest` en cada PR — M
+- [x] HU-11 `[propuesta]` GitHub Action con `alembic check` + `pytest` en cada PR — M ✅ v1.7.9
 - [ ] HU-37 `[usuario]` Modal "¿Qué hay de nuevo?" post-update — S
 
 ### Sprint 3 — Dashboard funcional v2
