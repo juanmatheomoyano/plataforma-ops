@@ -373,3 +373,32 @@ Historias completadas antes del formalizar este backlog (v1.0.0 → v1.7.7). Se 
 - ✅ Auto-update de Tauri 2 — v1.1.1
 - ✅ Limpieza automática de historial >90 días — v1.2.1
 - ✅ Cambio de contraseña propio en sidebar — v1.2.1
+
+---
+
+## 📥 Ideas propuestas (por definir)
+
+Ideas capturadas del usuario, sin sprint asignado todavía. Cuando maduren se transforman en HU con formato completo (criterios de aceptación, tamaño, sprint).
+
+### HU-38 — Sistema de permisos estilo VTEX con roles múltiples
+Propuesto por: `juanmatheomoyano` (commit `76ec65f`, 2026-07-27) · Prioridad tentativa: 🟡 Alta · Tamaño estimado: L-XL · Sprint: por definir
+
+**Idea original**
+Reemplazar el sistema actual de rol único por un sistema de **roles múltiples por usuario** (un usuario puede tener 2 o más roles activos simultáneamente, ej. "Categorías + Activación").
+
+**Roles propuestos**
+- **Owner**: acceso máximo, incluye user management.
+- **Admin**: acceso a todo menos user management.
+- **Categorías**: CRUD Medios de Pago solo lectura · Sellers acceso completo excepto import/export general (sí crear seller nuevo con credenciales) · Eventos solo visual (sin editar, sin toggle, sin crear).
+- **Catálogo**: sin módulos propios todavía · Eventos solo visual.
+- **Activación**: acceso al futuro módulo "Proceso de alta de Sellers" · Sellers como Categorías · Eventos solo visual.
+- **Administrativo**: acceso al futuro módulo "Automatización de cambio de contraseñas Payway" · Eventos solo visual.
+
+**Preguntas abiertas antes de implementar**
+- ¿Migración desde los 4 roles actuales? Mapping tentativo: admin→Owner+Admin, supervisor→Admin, analista→Categorías, viewer→Categorías (solo lectura).
+- ¿Cómo se resuelven conflictos entre roles? (unión de permisos parece lo natural).
+- ¿UI para asignar múltiples roles? Multi-select en el módulo Users.
+- Depende de HU-08 (audit_log) para trazar quién cambió qué rol y cuándo.
+- Depende de que existan los nuevos módulos "Alta de Sellers" y "Automatización Payway" (aún no en backlog).
+
+**Próximo paso:** convertir en HU formal cuando se planifique el sprint que la incluya. Antes de eso, definir con el usuario las preguntas abiertas.
