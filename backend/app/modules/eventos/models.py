@@ -17,5 +17,5 @@ class Evento(Base):
     max_cuota = Column(Integer, nullable=False)
     scope_seller_ids = Column(ARRAY(String), nullable=False, server_default="{}")
     creado_por = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     is_active = Column(Boolean, nullable=False, default=True)
