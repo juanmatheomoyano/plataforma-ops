@@ -169,9 +169,16 @@ Sirve para verificar que las credenciales de un seller estén funcionando:
 
 ### Exportar e importar sellers *(Admin, Supervisor)*
 
-**Exportar:** hacé clic en **"Exportar Excel"** para descargar la lista completa de sellers con todas sus credenciales en un archivo `.xlsx`. Usá este archivo con cuidado — contiene información confidencial.
+**Exportar (sin credenciales — Admin, Supervisor):** hacé clic en **"Exportar Excel"** y elegí la opción **"Sin credenciales"**. Descargás un `.xlsx` plano con todos los sellers pero **sin las App Key/App Token**. Podés abrirlo con doble clic desde Windows.
 
-**Importar:** si necesitás actualizar datos de varios sellers a la vez, podés modificar el Excel exportado y subirlo con el botón **"Importar Excel"**. La app va a actualizar los registros existentes o crear los nuevos.
+**Exportar (con credenciales — solo Admin):** en el mismo botón, elegí **"Con credenciales"**. Marcá el checkbox de confirmación. Descargás un `.zip` cifrado con AES-256, y en pantalla aparece un **password random de un solo uso** (copialo, no se vuelve a mostrar).
+
+> ⚠️ **Windows Explorer no soporta ZIP con AES-256.** Si intentás extraer el `.zip` con el botón derecho → "Extraer todo" de Windows, va a dar error `0x80004005` o parecido. **Usá WinRAR o 7-Zip** para extraer:
+> 1. Click derecho sobre el `.zip` → *Extraer aquí* (opción de WinRAR o 7-Zip).
+> 2. Cuando pida password, pegá el que copiaste del modal.
+> 3. Se extrae `sellers.xlsx` con las credenciales.
+
+**Importar:** si necesitás actualizar datos de varios sellers a la vez, podés modificar el Excel y subirlo con el botón **"Importar Excel"**. La app va a actualizar los registros existentes o crear los nuevos.
 
 ---
 

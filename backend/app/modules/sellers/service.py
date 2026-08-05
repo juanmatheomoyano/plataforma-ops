@@ -63,6 +63,53 @@ def _parse_estado(val: str | None) -> EstadoKeys:
     return EstadoKeys.activo
 
 
+def normalize_fecha(val) -> str | None:
+    """Normaliza fecha_creacion al formato canónico dd/mm/aaaa (AR).
+
+    Reglas:
+    - None / vacío → None
+    - datetime real → dd/mm/aaaa
+    - ISO 'aaaa-mm-dd' (con o sin hora, con Z, con offset) → dd/mm/aaaa
+    - 'm/d/aaaa' o 'd/m/aaaa' con separador único /:
+        · si algún componente > 12 → sin ambigüedad, se infiere formato y se convierte
+        · si ambos ≤ 12 (ambiguo) → se deja el string original sin tocar
+    - Cualquier otra cosa (basura, doble //, letras, etc.) → se deja el string original.
+
+    Nunca lanza excepción.
+    """
+    if val is None:
+        return None
+    # datetime nativo (viene así desde openpyxl si la celda es Date)
+    if isinstance(val, datetime):
+        return val.strftime("%d/%m/%Y")
+    s = str(val).strip()
+    if not s:
+        return None
+    # ISO: aaaa-mm-dd o aaaa-mm-ddTHH:MM:SS (con o sin Z / offset)
+    if len(s) >= 10 and s[4] == "-" and s[7] == "-" and s[:4].isdigit():
+        try:
+            dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+            return dt.strftime("%d/%m/%Y")
+        except ValueError:
+            pass
+    # A/B/aaaa con separador único /
+    parts = s.split("/")
+    if len(parts) == 3 and all(p.strip().isdigit() for p in parts):
+        a, b, y = (int(p) for p in parts)
+        if len(str(y)) == 4:
+            # a > 12 → seguro es día (formato d/m/aaaa) — ya está bien
+            if a > 12 and 1 <= b <= 12:
+                return f"{a:02d}/{b:02d}/{y}"
+            # b > 12 → seguro es día (formato m/d/aaaa US) — dar vuelta
+            if b > 12 and 1 <= a <= 12:
+                return f"{b:02d}/{a:02d}/{y}"
+            # Ambos ≤ 12 → ambiguo, no tocar
+            if 1 <= a <= 12 and 1 <= b <= 12:
+                return s
+    # Cualquier otro caso (doble //, letras, formato raro) → dejar original
+    return s
+
+
 async def get_all_sellers(
     db: AsyncSession,
     skip: int = 0,
@@ -90,7 +137,7 @@ async def create_seller(data: SellerCreate, db: AsyncSession) -> Seller:
         app_key_enc=encrypt(data.app_key),
         app_token_enc=encrypt(data.app_token),
         creado_por=data.creado_por,
-        fecha_creacion=data.fecha_creacion,
+        fecha_creacion=normalize_fecha(data.fecha_creacion),
         estado_keys=data.estado_keys,
         integracion=data.integracion,
         integracion_spec=data.integracion_spec,
@@ -128,6 +175,9 @@ async def update_seller(
         seller.app_token_enc = encrypt(update_data.pop("app_token"))
     else:
         update_data.pop("app_token", None)
+
+    if "fecha_creacion" in update_data:
+        update_data["fecha_creacion"] = normalize_fecha(update_data["fecha_creacion"])
 
     for field, value in update_data.items():
         setattr(seller, field, value)
@@ -224,7 +274,7 @@ async def import_sellers_from_file(
                 app_key=str(row_dict.get("app_key") or "").strip(),
                 app_token=str(row_dict.get("app_token") or "").strip(),
                 creado_por=str(row_dict.get("creado_por") or "").strip() or None,
-                fecha_creacion=str(row_dict.get("fecha_creacion") or "").strip() or None,
+                fecha_creacion=normalize_fecha(row_dict.get("fecha_creacion")),
                 estado_keys=_parse_estado(row_dict.get("estado_keys")),
                 integracion=str(row_dict.get("integracion") or "").strip() or None,
                 vendiendo=_parse_bool(row_dict.get("vendiendo")),
@@ -373,7 +423,7 @@ def _build_sellers_xlsx(sellers: list[Seller], include_credentials: bool) -> byt
             s.integracion_spec,
             "Sí" if s.vendiendo else "No",
             s.creado_por,
-            s.fecha_creacion,
+            normalize_fecha(s.fecha_creacion),
             s.notas,
             "activo" if s.is_active else "inactivo",
         ])
@@ -441,7 +491,10 @@ async def import_update_sellers(
                               "integracion_spec", "creado_por", "fecha_creacion", "notas"):
                     val = row_dict.get(field)
                     if val is not None:
-                        setattr(existing, field, str(val).strip() or None if field not in ("id_ecommerce", "seller_name") else str(val).strip())
+                        if field == "fecha_creacion":
+                            setattr(existing, field, normalize_fecha(val))
+                        else:
+                            setattr(existing, field, str(val).strip() or None if field not in ("id_ecommerce", "seller_name") else str(val).strip())
                 if "estado_keys" in row_dict:
                     existing.estado_keys = _parse_estado(row_dict["estado_keys"])
                 if "vendiendo" in row_dict:
@@ -478,7 +531,7 @@ async def import_update_sellers(
                     integracion_spec=str(row_dict.get("integracion_spec") or "").strip() or None,
                     vendiendo=_parse_bool(row_dict.get("vendiendo")),
                     creado_por=str(row_dict.get("creado_por") or "").strip() or None,
-                    fecha_creacion=str(row_dict.get("fecha_creacion") or "").strip() or None,
+                    fecha_creacion=normalize_fecha(row_dict.get("fecha_creacion")),
                     notas=str(row_dict.get("notas") or "").strip() or None,
                     is_active=_parse_active(row_dict.get("is_active", True)),
                 )

@@ -5,6 +5,36 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [1.7.9] — 2026-08-05 — Sprint 2 (parcial): CI, versión visible, normalización de fechas
+
+Segunda entrega. Sprint 2 quedó particionado: se releasea lo que ya está listo. HU-08 (audit_log), HU-09 (/auditoria), HU-10 (logs JSON), HU-37 (modal post-update), HU-40 (updater diagnosticable) y HU-41 (aviso WinRAR en modal) quedan para v1.7.10.
+
+### Backend
+- **HU-42** Helper `normalize_fecha()` en `sellers/service.py`: normaliza `fecha_creacion` a `dd/mm/aaaa` (AR). Detecta formato US `m/d/aaaa` cuando el día es > 12, deja intactos los ambiguos (ambos ≤ 12) y la basura (doble `//`, letras). Aplicado en 5 puntos: `create_seller`, `update_seller`, `import_sellers_from_file`, `import_update_sellers` y `_build_sellers_xlsx` (export).
+- Nuevo script one-time `backend/scripts/normalize_fecha_sellers.py` con modo `--apply` y dry-run. Reporta convertidos / ya normalizados / ambiguos / sin parsear.
+- **HU-11 (fix a)** `alembic/env.py` registra ahora también `eventos.models` y `core/scheduler` — sin esto `alembic check` reportaba drift falso.
+- **HU-11 (fix b)** Migración `c3d4e5f6a7b8_add_marketplace_seller_id` convertida a no-op. Duplicaba una columna que `b2c3d4e5f6a7` ya agrega; en prod había sido "aplicada" manualmente en `alembic_version`, pero desde cero lanzaba `DuplicateColumnError`.
+- **HU-11 (fix c)** `Evento.created_at` con `nullable=False` para sincronizar el modelo con la migración `f1a2b3c4d5e6`.
+
+### Frontend
+- **HU-39** Badge de versión (`v1.7.9`) al pie del sidebar, debajo de "Cerrar sesión". Selectable con el mouse para pegar en reportes de soporte.
+- `vite.config.js` lee la versión desde `frontend/src-tauri/tauri.conf.json` en build y la inyecta como `import.meta.env.VITE_APP_VERSION`. Source of truth única para la versión de la app.
+
+### Infra
+- **HU-11** Nuevo `.github/workflows/ci.yml`: en cada push y PR a `main` corre `alembic upgrade head`, `alembic check` y `pytest` (con Postgres 16 como service), + `npm ci` y `npm run build`. Bloquea merges con drift de modelo o tests rojos.
+
+### Docs
+- `MANUAL_USUARIO.md` sección Sellers: aviso explícito de que Windows Explorer no puede extraer el `.zip` con AES-256 (error `0x80004005`); indicar usar WinRAR o 7-Zip.
+
+### Migración de datos post-deploy
+Después de que Railway aplique v1.7.9, correr una vez contra la BD de prod:
+```
+cd backend && python -m scripts.normalize_fecha_sellers            # dry-run
+cd backend && python -m scripts.normalize_fecha_sellers --apply    # persistir
+```
+
+---
+
 ## [1.7.8] — 2026-07-30 — Sprint 1: Estabilización crítica
 
 Cierre del Sprint 1 (7 historias de usuario). Foco en tapar los críticos de la auditoría antes de sumar features nuevas.

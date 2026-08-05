@@ -81,7 +81,7 @@ THREADS_WRITE=5         # paralelismo para Create/Update/Delete
 BAPROAR_APP_KEY=...     # credenciales marketplace BaproAR (VTEX)
 BAPROAR_APP_TOKEN=...
 SENTRY_DSN=             # opcional — sin valor, Sentry no se inicializa
-APP_VERSION=1.7.8
+APP_VERSION=1.7.9       # usado por /api/updates/latest para anunciar la versión al updater Tauri
 RELEASE_URL=...         # URL del instalador .exe para auto-update
 RELEASE_DATE=...
 RELEASE_NOTES=...
@@ -92,8 +92,9 @@ RELEASE_NOTES=...
 ```env
 VITE_API_BASE_URL=<BASE-URL-BACKEND>/api
 VITE_SENTRY_DSN=            # opcional — sin valor, Sentry no se inicializa
-VITE_APP_VERSION=1.7.8
 ```
+
+> Nota: `VITE_APP_VERSION` ya NO se declara acá. Desde v1.7.9 se lee automáticamente desde `frontend/src-tauri/tauri.conf.json` en `vite.config.js` y se inyecta como `import.meta.env.VITE_APP_VERSION`. Al bumpear la versión en `tauri.conf.json`, el sidebar y el updater quedan sincronizados sin tocar el `.env`.
 
 ---
 

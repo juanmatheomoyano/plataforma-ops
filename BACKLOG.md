@@ -286,6 +286,75 @@ Prioridad 🟢 · Tamaño M · Sprint 6 · Estado 📋
 
 ## Épica: UX post-update
 
+### HU-42 `[usuario]`
+**Como** admin, **quiero** que las fechas de creación de sellers estén normalizadas a `dd/mm/aaaa`, **para** que el Excel exportado sea consistente y no tenga mezcla de formatos US/ISO.
+
+- Prioridad: 🟡 Alta · Tamaño: S · Estado: ✅ v1.7.9
+- Sprint: 2
+
+**Criterios de aceptación**
+- [x] Helper `normalize_fecha()` en `sellers/service.py` con reglas:
+  - `aaaa-mm-dd[...]` (ISO) → convierte a `dd/mm/aaaa`.
+  - `m/d/aaaa` con día > 12 → detecta US, da vuelta a `dd/mm/aaaa`.
+  - `d/m/aaaa` con día > 12 → ya está en AR, sin cambios.
+  - `A/B/aaaa` con ambos ≤ 12 (ambiguo) → deja intacto, reporta para revisar.
+  - Basura (doble `//`, letras, etc.) → deja intacto.
+  - Nunca lanza excepción.
+- [x] Aplicado en 5 puntos: `create_seller`, `update_seller`, `import_sellers_from_file`, `import_update_sellers`, `_build_sellers_xlsx`.
+- [x] Script one-time `backend/scripts/normalize_fecha_sellers.py` con dry-run + `--apply`, reporta convertidos / ya-normalizados / ambiguos / sin-parsear.
+- [ ] Correr en prod después del deploy de v1.7.9. *(pendiente para el operador)*
+
+**Notas técnicas:** el campo sigue siendo `String(64)` en la BD — no se migra a tipo `Date`. Cambiar el tipo requeriría migración destructiva y no aporta valor operativo. La normalización server-side garantiza consistencia sin cambio de schema.
+
+---
+
+### HU-41 `[usuario]`
+**Como** admin, **quiero** que el modal de export con credenciales me advierta que Windows no puede extraer el zip, **para** no perder tiempo probando con el explorador nativo.
+
+- Prioridad: 🟡 Alta · Tamaño: XS · Estado: 📋
+- Sprint: 2
+
+**Criterios de aceptación**
+- [ ] Después de mostrar el password one-shot en `ExportSellersModal.jsx`, agregar un aviso visible: *"⚠️ Windows no puede extraer este .zip con clic derecho → Extraer todo. Usá WinRAR o 7-Zip."*
+- [ ] Aviso con link a 7-Zip (`https://www.7-zip.org/`) para que quien no tenga WinRAR pueda instalar la alternativa gratis.
+
+**Notas técnicas:** solo tocar `frontend/src/modules/sellers/ExportSellersModal.jsx`. El export server-side (pyzipper AES-256) queda igual — es el estándar correcto de seguridad, la limitación es del Explorer de Windows. El manual ya fue actualizado con el mismo aviso.
+
+---
+
+### HU-40 `[usuario]`
+**Como** dev, **quiero** que el auto-updater sea diagnosticable, **para** saber por qué falla cuando no avisa al usuario de una nueva versión.
+
+- Prioridad: 🟡 Alta · Tamaño: S · Estado: 📋
+- Sprint: 2
+
+**Criterios de aceptación**
+- [ ] `useAutoUpdate.js`: reportar a Sentry en el `catch` con contexto (versión actual, endpoint, mensaje de error).
+- [ ] Toast al usuario si el check falla (no bloqueante, con "Reintentar").
+- [ ] Botón "Buscar actualizaciones" en `/configuracion` que fuerza el check.
+- [ ] Indicador visual en el sidebar si hay update disponible (badge en un ícono).
+- [ ] Mostrar en la consola del updater el status: chequeando / al día / disponible / instalando.
+
+**Notas técnicas:** el auto-updater actual (v1.7.5→v1.7.8) no avisó al usuario. Causa exacta no confirmada por falta de logs. Los tests fueron entre v1.7.5 (instalada) y v1.7.8 (publicada). Ver commits `80caca6`, `3fd0e5f`, `a4ba484` para historia.
+
+---
+
+### HU-39 `[usuario]`
+**Como** usuario, **quiero** ver la versión de la app en un lugar visible, **para** saber si estoy en la última cuando repongo algo o pido soporte.
+
+- Prioridad: 🟡 Alta · Tamaño: XS · Estado: ✅ v1.7.9
+- Sprint: 2
+
+**Criterios de aceptación**
+- [x] Badge de versión (`v1.7.8` estilo) al pie del sidebar, debajo de "Cerrar sesión".
+- [x] Fuente única de la versión: `frontend/src-tauri/tauri.conf.json`. `vite.config.js` la lee y la inyecta como `import.meta.env.VITE_APP_VERSION` en build.
+- [x] Selectable con el mouse (para copiar y pegar en un reporte de soporte).
+- [x] Frontend sigue compilando.
+
+**Notas técnicas:** `frontend/src/core/layout/Sidebar.jsx` + `frontend/vite.config.js`. Al bumpear la versión en `tauri.conf.json` para el próximo release, la UI se actualiza sola.
+
+---
+
 ### HU-37 `[usuario]`
 **Como** usuario, **quiero** ver un cartel emergente la primera vez que abro la app después de una actualización, **para** enterarme de qué cambió sin tener que buscar el changelog.
 

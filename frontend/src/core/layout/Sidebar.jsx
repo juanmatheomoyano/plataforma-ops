@@ -74,6 +74,9 @@ export function Sidebar() {
           <LogOut className="h-4 w-4" />
           Cerrar sesión
         </button>
+        <p className="mt-3 px-3 text-xs text-muted-foreground/70 text-center select-text">
+          v{import.meta.env.VITE_APP_VERSION}
+        </p>
       </div>
     </aside>
   )

@@ -42,6 +42,10 @@ Sprints de 2 semanas. Un tema de foco por sprint. **No es un commitment rígido*
 - [ ] HU-10 `[propuesta]` Logs estructurados JSON en backend — S
 - [x] HU-11 `[propuesta]` GitHub Action con `alembic check` + `pytest` en cada PR — M ✅ v1.7.9
 - [ ] HU-37 `[usuario]` Modal "¿Qué hay de nuevo?" post-update — S
+- [ ] HU-40 `[usuario]` Auto-updater diagnosticable (Sentry + toast + botón manual) — S
+- [ ] HU-41 `[usuario]` Aviso "usar WinRAR/7-Zip" en modal export cifrado — XS
+- [x] HU-39 `[usuario]` Badge de versión en sidebar — XS ✅ v1.7.9
+- [x] HU-42 `[usuario]` Normalizar fecha_creacion a dd/mm/aaaa — S ✅ v1.7.9
 
 ### Sprint 3 — Dashboard funcional v2
 **Foco:** el dashboard es la primera pantalla, tiene que ser útil, no decorativa.
