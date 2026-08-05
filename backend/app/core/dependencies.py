@@ -37,7 +37,9 @@ async def get_current_user(
         raise exc
 
     from .observability import set_sentry_user
+    from .logging_config import set_log_user
     set_sentry_user(user.id, user.username, user.role.value)
+    set_log_user(user.id, user.username, user.role.value)
     return user
 
 

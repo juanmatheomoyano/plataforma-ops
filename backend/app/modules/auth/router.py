@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.audit import client_ip, record_audit
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.core.limiter import limiter
@@ -14,7 +15,22 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @router.post("/login", response_model=TokenResponse)
 @limiter.limit("10/minute")
 async def login(request: Request, data: LoginRequest, db: AsyncSession = Depends(get_db)):
-    return await service.login(data, db)
+    ip = client_ip(request)
+    try:
+        result = await service.login(data, db)
+    except HTTPException as e:
+        # login fallido — auditar como intento
+        await record_audit(
+            db, action="auth.login.failed",
+            entity="user", entity_id=data.username, ip=ip,
+            payload={"reason": str(e.detail)},
+        )
+        raise
+    await record_audit(
+        db, action="auth.login", user=result.user,
+        entity="user", entity_id=str(result.user.id), ip=ip,
+    )
+    return result
 
 
 @router.get("/me", response_model=UserOut)
@@ -28,7 +44,8 @@ async def refresh(data: RefreshRequest, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/logout", status_code=204)
-async def logout(data: RefreshRequest, db: AsyncSession = Depends(get_db)):
+async def logout(request: Request, data: RefreshRequest, db: AsyncSession = Depends(get_db)):
     await service.logout(data.refresh_token, db)
+    await record_audit(db, action="auth.logout", ip=client_ip(request))
 
 

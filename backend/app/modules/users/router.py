@@ -1,10 +1,11 @@
 import io
 import uuid
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.audit import client_ip, record_audit
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_role
 
@@ -53,29 +54,65 @@ async def get_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     return await service.get_user_by_id(user_id, db)
 
 
-@router.post("", response_model=UserOut, status_code=201, dependencies=[_admin])
-async def create_user(data: UserCreate, db: AsyncSession = Depends(get_db)):
-    return await service.create_user(data, db)
-
-
-@router.patch("/{user_id}", response_model=UserOut, dependencies=[_admin])
-async def update_user(
-    user_id: uuid.UUID, data: UserUpdate, db: AsyncSession = Depends(get_db)
+@router.post("", response_model=UserOut, status_code=201)
+async def create_user(
+    request: Request,
+    data: UserCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_role(["admin"])),
 ):
-    return await service.update_user(user_id, data, db)
+    created = await service.create_user(data, db)
+    await record_audit(
+        db, action="user.create", user=current_user,
+        entity="user", entity_id=str(created.id), ip=client_ip(request),
+        payload={"username": created.username, "email": created.email, "role": created.role.value},
+    )
+    return created
+
+
+@router.patch("/{user_id}", response_model=UserOut)
+async def update_user(
+    request: Request,
+    user_id: uuid.UUID,
+    data: UserUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_role(["admin"])),
+):
+    updated = await service.update_user(user_id, data, db)
+    await record_audit(
+        db, action="user.update", user=current_user,
+        entity="user", entity_id=str(user_id), ip=client_ip(request),
+        payload=data.model_dump(exclude_unset=True),
+    )
+    return updated
 
 
 @router.post("/{user_id}/deactivate", response_model=UserOut)
 async def deactivate_user(
+    request: Request,
     user_id: uuid.UUID,
     current_user=Depends(require_role(["admin"])),
     db: AsyncSession = Depends(get_db),
 ):
-    return await service.deactivate_user(user_id, current_user.id, db)
+    result = await service.deactivate_user(user_id, current_user.id, db)
+    await record_audit(
+        db, action="user.deactivate", user=current_user,
+        entity="user", entity_id=str(user_id), ip=client_ip(request),
+    )
+    return result
 
 
-@router.post("/{user_id}/reset-password", response_model=UserOut, dependencies=[_admin])
+@router.post("/{user_id}/reset-password", response_model=UserOut)
 async def reset_password(
-    user_id: uuid.UUID, data: ChangePassword, db: AsyncSession = Depends(get_db)
+    request: Request,
+    user_id: uuid.UUID,
+    data: ChangePassword,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_role(["admin"])),
 ):
-    return await service.reset_password(user_id, data, db)
+    result = await service.reset_password(user_id, data, db)
+    await record_audit(
+        db, action="user.reset_password", user=current_user,
+        entity="user", entity_id=str(user_id), ip=client_ip(request),
+    )
+    return result

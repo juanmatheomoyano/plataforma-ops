@@ -37,13 +37,13 @@ Sprints de 2 semanas. Un tema de foco por sprint. **No es un commitment rígido*
 ### Sprint 2 — Observabilidad + Auditoría + UX post-update
 **Target release:** v1.7.9
 **Foco:** saber qué pasa en la app sin depender del usuario que reporte + avisarle al usuario cuando la app se actualizó.
-- [ ] HU-08 `[propuesta]` Tabla `audit_log` + interceptor SQLAlchemy — L
-- [ ] HU-09 `[propuesta]` Página `/auditoria` (solo admin) con filtros — M
-- [ ] HU-10 `[propuesta]` Logs estructurados JSON en backend — S
+- [x] HU-08 `[propuesta]` Tabla `audit_log` + interceptor SQLAlchemy — L ✅ v1.7.11
+- [x] HU-09 `[propuesta]` Página `/auditoria` (solo admin) con filtros — M ✅ v1.7.11
+- [x] HU-10 `[propuesta]` Logs estructurados JSON en backend — S ✅ v1.7.11
 - [x] HU-11 `[propuesta]` GitHub Action con `alembic check` + `pytest` en cada PR — M ✅ v1.7.9
-- [ ] HU-37 `[usuario]` Modal "¿Qué hay de nuevo?" post-update — S
+- [x] HU-37 `[usuario]` Modal "¿Qué hay de nuevo?" post-update — S ✅ v1.7.11
 - [x] HU-40 `[usuario]` Auto-updater diagnosticable (Sentry + toast + botón manual) — S ✅ v1.7.10 HOTFIX
-- [ ] HU-41 `[usuario]` Aviso "usar WinRAR/7-Zip" en modal export cifrado — XS
+- [x] HU-41 `[usuario]` Aviso "usar WinRAR/7-Zip" en modal export cifrado — XS ✅ v1.7.11
 - [x] HU-39 `[usuario]` Badge de versión en sidebar — XS ✅ v1.7.9
 - [x] HU-42 `[usuario]` Normalizar fecha_creacion a dd/mm/aaaa — S ✅ v1.7.9
 

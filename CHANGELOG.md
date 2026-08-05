@@ -5,6 +5,34 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [1.7.11] — 2026-08-05 — Sprint 2 completo: audit_log, /auditoria, logs JSON, modal post-update, aviso WinRAR
+
+Cierre del Sprint 2. Todas las HU cerradas menos el badge de "hay update" en sidebar (menor, va a futuro).
+
+### Backend
+- **HU-08** Nueva tabla `audit_log` (migración `e5f6a7b8c9d0`): id, timestamp, user_id, username, role, action, entity, entity_id, ip, request_id, payload JSONB, 5 índices.
+- **HU-08** Helper `record_audit()` en `core/audit.py` — best-effort (no rompe la operación si falla), redacta campos sensibles (`password`, `app_key`, `app_token`, etc.) automáticamente.
+- **HU-08** Aplicado en 15 acciones críticas: auth.login/logout, user.create/update/deactivate/reset_password, seller.create/update/deactivate/marketplace_toggle, sellers.export (con y sin creds), crud_medios.c/u/d (no-dry-run), evento.create/update/toggle_active/delete.
+- **HU-09** Nuevo módulo `auditoria` con 3 endpoints (admin-only): `GET /api/auditoria` paginado con filtros (username, action, entity, entity_id, from_date, to_date), `GET /api/auditoria/actions` para autocompletado, `GET /api/auditoria/export.csv`.
+- **HU-10** Nuevo `core/logging_config.py`:
+  - `JsonFormatter` custom sin deps externas (~130 LOC).
+  - `RequestIdMiddleware` inyecta `X-Request-ID` (uuid v4 o el que venga del cliente) por request. Expuesto en response header.
+  - Context vars propagan `request_id` + `user_id` + `username` + `role` a todos los logs de la request.
+  - `set_log_user()` invocado desde `get_current_user`.
+  - Formato legible en `APP_ENV=development`, JSON puro en prod.
+  - Silencia `sqlalchemy.engine` y `httpx` a WARNING en prod.
+- `client_ip()` helper respeta `X-Forwarded-For` para IP real detrás del proxy Railway.
+
+### Frontend
+- **HU-09** Nueva página `/auditoria` (admin-only): tabla paginada 50/pág con filtros por usuario, acción (con autocompletado datalist), entidad, entity_id, rango de fechas. Fila expandible muestra payload JSON + request_id.
+- **HU-09** Link "Auditoría" en sidebar (ícono ScrollText) visible solo para admin.
+- **HU-09** Botón "Export CSV" con el filtro activo.
+- **HU-37** Nuevo hook `useVersionAnnouncement()` — compara versión actual contra `localStorage.last_seen_version`. Si son distintas, muestra `WhatsNewModal` con las notas de `/api/updates/latest`.
+- **HU-37** Nuevo componente `WhatsNewModal` — se abre una vez tras cada update. Primera instalación no dispara (persiste silenciosamente).
+- **HU-41** Aviso amber en `ExportSellersModal` después de mostrar el password: "Windows Explorer no puede extraer este .zip, usá WinRAR o 7-Zip" con link a 7-Zip.
+
+---
+
 ## [1.7.10] — 2026-08-05 — HOTFIX: auto-updater diagnosticable
 
 **Fix crítico** para el bug histórico del auto-updater que fallaba silenciosamente sin avisar al usuario.

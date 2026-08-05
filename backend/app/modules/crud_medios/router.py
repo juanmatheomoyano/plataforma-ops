@@ -1,12 +1,13 @@
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.audit import client_ip, record_audit
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_role
 from app.modules.auth.models import User
@@ -40,6 +41,7 @@ _ALL_HISTORY_ROLES = {"admin", "supervisor"}
 
 @router.post("/execute", response_model=CrudResponse)
 async def execute_crud(
+    request: Request,
     body: CrudRequest,
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
@@ -47,7 +49,20 @@ async def execute_crud(
     if body.operacion in ("C", "U", "D") and not body.dry_run:
         if current_user.role.value not in _WRITE_ROLES:
             raise HTTPException(status_code=403, detail="Insufficient permissions")
-    return await run_crud_operation(db, current_user.id, body)
+    result = await run_crud_operation(db, current_user.id, body)
+    # Solo auditamos operaciones write no-dry-run (los reads y dry-runs no cambian estado).
+    if body.operacion in ("C", "U", "D") and not body.dry_run:
+        await record_audit(
+            db, action=f"crud_medios.{body.operacion.lower()}", user=current_user,
+            entity="crud_operation", entity_id=str(result.operation_id), ip=client_ip(request),
+            payload={
+                "total_sellers": result.total_sellers,
+                "total_matched": result.total_matched,
+                "total_success": result.total_success,
+                "total_errors": result.total_errors,
+            },
+        )
+    return result
 
 
 @router.get("/operations", response_model=list[OperationSummary])

@@ -1,6 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 import { Toaster } from "sonner"
 import { useAutoUpdate } from "./core/hooks/useAutoUpdate"
+import { useVersionAnnouncement } from "./core/hooks/useVersionAnnouncement"
+import { WhatsNewModal } from "./core/components/WhatsNewModal"
 import { AuthProvider } from "@/core/auth/AuthContext"
 import { PrivateRoute } from "@/core/auth/PrivateRoute"
 import { useAuth } from "@/core/auth/useAuth"
@@ -14,6 +16,7 @@ import UsersPage from "@/modules/users/UsersPage"
 import SellersPage from "@/modules/sellers/SellersPage"
 import CrudMediosPage from "@/modules/crud_medios/CrudMediosPage"
 import EventosPage from "@/modules/eventos/EventosPage"
+import AuditoriaPage from "@/modules/auditoria/AuditoriaPage"
 import "./index.css"
 
 function RoleRoute({ roles, children }) {
@@ -26,6 +29,14 @@ function ThemedToaster() {
   return <Toaster position="top-right" theme={theme} />
 }
 
+function VersionAnnouncement() {
+  const { user } = useAuth()
+  const { newVersion, dismiss } = useVersionAnnouncement()
+  // Solo mostrar si el user está logueado (evita el modal en la pantalla de login)
+  if (!user) return null
+  return <WhatsNewModal version={newVersion} onClose={dismiss} />
+}
+
 export default function App() {
   useAutoUpdate()
   return (
@@ -33,6 +44,7 @@ export default function App() {
       <ThemeProvider>
         <AuthProvider>
           <ThemedToaster />
+          <VersionAnnouncement />
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route
@@ -67,6 +79,14 @@ export default function App() {
                 element={
                   <RoleRoute roles={["admin", "supervisor"]}>
                     <EventosPage />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="auditoria"
+                element={
+                  <RoleRoute roles={["admin"]}>
+                    <AuditoriaPage />
                   </RoleRoute>
                 }
               />

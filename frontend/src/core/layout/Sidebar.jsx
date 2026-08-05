@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom"
-import { CalendarCheck, CreditCard, Home, LogOut, Settings, Store, Users } from "lucide-react"
+import { CalendarCheck, CreditCard, Home, LogOut, ScrollText, Settings, Store, Users } from "lucide-react"
 import { useAuth } from "@/core/auth/useAuth"
 
 export function Sidebar() {
@@ -11,6 +11,7 @@ export function Sidebar() {
     ...(hasRole(["admin", "supervisor", "analista"]) ? [{ to: "/sellers", label: "Sellers", Icon: Store }] : []),
     { to: "/crud-medios", label: "CRUD Medios de Pago", Icon: CreditCard },
     ...(hasRole(["admin", "supervisor"]) ? [{ to: "/eventos", label: "Eventos", Icon: CalendarCheck }] : []),
+    ...(hasRole(["admin"]) ? [{ to: "/auditoria", label: "Auditoría", Icon: ScrollText }] : []),
   ]
 
   return (

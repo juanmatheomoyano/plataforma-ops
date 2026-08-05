@@ -129,40 +129,58 @@ Historias de usuario. Se agrupan por épica. Cada sprint activo enlaza a las his
 ### HU-08 `[propuesta]`
 **Como** admin, **quiero** un log auditable de quién hizo qué en el sistema, **para** poder investigar incidentes y cumplir con requisitos internos.
 
-- Prioridad: 🟡 Alta · Tamaño: L · Estado: 📋
+- Prioridad: 🟡 Alta · Tamaño: L · Estado: ✅ v1.7.11
 - Sprint: 2
 
 **Criterios de aceptación**
-- [ ] Tabla `audit_log` (id, user_id, username, action, entity, entity_id, diff_json, ip, timestamp).
-- [ ] Interceptor de SQLAlchemy o dependency FastAPI captura al menos: create/update/delete de sellers, users, eventos + toggle marketplace + login/logout + export.
-- [ ] No captura reads triviales (spam).
+- [x] Tabla `audit_log` (id, timestamp, user_id, username, role, action, entity, entity_id, ip, request_id, payload JSONB) + migración `e5f6a7b8c9d0`. 5 índices (timestamp, user_id, action, entity, entity_id).
+- [x] Helper `record_audit()` en `core/audit.py`. Best-effort: si falla, loguea warning y no rompe la operación.
+- [x] Redacción automática de campos sensibles (`password`, `app_key`, `app_token`, `token`, `secret`) en el payload.
+- [x] Aplicado en:
+  - `auth.login` (éxito + `auth.login.failed`)
+  - `auth.logout`
+  - `user.create` / `user.update` / `user.deactivate` / `user.reset_password`
+  - `seller.create` / `seller.update` / `seller.deactivate` / `seller.marketplace_toggle`
+  - `sellers.export` / `sellers.export.with_credentials`
+  - `crud_medios.c` / `.u` / `.d` (solo no-dry-run)
+  - `evento.create` / `evento.update` / `evento.toggle_active` / `evento.delete`
+- [x] `client_ip()` respeta `X-Forwarded-For` para IP correcta detrás de proxy Railway.
+- [x] `request_id` propagado automáticamente desde context var (HU-10).
+
+**Notas técnicas:** decidimos NO usar interceptor SQLAlchemy genérico. Es frágil con async/expire_on_commit=False, y captura demasiado (reads triviales, migraciones, etc.). El approach explícito (call `record_audit()` en cada endpoint sensible) es más largo pero determinístico.
 
 ---
 
 ### HU-09 `[propuesta]`
 **Como** admin, **quiero** una página `/auditoria` con filtros, **para** buscar acciones específicas rápido.
 
-- Prioridad: 🟡 Alta · Tamaño: M · Estado: 📋
+- Prioridad: 🟡 Alta · Tamaño: M · Estado: ✅ v1.7.11
 - Sprint: 2
 
 **Criterios de aceptación**
-- [ ] Ruta `/auditoria` solo para admin.
-- [ ] Tabla paginada con filtros: usuario, módulo, acción, rango de fechas.
-- [ ] Detalle expandible por fila (diff_json formateado).
-- [ ] Export CSV del filtro activo.
+- [x] Ruta `/auditoria` solo admin (RoleRoute + require_role backend + link en sidebar oculto para no-admin).
+- [x] Endpoint `GET /api/auditoria` con paginación (limit/offset, max 500) + filtros: username, action, entity, entity_id, from_date, to_date.
+- [x] Endpoint `GET /api/auditoria/actions` — lista distinct de actions para autocompletar.
+- [x] Endpoint `GET /api/auditoria/export.csv` — export CSV con filtros aplicados (max 10k filas).
+- [x] Tabla paginada (50/página) con timestamp, usuario+rol, action, entidad, entity_id, IP.
+- [x] Fila expandible → muestra payload JSON formateado + request_id (para cross-ref con logs backend).
+- [x] Datalist en filtro `action` con autocompletado desde el endpoint `/actions`.
 
 ---
 
 ### HU-10 `[propuesta]`
 **Como** dev, **quiero** logs JSON estructurados en el backend, **para** filtrar en Railway sin regex.
 
-- Prioridad: 🟢 Media · Tamaño: S · Estado: 📋
+- Prioridad: 🟢 Media · Tamaño: S · Estado: ✅ v1.7.11
 - Sprint: 2
 
 **Criterios de aceptación**
-- [ ] Handler de logging con formato JSON (loguru o `python-json-logger`).
-- [ ] Campos: level, timestamp, module, message, request_id (uuid por request), user (si autenticado).
-- [ ] Middleware que inyecta request_id en todos los logs de la request.
+- [x] `JsonFormatter` custom en `core/logging_config.py` (sin dependencia externa, ~130 LOC).
+- [x] Campos: timestamp ISO UTC, level, logger, message, request_id, user_id, username, role, exception.
+- [x] `RequestIdMiddleware` inyecta `X-Request-ID` (uuid v4 o el que venga del cliente) por request y lo expone en response header.
+- [x] `set_log_user()` invocado desde `get_current_user` — enrichece logs autenticados.
+- [x] Formato legible en `APP_ENV=development` (no rompe uvicorn --reload); JSON solo en prod.
+- [x] Silencia `sqlalchemy.engine` y `httpx` a WARNING en prod (evita spam).
 
 ---
 
@@ -340,12 +358,12 @@ Este proceso es INDEPENDIENTE de la firma rsign para el updater — son dos firm
 ### HU-41 `[usuario]`
 **Como** admin, **quiero** que el modal de export con credenciales me advierta que Windows no puede extraer el zip, **para** no perder tiempo probando con el explorador nativo.
 
-- Prioridad: 🟡 Alta · Tamaño: XS · Estado: 📋
+- Prioridad: 🟡 Alta · Tamaño: XS · Estado: ✅ v1.7.11
 - Sprint: 2
 
 **Criterios de aceptación**
-- [ ] Después de mostrar el password one-shot en `ExportSellersModal.jsx`, agregar un aviso visible: *"⚠️ Windows no puede extraer este .zip con clic derecho → Extraer todo. Usá WinRAR o 7-Zip."*
-- [ ] Aviso con link a 7-Zip (`https://www.7-zip.org/`) para que quien no tenga WinRAR pueda instalar la alternativa gratis.
+- [x] Después de mostrar el password one-shot en `ExportSellersModal.jsx`, agregar un aviso visible: *"⚠️ Windows no puede extraer este .zip. Usá WinRAR o 7-Zip."*
+- [x] Aviso con link a 7-Zip (`https://www.7-zip.org/`) para que quien no tenga WinRAR pueda instalar la alternativa gratis.
 
 **Notas técnicas:** solo tocar `frontend/src/modules/sellers/ExportSellersModal.jsx`. El export server-side (pyzipper AES-256) queda igual — es el estándar correcto de seguridad, la limitación es del Explorer de Windows. El manual ya fue actualizado con el mismo aviso.
 
@@ -389,22 +407,18 @@ Este proceso es INDEPENDIENTE de la firma rsign para el updater — son dos firm
 ### HU-37 `[usuario]`
 **Como** usuario, **quiero** ver un cartel emergente la primera vez que abro la app después de una actualización, **para** enterarme de qué cambió sin tener que buscar el changelog.
 
-- Prioridad: 🟡 Alta · Tamaño: S · Estado: 📋 Backlog
-- Épica: UX post-update · Sprint: 2 (target v1.7.9)
+- Prioridad: 🟡 Alta · Tamaño: S · Estado: ✅ v1.7.11
+- Épica: UX post-update · Sprint: 2
 
 **Criterios de aceptación**
-- [ ] Nuevo hook `useVersionAnnouncement()` en `frontend/src/core/hooks/`.
-- [ ] Compara `import.meta.env.VITE_APP_VERSION` contra `localStorage.last_seen_version`.
-- [ ] Si son distintos, muestra `<WhatsNewModal />` con la versión nueva + notas de release.
-- [ ] Al cerrar el modal ("Entendido"), se guarda `last_seen_version` en localStorage → no vuelve a aparecer hasta el próximo update.
-- [ ] Las notas se toman de `GET /api/updates/latest` (campo `notes`) — no requiere endpoint nuevo.
-- [ ] En primera instalación (sin `last_seen_version` previo), NO se muestra el modal — solo se persiste la versión actual silenciosamente.
-- [ ] El modal es estético (usa componentes shadcn/ui existentes), no bloqueante (se puede cerrar con Esc/X).
-
-**Notas técnicas**
-- Va en `App.jsx` al mismo nivel que `useAutoUpdate()`.
-- Reutiliza el componente `Dialog` de `components/ui/dialog.jsx`.
-- No requiere backend nuevo — usa el endpoint `/api/updates/latest` que ya existe.
+- [x] Nuevo hook `useVersionAnnouncement()` en `frontend/src/core/hooks/`.
+- [x] Compara `import.meta.env.VITE_APP_VERSION` contra `localStorage.last_seen_version`.
+- [x] Si son distintos, muestra `<WhatsNewModal />` con la versión nueva + notas de release.
+- [x] Al cerrar el modal ("Entendido"), se guarda `last_seen_version` en localStorage → no vuelve a aparecer hasta el próximo update.
+- [x] Las notas se toman de `GET /api/updates/latest` (campo `notes`) — no requiere endpoint nuevo.
+- [x] En primera instalación (sin `last_seen_version` previo), NO se muestra el modal — solo se persiste la versión actual silenciosamente.
+- [x] El modal es estético (usa componentes shadcn/ui existentes), no bloqueante (Esc/X cierran).
+- [x] Solo se muestra cuando el user está logueado (no interfiere con pantalla de login).
 
 ---
 

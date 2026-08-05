@@ -11,11 +11,14 @@ from slowapi.errors import RateLimitExceeded
 from app.core.config import settings
 from app.core.limiter import limiter
 from app.core.database import AsyncSessionLocal
+from app.core.logging_config import RequestIdMiddleware, configure_logging
 from app.core.observability import init_sentry
 from app.core.scheduler import job_lock
 
-# Sentry debe inicializarse antes de crear la app para capturar todo
+# Logging + Sentry deben inicializarse antes de crear la app para capturar todo
+configure_logging()
 init_sentry()
+from app.modules.auditoria.router import router as auditoria_router
 from app.modules.auth.router import router as auth_router
 from app.modules.crud_medios.router import router as crud_medios_router
 from app.modules.crud_medios.service import cleanup_old_operations
@@ -98,14 +101,17 @@ app.add_middleware(
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["X-Export-Password", "X-Export-Filename"],
+    expose_headers=["X-Export-Password", "X-Export-Filename", "X-Request-ID"],
 )
+# Request ID middleware — inyecta uuid por request para trazar logs.
+app.add_middleware(RequestIdMiddleware)
 
 app.include_router(auth_router, prefix="/api")
 app.include_router(users_router, prefix="/api")
 app.include_router(sellers_router, prefix="/api")
 app.include_router(crud_medios_router, prefix="/api")
 app.include_router(eventos_router, prefix="/api")
+app.include_router(auditoria_router, prefix="/api")
 app.include_router(updates_public_router)
 app.include_router(updates_router, prefix="/api")
 

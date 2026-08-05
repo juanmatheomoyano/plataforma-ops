@@ -159,6 +159,27 @@ export function ExportSellersModal({ open, onClose, isAdmin }) {
               </div>
             </div>
 
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-amber-700 dark:bg-amber-900/30">
+              <div className="flex gap-2 text-sm">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+                <div className="space-y-1 text-amber-900 dark:text-amber-200">
+                  <p className="font-medium">Windows Explorer no puede extraer este .zip</p>
+                  <p>
+                    Usa <strong>WinRAR</strong> (si ya lo tenés) o instalá{" "}
+                    <a
+                      href="https://www.7-zip.org/"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline hover:text-amber-700 dark:hover:text-amber-100"
+                    >
+                      7-Zip
+                    </a>{" "}
+                    (gratis). El .zip usa cifrado AES-256, no compatible con el "Extraer todo" de Windows.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="flex justify-end pt-2">
               <Button onClick={onClose}>Ya lo guardé, cerrar</Button>
             </div>

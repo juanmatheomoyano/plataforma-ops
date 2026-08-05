@@ -18,6 +18,7 @@ import app.modules.sellers.models  # noqa: F401
 import app.modules.crud_medios.models  # noqa: F401
 import app.modules.eventos.models  # noqa: F401
 import app.core.scheduler  # noqa: F401 — registers SchedulerLock
+import app.core.audit  # noqa: F401 — registers AuditLog
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.async_database_url)
