@@ -308,6 +308,35 @@ Prioridad 🟢 · Tamaño M · Sprint 6 · Estado 📋
 
 ---
 
+### HU-43 `[usuario]`
+**Como** admin, **quiero** que el `.exe` de la app se instale sin advertencias de Windows Smart App Control / SmartScreen, **para** no tener que enseñarle a cada usuario nuevo el workaround de desbloquear el archivo.
+
+- Prioridad: 🟡 Alta · Tamaño: M (setup) + costo mensual · Estado: 📋
+- Sprint: sin asignar (requiere decisión de compra)
+
+**Contexto**
+Todos los `.exe` releaseados hasta v1.7.10 están firmados con `rsign` (formato Tauri para verificar updates), pero NO con un certificado de code-signing de un CA reconocido. Windows 11 con SAC activo bloquea la instalación. Cada usuario nuevo tiene que:
+1. Click derecho al `.exe` → Propiedades → Desbloquear, o
+2. Desactivar SAC temporalmente en Seguridad de Windows.
+
+**Opciones (por costo)**
+- **Azure Trusted Signing** (~USD 10/mes): recomendado. Setup con Azure account + GitHub Actions. Sin warnings tras ganar reputación (rápido). Integración vía workflow.
+- **Sectigo/DigiCert OV** (~USD 100-300/año): certificado estándar. SmartScreen warning inicial que desaparece tras varias descargas — poco útil para app interna con pocos users.
+- **Sectigo/DigiCert EV** (~USD 300-700/año): sin warnings desde el primer install. Requiere hardware USB token — complica CI/CD.
+
+**Criterios de aceptación**
+- [ ] Decidir opción (Azure Trusted Signing recomendado).
+- [ ] Comprar/setupear el certificado.
+- [ ] Integrar firma en `npm run tauri build` (local) y en `.github/workflows/ci.yml` (CI opcional).
+- [ ] Documentar el proceso de firma en `RUNBOOK.md`.
+- [ ] Validar: instalar `.exe` firmado en Windows 11 con SAC activo — sin bloqueo.
+- [ ] Actualizar `MANUAL_USUARIO.md` sacando el workaround (ya no aplica).
+
+**Notas técnicas**
+Este proceso es INDEPENDIENTE de la firma rsign para el updater — son dos firmas distintas. La rsign sigue siendo necesaria para que el updater Tauri verifique la integridad del binario descargado. El code-signing MS es para que Windows confíe al ejecutar.
+
+---
+
 ### HU-41 `[usuario]`
 **Como** admin, **quiero** que el modal de export con credenciales me advierta que Windows no puede extraer el zip, **para** no perder tiempo probando con el explorador nativo.
 

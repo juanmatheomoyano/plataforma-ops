@@ -33,12 +33,30 @@ Provincia Ops es una herramienta de escritorio exclusiva para el equipo interno 
 ## 2. Instalación
 
 1. Entrá al link de descarga que te compartió el administrador
-2. Descargá el archivo `.exe` (aproximadamente 10 MB)
+2. Descargá el archivo `.exe` (aproximadamente 4 MB)
 3. Ejecutá el instalador haciendo doble clic
 4. Seguí los pasos del instalador (siguiente → siguiente → instalar)
 5. Al terminar, buscá **"Provincia Ops"** en el menú inicio o en el escritorio
 
-> **Nota:** Si Windows muestra una advertencia de seguridad ("aplicación desconocida"), hacé clic en **"Más información"** y luego en **"Ejecutar de todos modos"**. Es seguro — la advertencia aparece porque el instalador es interno y no está firmado por Microsoft.
+### ⚠️ Si Windows bloquea la instalación
+
+El instalador es interno y no está firmado por Microsoft, así que **Windows Smart App Control** o **SmartScreen** pueden bloquearlo. Es seguro — solo hay que desbloquearlo manualmente.
+
+**Opción A — advertencia normal ("aplicación desconocida"):**
+- Click en **"Más información"** → **"Ejecutar de todos modos"**.
+
+**Opción B — Smart App Control activo (bloqueo total, muestra la ayuda de Microsoft):**
+1. Andá a **Descargas** en el Explorador de Windows.
+2. Click derecho sobre el `.exe` → **Propiedades**.
+3. Al final de la pestaña General buscá el checkbox **"Desbloquear"** → marcalo → **Aplicar**.
+4. Ejecutá el instalador otra vez.
+
+**Opción C — si Opción B no aparece, desactivar Smart App Control temporalmente:**
+1. Menú Inicio → buscar **"Seguridad de Windows"**.
+2. **Control de aplicaciones y explorador** → **Configuración de Control de aplicaciones inteligentes**.
+3. Cambiar a **Desactivado**.
+4. Instalar la app.
+5. (Opcional) Volver a activarlo después.
 
 ---
 

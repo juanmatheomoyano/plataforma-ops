@@ -89,6 +89,7 @@ Historias válidas pero sin sprint asignado. Se revisan al cerrar Sprint 6.
 - HU-34 `[propuesta]` Forzar cambio de contraseña en primer login
 - HU-35 `[propuesta]` Bloqueo de cuenta tras N intentos fallidos
 - HU-36 `[propuesta]` Dashboard personalizable (reordenar/ocultar cards)
+- HU-43 `[usuario]` Code-signing MS para que Windows no bloquee el .exe (requiere decisión de compra)
 
 ---
 
