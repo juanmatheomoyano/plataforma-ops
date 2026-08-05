@@ -5,6 +5,32 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [1.7.10] — 2026-08-05 — HOTFIX: auto-updater diagnosticable
+
+**Fix crítico** para el bug histórico del auto-updater que fallaba silenciosamente sin avisar al usuario.
+
+### Root cause encontrado
+- El `useAutoUpdate` viejo tenía `try/catch` con solo `console.log`. Cualquier fallo del updater (red, firma, permisos, dialog) se silenciaba.
+- No había forma de saber qué pasaba desde el lado del usuario.
+- Además, `window.confirm()` puede tener comportamiento inconsistente en WebView2.
+
+### Frontend
+- **HU-40** Reescrito `useAutoUpdate.js`:
+  - `Sentry.captureException(e)` con contexto (versión actual + endpoint) en el catch.
+  - `Sentry.addBreadcrumb` en cada paso del check.
+  - `console.info` con estado en cada paso — para debug con DevTools.
+  - `toast.error()` visible al usuario si algo falla (nunca más silencioso).
+  - `toast.success/info` en éxito o cuando no hay update.
+  - Reemplazado `window.confirm()` por `ask()` del `@tauri-apps/plugin-dialog` — diálogo nativo, más confiable.
+  - Nuevo hook `useManualUpdateCheck()` para trigger manual desde UI.
+- **HU-40** Nuevo botón **"Buscar actualizaciones ahora"** en `/configuracion` (con ícono spinning). Muestra versión instalada.
+- Capabilities Tauri: agregado `dialog:allow-ask` y `dialog:allow-message`.
+
+### Infra
+- `RELEASE_URL` en Railway apunta ahora a `provincia-ops-1.7.10-setup.exe` (nombre limpio, sin espacios/puntos raros).
+
+---
+
 ## [1.7.9] — 2026-08-05 — Sprint 2 (parcial): CI, versión visible, normalización de fechas
 
 Segunda entrega. Sprint 2 quedó particionado: se releasea lo que ya está listo. HU-08 (audit_log), HU-09 (/auditoria), HU-10 (logs JSON), HU-37 (modal post-update), HU-40 (updater diagnosticable) y HU-41 (aviso WinRAR en modal) quedan para v1.7.10.

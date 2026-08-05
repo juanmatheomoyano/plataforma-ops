@@ -325,17 +325,19 @@ Prioridad 🟢 · Tamaño M · Sprint 6 · Estado 📋
 ### HU-40 `[usuario]`
 **Como** dev, **quiero** que el auto-updater sea diagnosticable, **para** saber por qué falla cuando no avisa al usuario de una nueva versión.
 
-- Prioridad: 🟡 Alta · Tamaño: S · Estado: 📋
-- Sprint: 2
+- Prioridad: 🔴 Crítica · Tamaño: S · Estado: ✅ v1.7.10
+- Sprint: 2 (hotfix)
 
 **Criterios de aceptación**
-- [ ] `useAutoUpdate.js`: reportar a Sentry en el `catch` con contexto (versión actual, endpoint, mensaje de error).
-- [ ] Toast al usuario si el check falla (no bloqueante, con "Reintentar").
-- [ ] Botón "Buscar actualizaciones" en `/configuracion` que fuerza el check.
-- [ ] Indicador visual en el sidebar si hay update disponible (badge en un ícono).
-- [ ] Mostrar en la consola del updater el status: chequeando / al día / disponible / instalando.
+- [x] `useAutoUpdate.js`: reportar a Sentry en el `catch` con contexto (versión actual, endpoint, mensaje de error).
+- [x] Toast al usuario si el check falla (no bloqueante).
+- [x] Botón "Buscar actualizaciones ahora" en `/configuracion` que fuerza el check.
+- [x] Mostrar en la consola del updater el status: chequeando / al día / disponible / instalando.
+- [x] Dialog nativo Tauri (`ask()`) en vez de `window.confirm()` — más confiable en WebView2.
+- [x] Sentry breadcrumbs en cada paso.
+- [ ] Indicador visual en el sidebar si hay update disponible (badge en un ícono). *(pendiente, no crítico)*
 
-**Notas técnicas:** el auto-updater actual (v1.7.5→v1.7.8) no avisó al usuario. Causa exacta no confirmada por falta de logs. Los tests fueron entre v1.7.5 (instalada) y v1.7.8 (publicada). Ver commits `80caca6`, `3fd0e5f`, `a4ba484` para historia.
+**Notas técnicas:** el auto-updater v1.7.5→v1.7.9 nunca avisó al usuario. Con el fix de v1.7.10 la próxima falla se manda a Sentry con contexto y aparece en pantalla del usuario. Solo tras instalar v1.7.10 manualmente empieza a haber diagnóstico (v1.7.5 y v1.7.8 quedan silenciosas).
 
 ---
 

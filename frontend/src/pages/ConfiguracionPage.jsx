@@ -1,14 +1,18 @@
 import { useState } from "react"
-import { Moon, Sun } from "lucide-react"
+import { Moon, RefreshCw, Sun } from "lucide-react"
 import { useTheme } from "@/core/theme/ThemeContext"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import client from "@/core/api/client"
+import { useManualUpdateCheck } from "@/core/hooks/useAutoUpdate"
+
+const APP_VERSION = import.meta.env.VITE_APP_VERSION || "dev"
 
 export default function ConfiguracionPage() {
   const { theme, setTheme } = useTheme()
+  const checkUpdate = useManualUpdateCheck()
 
   const [form, setForm] = useState({
     current_password: "",
@@ -18,6 +22,16 @@ export default function ConfiguracionPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [checkingUpdate, setCheckingUpdate] = useState(false)
+
+  async function handleCheckUpdate() {
+    setCheckingUpdate(true)
+    try {
+      await checkUpdate()
+    } finally {
+      setCheckingUpdate(false)
+    }
+  }
 
   function set(field, value) {
     setForm((f) => ({ ...f, [field]: value }))
@@ -86,6 +100,34 @@ export default function ConfiguracionPage() {
               <span className="text-sm">Oscuro</span>
             </button>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Actualizaciones */}
+      <Card className="border-border bg-card">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base text-card-foreground">Actualizaciones</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              Versión instalada: <span className="font-mono text-foreground">v{APP_VERSION}</span>
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleCheckUpdate}
+            disabled={checkingUpdate}
+            className="w-full"
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${checkingUpdate ? "animate-spin" : ""}`} />
+            {checkingUpdate ? "Buscando..." : "Buscar actualizaciones ahora"}
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            La app chequea actualizaciones automáticamente al iniciar. Este botón fuerza un chequeo
+            manual — útil si algo falló silenciosamente.
+          </p>
         </CardContent>
       </Card>
 

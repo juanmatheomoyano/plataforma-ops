@@ -9,6 +9,8 @@
     "core:window:allow-set-title",
     "opener:default",
     "dialog:allow-save",
+    "dialog:allow-ask",
+    "dialog:allow-message",
     "fs:allow-write-file",
     "updater:allow-check",
     "updater:allow-download-and-install",

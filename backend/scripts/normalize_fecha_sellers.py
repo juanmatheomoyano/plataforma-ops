@@ -76,7 +76,7 @@ async def main(apply: bool) -> None:
     if convertidos:
         print(f"\n--- Convertidos ({len(convertidos)}) ---")
         for sid, old, new in convertidos[:50]:
-            print(f"  {sid}: {old!r} → {new!r}")
+            print(f"  {sid}: {old!r} -> {new!r}")
         if len(convertidos) > 50:
             print(f"  ...y {len(convertidos) - 50} más")
 
