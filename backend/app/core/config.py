@@ -13,8 +13,9 @@ class Settings(BaseSettings):
     VTEX_ACCOUNT: str
     THREADS_READ: int = 4
     THREADS_WRITE: int = 2
-    BAPROAR_APP_KEY: str = ""
-    BAPROAR_APP_TOKEN: str = ""
+    MARKETPLACE_APP_KEY: str = ""
+    MARKETPLACE_APP_TOKEN: str = ""
+    MARKETPLACE_URL: str = ""
     SENTRY_DSN: str = ""
     APP_VERSION: str = "dev"
 

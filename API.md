@@ -1,4 +1,4 @@
-# API Reference — Provincia Ops
+﻿# API Reference — Provincia Ops
 
 Referencia de los endpoints REST del backend. Para entender los flujos internos ver [ARCHITECTURE.md](ARCHITECTURE.md). Para operar en producción ver [RUNBOOK.md](RUNBOOK.md).
 
@@ -31,8 +31,8 @@ Referencia de los endpoints REST del backend. Para entender los flujos internos 
 | 422 | Validación Pydantic falló |
 | 429 | Rate limit excedido (solo `/auth/login`) |
 | 500 | Error interno (revisar Sentry + logs Railway) |
-| 502 | Falla contra API externa (VTEX/BaproAR) |
-| 503 | Servicio no disponible (credenciales BaproAR no configuradas) |
+| 502 | Falla contra API externa (VTEX/Marketplace) |
+| 503 | Servicio no disponible (credenciales Marketplace no configuradas) |
 
 ---
 
@@ -292,10 +292,10 @@ Cualquier rol autenticado. Cambia el propio password.
 
 ### `POST /api/sellers/{seller_id}/marketplace-toggle`
 
-**Rol:** admin, supervisor. Activa/desactiva el seller en BaproAR. Solo actualiza la BD si BaproAR responde OK.
+**Rol:** admin, supervisor. Activa/desactiva el seller en Marketplace. Solo actualiza la BD si Marketplace responde OK.
 
 **Response 200:** `SellerOut` con `marketplace_activo` invertido.
-**Errores:** `400` si el seller no está en BaproAR, `502` si BaproAR rechaza, `503` si credenciales BaproAR no configuradas.
+**Errores:** `400` si el seller no está en Marketplace, `502` si Marketplace rechaza, `503` si credenciales Marketplace no configuradas.
 
 ### `GET /api/sellers/export`
 
@@ -325,7 +325,7 @@ Cualquier rol autenticado. Cambia el propio password.
 
 ### `POST /api/sellers/sync-marketplace`
 
-**Rol:** admin, supervisor. Dispara manualmente el sync BaproAR (normalmente corre cada 24h).
+**Rol:** admin, supervisor. Dispara manualmente el sync Marketplace (normalmente corre cada 24h).
 
 **Response 200:** `{ "synced": 15, "total_marketplace": 20 }` o `{ "synced": 0, "total_marketplace": 0, "error": "..." }`.
 

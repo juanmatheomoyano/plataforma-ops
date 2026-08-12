@@ -1,6 +1,6 @@
 [package]
 name = "plataforma-ops"
-version = "1.7.12"
+version = "1.7.13"
 description = "Provincia Ops"
 authors = []
 edition = "2021"

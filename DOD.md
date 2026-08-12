@@ -1,4 +1,4 @@
-# Definition of Done — Provincia Ops
+﻿# Definition of Done — Provincia Ops
 
 Una historia está "hecha" solo si cumple **todos** estos criterios. No es "casi terminado" hasta que esté acá.
 

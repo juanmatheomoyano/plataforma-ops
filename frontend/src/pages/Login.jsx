@@ -35,11 +35,11 @@ export default function Login() {
         {/* Logo / título */}
         <div className="flex flex-col items-center gap-3 text-center">
           <img
-            src="/logo_provincia_compras-02.svg"
-            alt="Provincia Compras"
-            className="h-12 w-auto"
+            src="/logo_provincia_ops.svg"
+            alt="Provincia Ops"
+            className="h-12 w-auto text-foreground"
           />
-          <p className="text-sm text-muted-foreground">Provincia Ops</p>
+          <p className="text-sm text-muted-foreground">Iniciá sesión para continuar</p>
         </div>
 
         {/* Card de login */}

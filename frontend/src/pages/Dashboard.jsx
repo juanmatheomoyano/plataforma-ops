@@ -80,7 +80,7 @@ export default function Dashboard() {
             {ROLE_LABELS[user?.role] ?? user?.role}
           </Badge>
         </div>
-        <p className="text-sm text-muted-foreground">Panel de control — Provincia Compras</p>
+        <p className="text-sm text-muted-foreground">Panel de control — Provincia Ops</p>
       </div>
 
       {/* Métricas — admin + supervisor */}

@@ -1,4 +1,4 @@
-# Backlog — Provincia Ops
+﻿# Backlog — Provincia Ops
 
 Historias de usuario. Se agrupan por épica. Cada sprint activo enlaza a las historias que agarra desde [SPRINTS.md](SPRINTS.md).
 
@@ -46,7 +46,7 @@ Historias de usuario. Se agrupan por épica. Cada sprint activo enlaza a las his
 ---
 
 ### HU-03 `[propuesta]`
-**Como** dev, **quiero** que el sync marketplace no bloquee el startup de la app, **para** que Railway no mate el pod si BaproAR está lento.
+**Como** dev, **quiero** que el sync marketplace no bloquee el startup de la app, **para** que Railway no mate el pod si Marketplace está lento.
 
 - Prioridad: 🔴 Crítica · Tamaño: M · Estado: ✅ v1.7.8
 - Épica: Estabilización · Sprint: 1
@@ -54,15 +54,15 @@ Historias de usuario. Se agrupan por épica. Cada sprint activo enlaza a las his
 **Criterios de aceptación**
 - [x] Startup sync fuera del `lifespan`: `asyncio.create_task(_run_marketplace_sync("startup"))` corre en background.
 - [x] Cleanup del startup task en shutdown con timeout de 2s (cancel + wait_for).
-- [x] `httpx.Timeout(10.0, connect=5.0)` explícito en `baproar_client.py`.
-- [x] Tests de regresión en `tests/test_lifespan.py`: health responde <2s con BaproAR colgado + app arranca si sync tira excepción. 2/2 passing.
+- [x] `httpx.Timeout(10.0, connect=5.0)` explícito en `Marketplace_client.py`.
+- [x] Tests de regresión en `tests/test_lifespan.py`: health responde <2s con Marketplace colgado + app arranca si sync tira excepción. 2/2 passing.
 
 **Notas:** `backend/app/main.py:25-49`. Ver `RETRO.md` → "Startup sync en lifespan".
 
 ---
 
 ### HU-04 `[propuesta]`
-**Como** dev, **quiero** que el scheduler no dispare tareas duplicadas si Railway escala a >1 réplica, **para** no hacer doble PATCH contra BaproAR.
+**Como** dev, **quiero** que el scheduler no dispare tareas duplicadas si Railway escala a >1 réplica, **para** no hacer doble PATCH contra Marketplace.
 
 - Prioridad: 🔴 Crítica · Tamaño: M · Estado: ✅ v1.7.8
 - Épica: Estabilización · Sprint: 1
@@ -348,22 +348,45 @@ Nuevo manual VTEX indica que las reglas de 1 pago no llevan `cardLevel` (aplican
 
 ---
 
+### HU-46 `[usuario]`
+**Como** admin, **quiero** que el repo se pueda abrir al público sin exponer info de la empresa ni datos personales, **para** liberar el código y destrabar el auto-updater (que fallaba porque el repo era privado y GitHub no sirve assets sin auth).
+
+- Prioridad: 🔴 Crítica · Tamaño: M · Estado: ✅ v1.7.13
+- Sprint: sin sprint (rebrand + apertura)
+
+**Contexto**
+El auto-updater venía fallando desde v1.7.9 (usuarios instalando manual). Causa raíz: assets de releases de un repo privado devuelven 404 para requests no autenticadas. Solución: abrir el repo, pero antes limpiar cualquier referencia a la empresa o a personas.
+
+**Criterios de aceptación**
+- [x] Renombrado `sellers/baproar_client.py` → `sellers/marketplace_client.py`. Env vars `BAPROAR_*` → `MARKETPLACE_*` + nueva `MARKETPLACE_URL` (URL antes hardcodeada).
+- [x] Tauri: publisher `Provincia NET` → `Provincia Ops`, identifier `com.provincianet.*` → `com.provinciaops.*`.
+- [x] Frontend: `logo_provincia_compras-02.svg` → `logo_provincia_ops.svg` (wordmark simple). Alt tags y textos actualizados en `Login`, `Sidebar`, `Dashboard`.
+- [x] Barrido de MDs: sin "BaproAR" ni "Provincia Compras/NET".
+- [x] Password default de import: hardcoded `Provincia.2026` → env var `DEFAULT_INITIAL_PASSWORD`.
+- [x] `MANUAL_USUARIO.md` sanitizado (contraseña genérica "la que te dé el administrador").
+- [x] Verificado: `CREDENTIALS.md`, `Provincia Ops - Documentación/`, `.claude/settings.local.json` nunca committeados.
+- [x] Git history verificada: sin `Benjamin.00`, DB password ni tokens de GH en ningún commit.
+
+**Notas técnicas:** el nuevo identifier rompe el upgrade path automático desde v1.7.12 (Windows los ve como apps distintas). Aceptable — el updater ya venía roto igual. Post v1.7.13, updates fluyen normal contra el repo público.
+
+---
+
 ### HU-44 `[usuario]`
 **Como** usuario, **quiero** que el updater no se cuelgue en "Descargando..." indefinido, **para** saber si falló y tener un plan B.
 
-- Prioridad: 🟡 Alta · Tamaño: S · Estado: 📋
-- Sprint: sin asignar
+- Prioridad: 🟡 Alta · Tamaño: S · Estado: ✅ v1.7.13
+- Sprint: sin sprint
 
 **Contexto**
 En v1.7.11 se detectó que `update.downloadAndInstall()` puede quedarse colgado indefinidamente (probablemente Windows Defender / SAC bloqueando la descarga background sin devolver error). El toast "Descargando…" desaparece a los 20s y el usuario no ve más nada.
 
 **Criterios de aceptación**
-- [ ] `useAutoUpdate.js`: envolver `downloadAndInstall()` con `Promise.race` + timeout de 60s.
-- [ ] Barra de progreso visible durante la descarga (event listener de `downloadAndInstall` con callback `onEvent`).
-- [ ] Si timeout o error, mostrar toast con acción "Abrir en el browser" que hace `open()` del URL del `.exe`.
-- [ ] Log a Sentry con tag `download-failed` para poder trackear frecuencia.
+- [x] `useAutoUpdate.js`: envolver `downloadAndInstall()` con `Promise.race` + timeout de 60s.
+- [x] Barra de progreso visible durante la descarga (event listener con `onEvent` — Started/Progress/Finished).
+- [x] Si timeout o error, toast con acción "Abrir descarga" que abre `github.com/.../releases/latest` en el browser (vía `@tauri-apps/plugin-opener`).
+- [x] Log a Sentry con tag `reason: download-failed` + bytes descargados vs. total para poder trackear.
 
-**Notas técnicas:** el plugin `@tauri-apps/plugin-updater` v2 soporta `downloadAndInstall(onEvent)` donde `onEvent` recibe `{event: 'Started'|'Progress'|'Finished', data?}`. Con eso hacemos la barra.
+**Notas técnicas:** el plugin `@tauri-apps/plugin-updater` v2 soporta `downloadAndInstall(onEvent)` donde `onEvent` recibe `{event: 'Started'|'Progress'|'Finished', data?}`.
 
 ---
 
@@ -498,7 +521,7 @@ Historias completadas antes del formalizar este backlog (v1.0.0 → v1.7.7). Se 
 - ✅ Campo Integración + Especificación con crear nueva — v1.2.0
 - ✅ Export/Import Excel — v1.3.0
 - ✅ Export con credenciales VTEX (solo admin) — v1.7.1
-- ✅ Sync marketplace BaproAR + toggle — v1.7.7
+- ✅ Sync marketplace Marketplace + toggle — v1.7.7
 
 ### CRUD Medios de Pago v1
 - ✅ Filtros por columna en tabla resultados — v1.2.1
@@ -545,7 +568,7 @@ Historias completadas antes del formalizar este backlog (v1.0.0 → v1.7.7). Se 
 Ideas capturadas del usuario, sin sprint asignado todavía. Cuando maduren se transforman en HU con formato completo (criterios de aceptación, tamaño, sprint).
 
 ### HU-38 `[usuario]` — Sistema de permisos estilo VTEX con roles múltiples
-Propuesto por: `juanmatheomoyano` (commit `76ec65f`, 2026-07-27) · Prioridad tentativa: 🟡 Alta · Tamaño estimado: L-XL · Sprint: por definir
+Propuesto por: `usuario` (commit `76ec65f`, 2026-07-27) · Prioridad tentativa: 🟡 Alta · Tamaño estimado: L-XL · Sprint: por definir
 
 **Idea original**
 Reemplazar el sistema actual de rol único por un sistema de **roles múltiples por usuario** (un usuario puede tener 2 o más roles activos simultáneamente, ej. "Categorías + Activación").

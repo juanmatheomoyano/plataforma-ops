@@ -1,6 +1,6 @@
-# Provincia Ops
+﻿# Provincia Ops
 
-Herramienta interna de Provincia Compras para gestión masiva de reglas de pago VTEX.
+Herramienta interna de Provincia Ops para gestión masiva de reglas de pago VTEX.
 Reemplaza el script Python de consola `crud_medios_de_pago_v6.py` con una interfaz desktop Windows.
 
 ---
@@ -16,7 +16,7 @@ Reemplaza el script Python de consola `crud_medios_de_pago_v6.py` con una interf
 | **Deploy backend** | Railway |
 | **Auth** | JWT (access 8hs + refresh 7 días con rotación), roles por claim |
 | **Encriptación** | Fernet (credenciales VTEX) |
-| **Tipografía** | Encode Sans (fuente oficial Provincia Compras) |
+| **Tipografía** | Encode Sans (fuente oficial Provincia Ops) |
 
 ---
 
@@ -25,7 +25,7 @@ Reemplaza el script Python de consola `crud_medios_de_pago_v6.py` con una interf
 | Módulo | Acceso | Descripción |
 |---|---|---|
 | **Dashboard** | todos | Métricas por rol, últimas operaciones, accesos rápidos |
-| **Sellers** | todos (ABM: admin/supervisor) | Gestión de sellers y credenciales VTEX encriptadas. Columna Marketplace: muestra estado BaproAR (Activo/Inactivo) y permite toggle directo. Sync automático al startup y cada 24 hs; botón de sync manual (admin/supervisor) |
+| **Sellers** | todos (ABM: admin/supervisor) | Gestión de sellers y credenciales VTEX encriptadas. Columna Marketplace: muestra estado Marketplace (Activo/Inactivo) y permite toggle directo. Sync automático al startup y cada 24 hs; botón de sync manual (admin/supervisor) |
 | **CRUD Medios de Pago** | todos (C/U/D: admin, supervisor) | Operaciones R/C/U/D masivas sobre reglas de pago VTEX. Scope selector con modos: todos, por analista, seller específico, lista. Resultados incluyen `id_ecommerce` del seller. Read incluye validación por grupos de cuotas (1p/6c/9c/12c/18c/24c) y eventos vigentes/próximos. Export Excel completo: RESUMEN (gráfico de torta), DASHBOARD_VENDEDORES (colores, grupos y eventos seleccionados), PAGOS_CONSOLIDADO, ERRORES |
 | **Eventos** | admin, supervisor | Crear y administrar eventos planificados (Hot Sale, Cyber Monday, etc.). Muestra eventos vigentes y próximos. La validación por seller se ejecuta desde CRUD Read |
 | **Usuarios** | admin, supervisor | ABM de usuarios y roles |
@@ -78,8 +78,8 @@ FERNET_KEY=...          # generado con Fernet.generate_key()
 VTEX_ACCOUNT=...
 THREADS_READ=10         # paralelismo para operaciones Read
 THREADS_WRITE=5         # paralelismo para Create/Update/Delete
-BAPROAR_APP_KEY=...     # credenciales marketplace BaproAR (VTEX)
-BAPROAR_APP_TOKEN=...
+Marketplace_APP_KEY=...     # credenciales marketplace Marketplace (VTEX)
+Marketplace_APP_TOKEN=...
 SENTRY_DSN=             # opcional — sin valor, Sentry no se inicializa
 APP_VERSION=1.7.9       # usado por /api/updates/latest para anunciar la versión al updater Tauri
 RELEASE_URL=...         # URL del instalador .exe para auto-update

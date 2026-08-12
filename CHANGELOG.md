@@ -1,7 +1,31 @@
-# Changelog — Provincia Ops
+﻿# Changelog — Provincia Ops
 
 Todos los cambios importantes del proyecto se documentan acá.
 Formato: [versión] — fecha — descripción
+
+---
+
+## [1.7.13] — 2026-08-12 — Repo público: rebrand + sanitización + updater con timeout/fallback (HU-44)
+
+Preparación para abrir el repo. Se sacaron todas las referencias a la empresa y a personas concretas del código y de la doc pública. Además se resolvió el bug histórico del auto-updater que quedaba pegado en "Descargando…" (HU-44).
+
+### Rebrand & sanitización
+- **Módulo marketplace VTEX**: renombrado `sellers/baproar_client.py` → `sellers/marketplace_client.py`. Env vars `BAPROAR_APP_KEY/TOKEN` → `MARKETPLACE_APP_KEY/TOKEN`, y nueva `MARKETPLACE_URL` (antes hardcodeada).
+- **Publisher/identifier Tauri**: `Provincia NET` → `Provincia Ops`, `com.provincianet.plataforma-ops` → `com.provinciaops.app` (⚠️ nuevo identifier — no upgrade automático desde v1.7.12; una vez que se instala v1.7.13, siguientes updates fluyen normal).
+- **Logo**: sacado `logo_provincia_compras-02.svg`, agregado `logo_provincia_ops.svg` (placeholder simple tipo wordmark "PO Provincia Ops"). Actualizados `Login.jsx`, `Sidebar.jsx`, `Dashboard.jsx`.
+- **Docs**: barrido en `README.md`, `ARCHITECTURE.md`, `RUNBOOK.md`, `API.md`, `MANUAL_USUARIO.md`, `RETRO.md`, `BACKLOG.md`, `CHANGELOG.md` para reemplazar "BaproAR"→"Marketplace" y "Provincia Compras/NET"→"Provincia Ops". Se removió el password default `Provincia.2026` del manual (ahora "la contraseña inicial que te dé el administrador").
+- **Contraseña default de import** ahora se lee de env var `DEFAULT_INITIAL_PASSWORD` con fallback `ChangeMe.2026` (antes hardcoded `Provincia.2026`).
+
+### Auto-updater (HU-44)
+- **`useAutoUpdate.js`** reescrito:
+  - `Promise.race` con timeout de 60s en `downloadAndInstall()`.
+  - Barra de progreso en el toast (`Descargando v1.7.13… 34%`) usando `onEvent` (`Started`/`Progress`/`Finished`).
+  - Fallback: si la descarga falla o timeout, toast con botón **"Abrir descarga"** que abre `github.com/.../releases/latest` en el browser (vía `@tauri-apps/plugin-opener`).
+  - Sentry captura el fail con tag `reason: download-failed` + tamaño y bytes descargados para debug.
+- Se agregó `@tauri-apps/plugin-opener` (dep JS del plugin que ya estaba en Cargo).
+
+### Sin migración
+No hay cambios de BD. El rename de env vars sí requiere actualizar Railway.
 
 ---
 
@@ -121,7 +145,7 @@ Cierre del Sprint 1 (7 historias de usuario). Foco en tapar los críticos de la 
 
 ### Backend
 - **CORS restringido (HU-02)**: whitelist explícita de orígenes (Tauri Windows/macOS/Linux + dev Vite). `allow_credentials=False` mantenido. Header `X-Export-Password` expuesto para que axios pueda leerlo. Test de regresión en `test_cors.py`.
-- **Startup sync no-fatal (HU-03)**: el sync marketplace ahora corre en background (`asyncio.create_task`), no bloquea el arranque de la app. Si BaproAR está caído, la app arranca igual y el sync falla silenciosamente. Timeout explícito `httpx.Timeout(10.0, connect=5.0)` en el cliente BaproAR.
+- **Startup sync no-fatal (HU-03)**: el sync marketplace ahora corre en background (`asyncio.create_task`), no bloquea el arranque de la app. Si Marketplace está caído, la app arranca igual y el sync falla silenciosamente. Timeout explícito `httpx.Timeout(10.0, connect=5.0)` en el cliente Marketplace.
 - **APScheduler con lock DB (HU-04)**: nueva tabla `scheduler_locks` + context manager `job_lock()`. Estrategia atómica con `INSERT ... ON CONFLICT DO UPDATE ... WHERE locked_until < NOW()` de Postgres. Evita jobs duplicados si Railway escala a más de 1 réplica. TTL de 30 min protege contra crashes.
 - **Export sellers con credenciales (HU-05)**: nuevo endpoint que devuelve `.zip` con AES-256 (via `pyzipper`). Password random one-shot generado en el server (`secrets.token_urlsafe(12)`), expuesto en header `X-Export-Password`. Solo admin. Log de auditoría (username + user_id + bytes) por cada export.
 - **Sentry integrado (HU-06)**: nuevo módulo `core/observability.py`. `init_sentry()` gateado por env var `SENTRY_DSN`. Integraciones FastAPI/Starlette/SQLAlchemy. `set_sentry_user()` taggea cada error con el user autenticado.
@@ -159,18 +183,18 @@ Cierre del Sprint 1 (7 historias de usuario). Foco en tapar los críticos de la 
 
 ---
 
-## [1.7.7] — 2026-07-01 — Sync de marketplace BaproAR en módulo Sellers
+## [1.7.7] — 2026-07-01 — Sync de marketplace Marketplace en módulo Sellers
 
 ### Backend
 - Nuevos campos en tabla `sellers`: `marketplace_activo` (bool nullable) y `marketplace_sync_at` (datetime nullable).
-- Nuevo cliente `baproar_client.py`: llama a `GET /api/seller-register/pvt/sellers` y `PATCH /api/seller-register/pvt/sellers/{id}` usando credenciales del marketplace BaproAR.
-- Credenciales BaproAR como env vars (`BAPROAR_APP_KEY`, `BAPROAR_APP_TOKEN`) — no se guardan en BD.
-- `POST /api/sellers/sync-marketplace`: sincroniza estado activo/inactivo de todos los sellers contra BaproAR. Solo actualiza la BD si la respuesta es 200 y los datos son válidos.
-- `POST /api/sellers/{id}/marketplace-toggle`: activa o desactiva un seller en BaproAR. Solo modifica la BD si BaproAR confirma con 200.
+- Nuevo cliente `Marketplace_client.py`: llama a `GET /api/seller-register/pvt/sellers` y `PATCH /api/seller-register/pvt/sellers/{id}` usando credenciales del marketplace Marketplace.
+- Credenciales Marketplace como env vars (`Marketplace_APP_KEY`, `Marketplace_APP_TOKEN`) — no se guardan en BD.
+- `POST /api/sellers/sync-marketplace`: sincroniza estado activo/inactivo de todos los sellers contra Marketplace. Solo actualiza la BD si la respuesta es 200 y los datos son válidos.
+- `POST /api/sellers/{id}/marketplace-toggle`: activa o desactiva un seller en Marketplace. Solo modifica la BD si Marketplace confirma con 200.
 - Sync automático al iniciar la app y cada 24 hs via APScheduler.
 
 ### Frontend
-- Columna "Marketplace" en la tabla de sellers: muestra el estado BaproAR (Activo/Inactivo/—). Clickeable para toggle directo desde la tabla (admin/supervisor).
+- Columna "Marketplace" en la tabla de sellers: muestra el estado Marketplace (Activo/Inactivo/—). Clickeable para toggle directo desde la tabla (admin/supervisor).
 - Botón "Sync Marketplace" en el header con spinner y hora de última sincronización.
 
 ---
@@ -356,7 +380,7 @@ Cierre del Sprint 1 (7 historias de usuario). Foco en tapar los críticos de la 
 ## [1.5.0] — 2026-05-29 — Brand redesign completo
 
 ### Frontend
-- Tipografía: Encode Sans (fuente oficial Provincia Compras), pesos 300–700 desde `/public/fonts/`
+- Tipografía: Encode Sans (fuente oficial Provincia Ops), pesos 300–700 desde `/public/fonts/`
 - Colores de marca: Verde `#279D2E` como `--primary`, Cyan `#25B4BD`, Gris `#3C3C3B`
 - Dark/Light mode: ThemeContext con localStorage, toggle en ConfiguracionPage
 - Logo SVG oficial `logo_provincia_compras-02.svg` en sidebar y login

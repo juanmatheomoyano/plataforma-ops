@@ -8,8 +8,12 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import os
+
 from app.core.security import hash_password, verify_password
 from app.modules.auth.models import User, UserRole
+
+DEFAULT_INITIAL_PASSWORD = os.getenv("DEFAULT_INITIAL_PASSWORD", "ChangeMe.2026")
 
 from .schemas import ChangePassword, SelfChangePassword, UserCreate, UserImportError, UserImportUpdateResult, UserUpdate
 
@@ -188,7 +192,7 @@ async def import_update_users(
                     username=username,
                     email=email,
                     full_name=full_name,
-                    hashed_password=hash_password("Provincia.2026"),
+                    hashed_password=hash_password(DEFAULT_INITIAL_PASSWORD),
                     role=UserRole(role),
                     is_active=is_active,
                 )

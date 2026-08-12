@@ -1,4 +1,4 @@
-# Arquitectura — Provincia Ops
+﻿# Arquitectura — Provincia Ops
 
 Documento técnico. Cómo está armada la app por dentro, cómo fluyen los datos, qué decisiones se tomaron y por qué. Para usuarios finales ver [MANUAL_USUARIO.md](MANUAL_USUARIO.md). Para operar en producción ver [RUNBOOK.md](RUNBOOK.md). Para referencia de endpoints ver [API.md](API.md).
 
@@ -10,7 +10,7 @@ Provincia Ops es una app cliente-servidor:
 
 - **Cliente**: aplicación desktop Windows empaquetada con **Tauri 2**. Dentro corre una SPA hecha con **React 19 + Vite 8**. La UI es 100% web; Tauri solo aporta el shell nativo (ventana, updater, WebView2).
 - **Servidor**: API REST en **FastAPI** (Python 3.11+) sobre **PostgreSQL** (async con SQLAlchemy 2 + asyncpg). Hosteado en **Railway**.
-- **Terceros**: la app consume dos APIs VTEX (reglas de pago por seller y el marketplace BaproAR).
+- **Terceros**: la app consume dos APIs VTEX (reglas de pago por seller y el marketplace Marketplace).
 
 ```
 ┌──────────────────────────────┐         ┌──────────────────────────────┐
@@ -33,7 +33,7 @@ GitHub Releases                           │  │ APScheduler (in-proc)│   �
                                           ┌─────────────▼───────────────┐
                                           │ VTEX APIs                   │
                                           │  · rules por seller         │
-                                          │  · marketplace BaproAR      │
+                                          │  · marketplace Marketplace      │
                                           └─────────────────────────────┘
 ```
 
@@ -62,7 +62,7 @@ GitHub Releases                           │  │ APScheduler (in-proc)│   �
 | python-jose | latest | JWT encode/decode |
 | bcrypt | latest | Hash de contraseñas |
 | cryptography | latest | Fernet (encripta App Key/Token) |
-| httpx | latest | Cliente HTTP async (VTEX/BaproAR) |
+| httpx | latest | Cliente HTTP async (VTEX/Marketplace) |
 | openpyxl | latest | Excel read/write |
 | pyzipper | ≥0.3.6 | Zip AES-256 (export con credenciales) |
 | APScheduler | <4.0 | Jobs programados in-process |
@@ -283,27 +283,27 @@ POST /api/crud-medios/execute
 
 **Validación de evento**: hay una variante `run_evento_validation` que, para un evento (fechas + cuotas requeridas), verifica que cada seller tenga reglas correctas (firmas Visa+Mastercard, conector válido, `valor_minimo_cuota=1`, sin `interes_externo`, etc). La lógica vive en `check_cuota_group` y `build_seller_dashboard` (fiel al script legacy v3.5 del que se migró).
 
-### 4.5 Sincronización marketplace BaproAR
+### 4.5 Sincronización marketplace Marketplace
 
-BaproAR es la instancia VTEX del marketplace principal. Los sellers de Provincia Ops pueden estar registrados también como "marketplace sellers" en BaproAR. Necesitamos saber cuáles están activos.
+Marketplace es la instancia VTEX del marketplace principal. Los sellers de Provincia Ops pueden estar registrados también como "marketplace sellers" en Marketplace. Necesitamos saber cuáles están activos.
 
 **Job `marketplace_sync`** (definido en `main.py`):
 
 - Corre en **startup** (en background, no bloquea el arranque).
 - Corre **cada 24h** vía APScheduler in-process.
 - Toma `job_lock('marketplace_sync', ttl=30min)` → si otra réplica lo tiene, skip.
-- `baproar_client.list_sellers()`: pagina `?from=X&to=Y` de `/api/seller-register/pvt/sellers` (page_size=100) hasta cubrir el `paging.total`.
+- `Marketplace_client.list_sellers()`: pagina `?from=X&to=Y` de `/api/seller-register/pvt/sellers` (page_size=100) hasta cubrir el `paging.total`.
 - Matchea por `account` (nombre de cuenta VTEX del seller) contra `Seller.seller_id`. Guarda:
   - `marketplace_activo` (bool)
-  - `marketplace_seller_id` (id interno de BaproAR, a veces distinto del account)
+  - `marketplace_seller_id` (id interno de Marketplace, a veces distinto del account)
   - `marketplace_sync_at` (timestamp)
 - Errores no son fatales — solo loguean warning y devuelven `{"error": ...}`.
 
-**Toggle manual**: `POST /sellers/{id}/marketplace-toggle` (admin/supervisor) llama primero a BaproAR (`PATCH /sellers/{baproar_id}` con `{"op":"replace","path":"/isActive","value":bool}`). **Solo si BaproAR responde 200**, actualiza la BD. Si BaproAR falla, devuelve 502 y no queda la BD desincronizada.
+**Toggle manual**: `POST /sellers/{id}/marketplace-toggle` (admin/supervisor) llama primero a Marketplace (`PATCH /sellers/{Marketplace_id}` con `{"op":"replace","path":"/isActive","value":bool}`). **Solo si Marketplace responde 200**, actualiza la BD. Si Marketplace falla, devuelve 502 y no queda la BD desincronizada.
 
 ### 4.6 Scheduler in-process con lock distribuido
 
-Railway puede correr múltiples réplicas del backend (aunque hoy corremos con 1, el código soporta N). APScheduler es in-process — sin lock, cada réplica correría el mismo job en paralelo, potencialmente pisándose contra VTEX/BaproAR.
+Railway puede correr múltiples réplicas del backend (aunque hoy corremos con 1, el código soporta N). APScheduler es in-process — sin lock, cada réplica correría el mismo job en paralelo, potencialmente pisándose contra VTEX/Marketplace.
 
 Solución (`core/scheduler.py`):
 
@@ -479,7 +479,7 @@ En `backend/tests/`:
 |---|---|
 | `test_role_permissions.py` | Matriz: 18 endpoints × 4 roles + 1 no-auth. Verifica 200 vs 403. |
 | `test_cors.py` | Regresión del bug de CORS (que `expose_headers` funcione). |
-| `test_lifespan.py` | Startup no bloquea si BaproAR está caído. |
+| `test_lifespan.py` | Startup no bloquea si Marketplace está caído. |
 | `test_scheduler_lock.py` | Lock UPSERT atómico + TTL. |
 | `test_crud_service.py` | Lógica de `matches_filters`, `check_cuota_group`, etc. (heredado del script v6). |
 

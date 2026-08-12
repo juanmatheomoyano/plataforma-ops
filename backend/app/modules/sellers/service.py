@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.security import decrypt, encrypt
 
-from . import baproar_client
+from . import marketplace_client
 from .models import EstadoKeys, Seller
 from .schemas import ImportError, SellerCreate, SellerImportResult, SellerImportUpdateResult, SellerUpdate
 
@@ -324,29 +324,29 @@ def _parse_active(val) -> bool:
 
 
 async def sync_marketplace_sellers(db: AsyncSession) -> dict:
-    """Llama a BaproAR, actualiza marketplace_activo en los sellers que coincidan por seller_id."""
-    if not settings.BAPROAR_APP_KEY or not settings.BAPROAR_APP_TOKEN:
-        logger.warning("sync_marketplace_sellers: BAPROAR_APP_KEY/TOKEN no configuradas — sync omitido")
-        return {"synced": 0, "total_marketplace": 0, "error": "Credenciales BaproAR no configuradas"}
+    """Llama al marketplace, actualiza marketplace_activo en los sellers que coincidan por seller_id."""
+    if not settings.MARKETPLACE_APP_KEY or not settings.MARKETPLACE_APP_TOKEN:
+        logger.warning("sync_marketplace_sellers: MARKETPLACE_APP_KEY/TOKEN no configuradas — sync omitido")
+        return {"synced": 0, "total_marketplace": 0, "error": "Credenciales del marketplace no configuradas"}
 
     try:
-        marketplace_sellers = await baproar_client.list_sellers(
-            settings.BAPROAR_APP_KEY, settings.BAPROAR_APP_TOKEN
+        marketplace_sellers = await marketplace_client.list_sellers(
+            settings.MARKETPLACE_APP_KEY, settings.MARKETPLACE_APP_TOKEN
         )
     except Exception as e:
-        logger.error("sync_marketplace_sellers: error al llamar BaproAR: %s", e)
+        logger.error("sync_marketplace_sellers: error al llamar al marketplace: %s", e)
         return {"synced": 0, "total_marketplace": 0, "error": str(e)}
 
-    # Construir mapa account → {isActive, baproar_id}
+    # Construir mapa account → {isActive, marketplace_id}
     # El campo "account" es el nombre de cuenta VTEX del seller (coincide con seller_id en nuestra BD)
-    # El campo "id" es el identificador interno de BaproAR (a veces taxCode, a veces el account)
+    # El campo "id" es el identificador interno del marketplace (a veces taxCode, a veces el account)
     account_map: dict[str, dict] = {}
     for ms in marketplace_sellers:
         account = ms.get("account")
         is_active = ms.get("isActive")
-        baproar_id = ms.get("id")
+        marketplace_id = ms.get("id")
         if isinstance(account, str) and account and isinstance(is_active, bool):
-            account_map[account] = {"is_active": is_active, "baproar_id": str(baproar_id) if baproar_id else account}
+            account_map[account] = {"is_active": is_active, "marketplace_id": str(marketplace_id) if marketplace_id else account}
 
     if not account_map:
         return {"synced": 0, "total_marketplace": len(marketplace_sellers), "error": "Sin sellers válidos en la respuesta"}
@@ -358,7 +358,7 @@ async def sync_marketplace_sellers(db: AsyncSession) -> dict:
     for seller in sellers_to_update:
         entry = account_map[seller.seller_id]
         seller.marketplace_activo = entry["is_active"]
-        seller.marketplace_seller_id = entry["baproar_id"]
+        seller.marketplace_seller_id = entry["marketplace_id"]
         seller.marketplace_sync_at = now
         seller.updated_at = now
 
@@ -368,29 +368,29 @@ async def sync_marketplace_sellers(db: AsyncSession) -> dict:
 
 
 async def toggle_marketplace_seller(seller_id: uuid.UUID, db: AsyncSession) -> Seller:
-    """Activa/desactiva un seller en BaproAR y luego actualiza la BD solo si la API responde OK."""
-    if not settings.BAPROAR_APP_KEY or not settings.BAPROAR_APP_TOKEN:
-        raise HTTPException(status_code=503, detail="Credenciales BaproAR no configuradas")
+    """Activa/desactiva un seller en el marketplace y luego actualiza la BD solo si la API responde OK."""
+    if not settings.MARKETPLACE_APP_KEY or not settings.MARKETPLACE_APP_TOKEN:
+        raise HTTPException(status_code=503, detail="Credenciales del marketplace no configuradas")
 
     seller = await get_seller_by_id(seller_id, db)
 
     if seller.marketplace_activo is None:
-        raise HTTPException(status_code=400, detail="Este seller no está registrado en el marketplace BaproAR")
+        raise HTTPException(status_code=400, detail="Este seller no está registrado en el marketplace")
 
     new_state = not seller.marketplace_activo
 
-    baproar_id = seller.marketplace_seller_id or seller.seller_id
+    marketplace_id = seller.marketplace_seller_id or seller.seller_id
     try:
-        await baproar_client.toggle_seller(
-            baproar_id, new_state,
-            settings.BAPROAR_APP_KEY, settings.BAPROAR_APP_TOKEN,
+        await marketplace_client.toggle_seller(
+            marketplace_id, new_state,
+            settings.MARKETPLACE_APP_KEY, settings.MARKETPLACE_APP_TOKEN,
         )
     except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=502, detail=f"BaproAR rechazó la operación: HTTP {e.response.status_code}")
+        raise HTTPException(status_code=502, detail=f"El marketplace rechazó la operación: HTTP {e.response.status_code}")
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Error al contactar BaproAR: {e}")
+        raise HTTPException(status_code=502, detail=f"Error al contactar al marketplace: {e}")
 
-    # Solo actualizamos la BD después de confirmar que BaproAR respondió OK
+    # Solo actualizamos la BD después de confirmar que el marketplace respondió OK
     seller.marketplace_activo = new_state
     seller.marketplace_sync_at = datetime.now(timezone.utc)
     seller.updated_at = datetime.now(timezone.utc)

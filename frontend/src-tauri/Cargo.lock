@@ -2582,7 +2582,7 @@ checksum = "19f132c84eca552bf34cab8ec81f1c1dcc229b811638f9d283dceabe58c5569e"
 
 [[package]]
 name = "plataforma-ops"
-version = "1.7.11"
+version = "1.7.12"
 dependencies = [
  "serde",
  "serde_json",

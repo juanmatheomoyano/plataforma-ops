@@ -1,4 +1,4 @@
-# Retro — Provincia Ops
+﻿# Retro — Provincia Ops
 
 Bitácora viva de lo que aprendimos construyendo esto. **No es una reunión, es un registro.** Se agrega al final cuando pasa algo relevante (bug feo, decisión importante, patrón que funcionó, zona que sabemos frágil).
 
@@ -7,24 +7,24 @@ Bitácora viva de lo que aprendimos construyendo esto. **No es una reunión, es 
 ## ✅ Qué funcionó (patrones a repetir)
 
 ### Debug con endpoint temporal sin auth
-Para diagnosticar el problema de "solo sincroniza 46 sellers", agregamos un `GET /sellers/debug-baproar` público que devolvía la respuesta cruda de BaproAR. Nos permitió descubrir que:
+Para diagnosticar el problema de "solo sincroniza 46 sellers", agregamos un `GET /sellers/debug-Marketplace` público que devolvía la respuesta cruda de Marketplace. Nos permitió descubrir que:
 - La paginación era `from`/`to` (no `page`/`pageSize`)
 - El campo de match era `account`, no `id` (que a veces es taxCode)
 
 **Cuándo repetir:** frente a integraciones opacas donde la doc no coincide con la realidad. **Regla:** el endpoint temporal se borra en el mismo PR que lo resuelve, nunca queda en main.
 
 ### Wrapping try/except en tareas de lifespan
-Envolver el startup sync en try/except que solo loguea warning evitó que un BaproAR caído tirara toda la app abajo.
+Envolver el startup sync en try/except que solo loguea warning evitó que un Marketplace caído tirara toda la app abajo.
 
 **Cuándo repetir:** cualquier side effect que corra en `lifespan` de FastAPI. La app tiene que arrancar sí o sí, aunque una integración externa esté caída.
 
 ### Env vars para credenciales de terceros (no en BD)
-Las credenciales BaproAR viven en Railway como env vars, no en la tabla `sellers`. Mismo criterio que VTEX_ACCOUNT. Facilita rotación sin migraciones y evita tener secretos en dumps de BD.
+Las credenciales Marketplace viven en Railway como env vars, no en la tabla `sellers`. Mismo criterio que VTEX_ACCOUNT. Facilita rotación sin migraciones y evita tener secretos en dumps de BD.
 
 **Cuándo repetir:** siempre para credenciales de sistemas externos que son globales a la app (no per-tenant).
 
 ### Solo actualizar BD tras confirmación del externo
-El toggle marketplace hace PATCH a BaproAR primero y solo si responde 200 actualiza la tabla `sellers`. Evita el clásico "en Provincia Ops figura activo pero en BaproAR está apagado".
+El toggle marketplace hace PATCH a Marketplace primero y solo si responde 200 actualiza la tabla `sellers`. Evita el clásico "en Provincia Ops figura activo pero en Marketplace está apagado".
 
 **Cuándo repetir:** cualquier acción que cambie estado en un sistema externo. Fuente de verdad = el externo.
 
@@ -87,7 +87,7 @@ Al agregar/renombrar un rol, tocar **los 4** lugares:
 `allow_credentials=True` **requiere** `allow_origins` explícito (no `*`). Si volvés a `*`, obligatorio `allow_credentials=False` o el navegador rechaza todo.
 
 ### APScheduler in-process
-Corre en el mismo uvicorn. Si Railway escala a >1 réplica, cada una dispara el sync → race + doble PATCH contra BaproAR. Antes de escalar horizontal, mover a job separado o agregar lock DB.
+Corre en el mismo uvicorn. Si Railway escala a >1 réplica, cada una dispara el sync → race + doble PATCH contra Marketplace. Antes de escalar horizontal, mover a job separado o agregar lock DB.
 
 ### Startup sync en lifespan
 Cualquier IO externa dentro del `lifespan` corre en el path del health check de Railway. Si tarda >30s, el health check falla y Railway mata el pod. Timeout HTTP explícito **obligatorio** para cualquier httpx call en el lifespan.

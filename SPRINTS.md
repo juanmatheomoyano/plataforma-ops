@@ -1,4 +1,4 @@
-# Sprints — Provincia Ops
+﻿# Sprints — Provincia Ops
 
 Sprints de 2 semanas. Un tema de foco por sprint. **No es un commitment rígido**: si sale un bug crítico, el sprint se rompe y está bien. Las historias detalladas viven en [BACKLOG.md](BACKLOG.md).
 
@@ -98,6 +98,15 @@ Historias válidas pero sin sprint asignado. Se revisan al cerrar Sprint 6.
 Fuera de sprint. Cambio pedido por VTEX (nuevo manual de medios de pago).
 
 - [x] [HU-45](BACKLOG.md#hu-45) `[usuario]` Soporte "Sin level" en CRUD para reglas de 1 pago + fix chip Corporate T — S ✅ v1.7.12
+
+---
+
+## 🔓 Apertura del repo + fix updater — v1.7.13
+
+Fuera de sprint. Rebrand + sanitización + fix HU-44 para poder abrir el repo (destraba el auto-updater que fallaba con repo privado).
+
+- [x] [HU-46](BACKLOG.md#hu-46) `[usuario]` Rebrand + sanitización de código y docs para hacer público el repo — M ✅ v1.7.13
+- [x] [HU-44](BACKLOG.md#hu-44) `[usuario]` Auto-updater con timeout + barra de progreso + fallback al browser — S ✅ v1.7.13
 
 ---
 

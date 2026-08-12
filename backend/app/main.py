@@ -24,7 +24,7 @@ from app.modules.crud_medios.router import router as crud_medios_router
 from app.modules.crud_medios.service import cleanup_old_operations
 from app.modules.crud_medios.vtex_client import close_client as close_vtex_client
 from app.modules.eventos.router import router as eventos_router
-from app.modules.sellers.baproar_client import close_client as close_baproar_client
+from app.modules.sellers.marketplace_client import close_client as close_marketplace_client
 from app.modules.sellers.router import router as sellers_router
 from app.modules.sellers.service import sync_marketplace_sellers
 from app.modules.updates.router import public_router as updates_public_router
@@ -58,7 +58,7 @@ async def lifespan(app: FastAPI):
         await cleanup_old_operations(db)
 
     # Sync marketplace en background — NO bloquea el startup ni el health check.
-    # Si BaproAR está caído, la app arranca igual y el sync fallará silenciosamente.
+    # Si el marketplace está caído, la app arranca igual y el sync fallará silenciosamente.
     startup_task = asyncio.create_task(_run_marketplace_sync("startup"))
 
     # Sync diario programado.
@@ -77,7 +77,7 @@ async def lifespan(app: FastAPI):
         except (asyncio.CancelledError, asyncio.TimeoutError):
             pass
     await close_vtex_client()
-    await close_baproar_client()
+    await close_marketplace_client()
 
 
 app = FastAPI(title="Provincia Ops", lifespan=lifespan)

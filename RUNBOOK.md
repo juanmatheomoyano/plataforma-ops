@@ -1,4 +1,4 @@
-# Runbook — Provincia Ops
+﻿# Runbook — Provincia Ops
 
 Manual de operaciones en producción. Cómo deployar, cómo hacer rollback, qué hacer cuando algo rompe, y cómo recuperarse de escenarios de emergencia.
 
@@ -16,7 +16,7 @@ Para entender cómo funciona la app por dentro ver [ARCHITECTURE.md](ARCHITECTUR
 | Distribución .exe | GitHub Releases (repo del proyecto — ver CREDENTIALS.md) | `gh release ...` o UI web |
 | Error tracking | Sentry (`provincia-ops.sentry.io`) | login GitHub OAuth |
 | VTEX (sellers) | Cada seller = subdominio `<seller_id>.vtexcommercestable.com.br` | credenciales por seller en DB (Fernet) |
-| BaproAR marketplace | `baproar.vtexcommercestable.com.br` | env vars `BAPROAR_APP_KEY` / `BAPROAR_APP_TOKEN` |
+| Marketplace marketplace | `Marketplace.vtexcommercestable.com.br` | env vars `Marketplace_APP_KEY` / `Marketplace_APP_TOKEN` |
 | Firma updater | Local: `<ruta-a-tauri-signing.key>` | password (ver CREDENTIALS.md) |
 
 ---
@@ -91,9 +91,9 @@ Env vars actuales en backend (obligatorias marcadas):
 | `APP_SECRET_KEY` | ✅ | Random hex 64 chars. |
 | `JWT_SECRET_KEY` | ✅ | Random hex 64 chars. **NO ROTAR** salvo emergencia (deslogueá a todos). |
 | `FERNET_KEY` | ✅ | Fernet key (44 chars base64). **NO ROTAR NUNCA** (perdés credenciales encriptadas). |
-| `VTEX_ACCOUNT` | ✅ | Nombre de cuenta VTEX (`baproar`). |
-| `BAPROAR_APP_KEY` | ✅ | Credenciales para sync marketplace. |
-| `BAPROAR_APP_TOKEN` | ✅ | Idem. |
+| `VTEX_ACCOUNT` | ✅ | Nombre de cuenta VTEX (`Marketplace`). |
+| `Marketplace_APP_KEY` | ✅ | Credenciales para sync marketplace. |
+| `Marketplace_APP_TOKEN` | ✅ | Idem. |
 | `JWT_ALGORITHM` | opt | Default `HS256`. |
 | `JWT_EXPIRE_MINUTES` | opt | Default `30`. |
 | `JWT_REFRESH_EXPIRE_DAYS` | opt | Default `30`. |
@@ -279,9 +279,9 @@ Causas típicas:
 1. Ver logs de Railway con filtro `marketplace_sync`. Buscar:
    - `Marketplace sync (startup) skipped: otra réplica corriendo` → normal si hay otra réplica.
    - `Marketplace sync (...) falló (no fatal): ...` → problema. Leer el mensaje.
-   - `BAPROAR_APP_KEY/TOKEN no configuradas` → env vars faltantes.
+   - `Marketplace_APP_KEY/TOKEN no configuradas` → env vars faltantes.
 2. Disparar manualmente: `POST /api/sellers/sync-marketplace`. Ver la response.
-3. Si BaproAR devuelve 401/403: las credenciales cambiaron. Actualizar en Railway env vars.
+3. Si Marketplace devuelve 401/403: las credenciales cambiaron. Actualizar en Railway env vars.
 
 ### 4.4 "Actualización automática del .exe no funciona"
 

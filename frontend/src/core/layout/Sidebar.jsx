@@ -19,9 +19,9 @@ export function Sidebar() {
       {/* Logo */}
       <div className="flex items-center px-5 py-4 border-b border-border">
         <img
-          src="/logo_provincia_compras-02.svg"
-          alt="Provincia Compras"
-          className="h-9 w-auto"
+          src="/logo_provincia_ops.svg"
+          alt="Provincia Ops"
+          className="h-9 w-auto text-foreground"
         />
       </div>
 

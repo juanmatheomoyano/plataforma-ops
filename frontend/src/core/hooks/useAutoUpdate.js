@@ -3,10 +3,49 @@ import { toast } from "sonner"
 import * as Sentry from "@sentry/react"
 
 const CURRENT_VERSION = import.meta.env.VITE_APP_VERSION || "unknown"
+const DOWNLOAD_TIMEOUT_MS = 60_000
+const RELEASES_URL = "https://github.com/juanmatheomoyano/plataforma-ops/releases/latest"
+
+async function openInBrowser(url) {
+  try {
+    const { open } = await import("@tauri-apps/plugin-opener")
+    await open(url)
+  } catch {
+    try {
+      window.open(url, "_blank")
+    } catch {
+      /* noop */
+    }
+  }
+}
+
+function fallbackToast(version, reason) {
+  toast.error("La descarga automática falló", {
+    duration: 15000,
+    description:
+      reason === "timeout"
+        ? "Windows puede estar bloqueando el archivo. Bajalo a mano desde el navegador."
+        : "Podés bajar el instalador manualmente desde GitHub.",
+    action: {
+      label: "Abrir descarga",
+      onClick: () => openInBrowser(RELEASES_URL),
+    },
+  })
+}
+
+function withTimeout(promise, ms, onTimeout) {
+  let timer
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => {
+      onTimeout?.()
+      reject(new Error("timeout"))
+    }, ms)
+  })
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer))
+}
 
 /**
  * Chequea si hay una nueva versión disponible via tauri-plugin-updater.
- * Devuelve `{ status, version?, error? }`.
  *
  * status:
  *   "not-tauri"     → no estamos corriendo dentro de Tauri (dev browser)
@@ -14,12 +53,10 @@ const CURRENT_VERSION = import.meta.env.VITE_APP_VERSION || "unknown"
  *   "available"     → update disponible pero usuario canceló
  *   "installing"    → usuario aceptó, en proceso
  *   "installed"     → instalado (se va a relaunch)
+ *   "download-failed" → download falló (timeout o error); fallback abre browser
  *   "error"         → algo falló, ver `error`
- *
- * Todos los pasos loguean con console.info + Sentry breadcrumbs.
- * Errores se envían a Sentry con contexto y se muestran al usuario con toast.
  */
-export async function checkForUpdatesOnce({ silent = false } = {}) {
+export async function checkForUpdatesOnce({ silent = false, onProgress } = {}) {
   const ctx = { current_version: CURRENT_VERSION }
 
   try {
@@ -48,7 +85,6 @@ export async function checkForUpdatesOnce({ silent = false } = {}) {
       return { status: "no-update" }
     }
 
-    // Diálogo nativo Tauri (más confiable que window.confirm en WebView2).
     const userConfirmed = await ask(
       `Nueva versión ${update.version} disponible.\n\n${update.body || "Sin notas"}\n\n¿Instalar ahora?`,
       { title: "Provincia Ops — Actualización", okLabel: "Instalar", cancelLabel: "Después" }
@@ -59,14 +95,52 @@ export async function checkForUpdatesOnce({ silent = false } = {}) {
       return { status: "available", version: update.version }
     }
 
-    toast.info(`Descargando v${update.version}…`, { duration: 20000 })
-    console.info("[updater] downloadAndInstall start")
-    await update.downloadAndInstall()
+    let totalBytes = 0
+    let downloadedBytes = 0
+    const toastId = toast.loading(`Descargando v${update.version}… 0%`)
+
+    try {
+      await withTimeout(
+        update.downloadAndInstall((ev) => {
+          if (ev?.event === "Started") {
+            totalBytes = ev.data?.contentLength || 0
+            downloadedBytes = 0
+          } else if (ev?.event === "Progress") {
+            downloadedBytes += ev.data?.chunkLength || 0
+            const pct = totalBytes > 0 ? Math.min(100, Math.floor((downloadedBytes / totalBytes) * 100)) : 0
+            toast.loading(`Descargando v${update.version}… ${pct}%`, { id: toastId })
+            onProgress?.({ downloaded: downloadedBytes, total: totalBytes, pct })
+          } else if (ev?.event === "Finished") {
+            toast.loading(`Instalando v${update.version}…`, { id: toastId })
+          }
+        }),
+        DOWNLOAD_TIMEOUT_MS,
+        () => {
+          console.warn("[updater] download timeout")
+          Sentry.captureMessage("updater download timeout", {
+            level: "warning",
+            tags: { component: "auto-updater", reason: "download-failed" },
+            extra: { ...ctx, target_version: update.version, downloadedBytes, totalBytes },
+          })
+        }
+      )
+    } catch (dlErr) {
+      toast.dismiss(toastId)
+      const reason = dlErr?.message === "timeout" ? "timeout" : "error"
+      console.error("[updater] download failed", { reason, err: dlErr?.message })
+      Sentry.captureException(dlErr, {
+        tags: { component: "auto-updater", reason: "download-failed" },
+        extra: { ...ctx, target_version: update.version, downloadedBytes, totalBytes },
+      })
+      fallbackToast(update.version, reason)
+      return { status: "download-failed", version: update.version, reason }
+    }
+
+    toast.dismiss(toastId)
     console.info("[updater] downloadAndInstall done, relaunching")
     await relaunch()
     return { status: "installed" }
   } catch (e) {
-    // Nunca ocultar — mostrar al user + mandar a Sentry con contexto.
     const errMsg = e?.message || String(e)
     console.error("[updater] failed", { ...ctx, error: errMsg })
     Sentry.captureException(e, { tags: { component: "auto-updater" }, extra: ctx })
@@ -74,6 +148,10 @@ export async function checkForUpdatesOnce({ silent = false } = {}) {
       toast.error(`No se pudo chequear actualizaciones: ${errMsg}`, {
         duration: 8000,
         description: `Versión actual: v${CURRENT_VERSION}`,
+        action: {
+          label: "Abrir descarga",
+          onClick: () => openInBrowser(RELEASES_URL),
+        },
       })
     }
     return { status: "error", error: errMsg }
@@ -82,8 +160,6 @@ export async function checkForUpdatesOnce({ silent = false } = {}) {
 
 /**
  * Hook: dispara el check automático 5s después de montarse.
- * `silent: true` en el startup — no muestra toast si no hay update (el user
- * no pidió chequear, es automático).
  */
 export function useAutoUpdate() {
   useEffect(() => {

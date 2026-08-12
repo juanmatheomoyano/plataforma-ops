@@ -1,4 +1,4 @@
-"""Regresión startup: BaproAR caído no debe bloquear el arranque de la app.
+"""Regresión startup: marketplace caído no debe bloquear el arranque de la app.
 
 Ver RETRO.md → "Startup sync en lifespan".
 """
@@ -15,18 +15,18 @@ async def _noop(db):
     pass
 
 
-async def _simulated_slow_baproar(db):
-    """Simula un BaproAR que no responde nunca."""
+async def _simulated_slow_marketplace(db):
+    """Simula un marketplace que no responde nunca."""
     await asyncio.sleep(60)
 
 
 async def _failing_sync(db):
-    raise RuntimeError("BaproAR unavailable")
+    raise RuntimeError("marketplace unavailable")
 
 
-def test_health_check_responds_fast_even_if_baproar_hangs():
-    """Con BaproAR colgado, el /health debe responder <2s (no bloqueado por el sync)."""
-    with patch("app.main.sync_marketplace_sellers", _simulated_slow_baproar), \
+def test_health_check_responds_fast_even_if_marketplace_hangs():
+    """Con marketplace colgado, el /health debe responder <2s (no bloqueado por el sync)."""
+    with patch("app.main.sync_marketplace_sellers", _simulated_slow_marketplace), \
          patch("app.main.cleanup_old_operations", _noop):
         with TestClient(app) as client:
             t0 = time.monotonic()

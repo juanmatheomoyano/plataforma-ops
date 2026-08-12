@@ -128,7 +128,7 @@ async def download_page():
             </svg>
         </div>
         <h1>Herramienta operativa interna</h1>
-        <p class="subtitle">Provincia Compras · Gestión de medios de pago VTEX</p>
+        <p class="subtitle">Gestión de medios de pago VTEX</p>
 
         <div class="version-badge">
             <div class="label">Versión disponible</div>

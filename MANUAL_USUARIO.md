@@ -1,6 +1,6 @@
-# Manual de usuario — Provincia Ops
+﻿# Manual de usuario — Provincia Ops
 
-**Provincia Compras · Herramienta operativa interna**
+**Herramienta operativa interna**
 Versión 1.7.2
 
 ---
@@ -24,9 +24,9 @@ Versión 1.7.2
 
 ## 1. ¿Qué es Provincia Ops?
 
-Provincia Ops es una herramienta de escritorio exclusiva para el equipo interno de Provincia Compras. Permite gestionar de forma masiva las reglas de medios de pago de los sellers que operan en el marketplace, consultar su estado, y coordinar eventos comerciales (Hot Sale, Cyber Monday, etc.).
+Provincia Ops es una herramienta de escritorio exclusiva para el equipo interno. Permite gestionar de forma masiva las reglas de medios de pago de los sellers que operan en el marketplace, consultar su estado, y coordinar eventos comerciales (Hot Sale, Cyber Monday, etc.).
 
-**No es una aplicación web** — se instala en tu computadora Windows y se conecta de forma segura a los servidores de Provincia Compras.
+**No es una aplicación web** — se instala en tu computadora Windows y se conecta de forma segura a los servidores backend.
 
 ---
 
@@ -67,7 +67,7 @@ El instalador es interno y no está firmado por Microsoft, así que **Windows Sm
 Cuando el administrador crea tu usuario, la contraseña predeterminada es:
 
 ```
-Provincia.2026
+<contraseña inicial que te dé el administrador>
 ```
 
 > ⚠️ **Importante:** Esta contraseña es temporal y genérica. **Debés cambiarla antes de usar la aplicación.** Si no la cambiás, cualquier persona que conozca esta contraseña podría acceder con tu usuario.
@@ -75,7 +75,7 @@ Provincia.2026
 ### Cómo iniciar sesión
 
 1. Abrí la aplicación
-2. En la pantalla de login, ingresá tu **usuario** (te lo da el administrador) y la contraseña `Provincia.2026`
+2. En la pantalla de login, ingresá tu **usuario** (te lo da el administrador) y la contraseña `<contraseña inicial que te dé el administrador>`
 3. Hacé clic en **"Ingresar"**
 
 ### Cómo cambiar la contraseña
@@ -83,7 +83,7 @@ Provincia.2026
 1. Una vez adentro, mirá la barra lateral izquierda
 2. Hacé clic en **"Configuración"** (ícono de engranaje, al fondo del menú)
 3. En la sección **"Cambiar contraseña"**, completá:
-   - **Contraseña actual:** `Provincia.2026`
+   - **Contraseña actual:** `<contraseña inicial que te dé el administrador>`
    - **Nueva contraseña:** la que elegís vos (mínimo 8 caracteres, recomendamos incluir mayúsculas, números y un símbolo)
    - **Confirmar nueva contraseña:** repetí la nueva
 4. Hacé clic en **"Guardar"**
@@ -136,7 +136,7 @@ Cada usuario tiene un rol que determina qué puede ver y hacer dentro de la apli
 
 ## 6. Módulo Sellers
 
-En este módulo se gestionan todos los sellers que operan en el marketplace de Provincia Compras.
+En este módulo se gestionan todos los sellers que operan en el marketplace.
 
 ### Cómo llegar
 
@@ -365,7 +365,7 @@ Hacé clic en **"Usuarios"** en el menú lateral.
    - **Usuario** — nombre de login (sin espacios, ej: `mmartinez`)
    - **Nombre completo** — para que aparezca en la interfaz
    - **Email**
-   - **Contraseña** — la inicial es `Provincia.2026` (el usuario debe cambiarla al entrar)
+   - **Contraseña** — la inicial es `<contraseña inicial que te dé el administrador>` (el usuario debe cambiarla al entrar)
    - **Rol** — Admin, Supervisor, Analista o Viewer
 3. Hacé clic en **"Guardar"**
 
@@ -410,7 +410,7 @@ No necesitás hacer nada especial — el proceso es automático.
 ## 12. Preguntas frecuentes
 
 **¿Olvidé mi contraseña, qué hago?**
-Contactá al administrador para que te resetee la contraseña. El administrador te la vuelve a dejar como `Provincia.2026` y vos la cambiás al entrar.
+Contactá al administrador para que te resetee la contraseña. El administrador te la vuelve a dejar como `<contraseña inicial que te dé el administrador>` y vos la cambiás al entrar.
 
 **¿La aplicación no abre o se congela?**
 Cerrala desde el Administrador de tareas (Ctrl + Shift + Esc, buscá "Provincia Ops", clic derecho → Finalizar tarea) y volvé a abrirla.
@@ -422,7 +422,7 @@ Si usaste **Dry Run**, no pasó nada — fue una simulación. Si fue una operaci
 No hay una frecuencia obligatoria. Se recomienda ejecutarlo antes de cada evento comercial para validar que todos los sellers estén correctamente configurados.
 
 **¿Puedo usar la aplicación desde casa?**
-Sí, siempre que tengas conexión a internet. La app se conecta al servidor de Provincia Compras en la nube.
+Sí, siempre que tengas conexión a internet. La app se conecta al servidor de Provincia Ops en la nube.
 
 **¿Qué significa "Dry Run"?**
 Es una simulación. La operación se ejecuta como si fuera real pero **no hace ningún cambio en VTEX**. Sirve para verificar qué sellers y reglas serían afectados antes de ejecutar en serio.
@@ -432,4 +432,4 @@ Que ese seller tiene reglas de pago pero no están configuradas correctamente pa
 
 ---
 
-*Ante cualquier duda o problema, contactá al equipo de Provincia Compras.*
+*Ante cualquier duda o problema, contactá al equipo de Provincia Ops.*
