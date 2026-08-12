@@ -326,6 +326,47 @@ Prioridad 🟢 · Tamaño M · Sprint 6 · Estado 📋
 
 ---
 
+### HU-45 `[usuario]`
+**Como** analista/admin, **quiero** poder crear/buscar/actualizar/eliminar reglas VTEX **sin level** para tarjetas de 1 pago, **para** cumplir con el nuevo manual de medios de pago (las tarjetas de 1 pago aplican a cualquier tipo).
+
+- Prioridad: 🟡 Alta · Tamaño: S · Estado: ✅ v1.7.12
+- Sprint: sin sprint (hotfix operativo)
+
+**Contexto**
+Nuevo manual VTEX indica que las reglas de 1 pago no llevan `cardLevel` (aplican a cualquier tarjeta). El sistema previo obligaba a seleccionar un level en Crear, y en los filtros no había forma de matchear reglas sin cardLevel.
+
+**Criterios de aceptación**
+- [x] Chip **"Sin level"** en filtros (R/U/D) y en Crear (solo habilitado con cuotas = 1).
+- [x] Backend: sentinel `"__no_level__"` en `filtros.levels` matchea reglas sin cardLevel.
+- [x] Backend: `execute_create` con `"__no_level__"` (o levels vacío) crea regla con `cardLevel: null` y nombre sin segmento de level.
+- [x] Backend: `execute_update` con `level = "__no_level__"` limpia el cardLevel de la regla.
+- [x] Validación frontend: rechaza "Sin level" combinado con cuotas ≠ [1] con mensaje claro.
+- [x] Chip **Corporate** renombrado a **Corporate T** (valor `"corporate t"`) — coincide con el nombre real en VTEX.
+- [x] Sin migración de BD (cambio de lógica solamente).
+
+**Notas técnicas:** sentinel string `"__no_level__"` compartido entre schemas y frontend. La regla "1 pago = sin level" es soft (frontend), backend acepta cualquier combinación.
+
+---
+
+### HU-44 `[usuario]`
+**Como** usuario, **quiero** que el updater no se cuelgue en "Descargando..." indefinido, **para** saber si falló y tener un plan B.
+
+- Prioridad: 🟡 Alta · Tamaño: S · Estado: 📋
+- Sprint: sin asignar
+
+**Contexto**
+En v1.7.11 se detectó que `update.downloadAndInstall()` puede quedarse colgado indefinidamente (probablemente Windows Defender / SAC bloqueando la descarga background sin devolver error). El toast "Descargando…" desaparece a los 20s y el usuario no ve más nada.
+
+**Criterios de aceptación**
+- [ ] `useAutoUpdate.js`: envolver `downloadAndInstall()` con `Promise.race` + timeout de 60s.
+- [ ] Barra de progreso visible durante la descarga (event listener de `downloadAndInstall` con callback `onEvent`).
+- [ ] Si timeout o error, mostrar toast con acción "Abrir en el browser" que hace `open()` del URL del `.exe`.
+- [ ] Log a Sentry con tag `download-failed` para poder trackear frecuencia.
+
+**Notas técnicas:** el plugin `@tauri-apps/plugin-updater` v2 soporta `downloadAndInstall(onEvent)` donde `onEvent` recibe `{event: 'Started'|'Progress'|'Finished', data?}`. Con eso hacemos la barra.
+
+---
+
 ### HU-43 `[usuario]`
 **Como** admin, **quiero** que el `.exe` de la app se instale sin advertencias de Windows Smart App Control / SmartScreen, **para** no tener que enseñarle a cada usuario nuevo el workaround de desbloquear el archivo.
 

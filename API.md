@@ -387,6 +387,7 @@ Cualquier rol autenticado. Cambia el propio password.
 ```
 
 - `scope.seller_ids` vacío = todos los sellers activos.
+- `filtros.levels`: acepta valores de level (`"gold"`, `"platinum"`, `"corporate t"`, etc.) y el sentinel `"__no_level__"` para matchear reglas sin `cardLevel` (1 pago). Combinable con `levels_mode: include|exclude`.
 - `accion_create` obligatorio si `operacion=C`:
   ```json
   {
@@ -403,6 +404,7 @@ Cualquier rol autenticado. Cambia el propio password.
   ```json
   { "cuotas": [1, 3, 6, 9], "enabled": true }
   ```
+- **Levels sin cardLevel:** en `accion_create.levels` o `accion_update.level`, el sentinel `"__no_level__"` produce (Create) o limpia (Update) el `cardLevel` de la regla. En Create el nombre generado omite el segmento de level. Válido solo con `cuotas = [1]` (regla operativa VTEX; enforced en frontend).
 
 **Response 200:**
 ```json

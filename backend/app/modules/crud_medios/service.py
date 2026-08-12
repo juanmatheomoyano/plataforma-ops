@@ -445,10 +445,15 @@ def matches_filters(rule: dict, filtros: FiltrosRequest) -> bool:  # noqa: C901
             return False
 
     # ── levels — match por cardLevel.name (string, alineado con script v6) ─
+    # Sentinel "__no_level__" representa reglas sin cardLevel (o cardLevel vacío).
     if filtros.levels:
         card_level = rule.get("cardLevel")
         rule_lv = (card_level.get("name") or "").strip().lower() if isinstance(card_level, dict) else ""
-        in_list = rule_lv in {lv.strip().lower() for lv in filtros.levels}
+        filter_set = {lv.strip().lower() for lv in filtros.levels}
+        if rule_lv == "":
+            in_list = "__no_level__" in filter_set
+        else:
+            in_list = rule_lv in filter_set
         if filtros.levels_mode == "include" and not in_list:
             return False
         if filtros.levels_mode == "exclude" and in_list:
@@ -629,26 +634,31 @@ async def execute_create(
             else:
                 logger.warning("execute_create [%s]: no se encontró connector en las reglas existentes", sid)
 
-    # Build all brand × level combinations
+    # Build all brand × level combinations.
+    # Sentinel "__no_level__" (o levels vacío) → regla sin cardLevel
+    # (regla VTEX: reglas de 1 pago aplican a cualquier nivel).
     combinations = []
+    levels_iter = accion.levels if accion.levels else [None]
     for ps_key in accion.ps_names:
         ps = PAYMENT_SYSTEMS_MAP.get(ps_key.lower())
         if not ps:
             logger.warning("execute_create: brand desconocida '%s', ignorada", ps_key)
             continue
-        for level in accion.levels:
-            level_prefix = level.upper().replace("/", "_").replace(" ", "_")
+        for level in levels_iter:
+            # Normalizar sentinel → None
+            effective_level = None if (level is None or level == "__no_level__") else level
             ps_prefix = ps_key.upper()
             max_c = max(accion.cuotas) if accion.cuotas else 0
+            parts = []
             if accion.rule_name_prefix:
-                rule_name = (
-                    f"{accion.rule_name_prefix}_{ps_prefix}_{level_prefix}_{max_c}"
-                    if max_c else
-                    f"{accion.rule_name_prefix}_{ps_prefix}_{level_prefix}"
-                )
-            else:
-                rule_name = f"{ps_prefix}_{level_prefix}_{max_c}" if max_c else f"{ps_prefix}_{level_prefix}"
-            combinations.append((ps, level, rule_name))
+                parts.append(accion.rule_name_prefix)
+            parts.append(ps_prefix)
+            if effective_level:
+                parts.append(effective_level.upper().replace("/", "_").replace(" ", "_"))
+            if max_c:
+                parts.append(str(max_c))
+            rule_name = "_".join(parts)
+            combinations.append((ps, effective_level, rule_name))
 
     installments = _build_installments(accion.cuotas) if accion.cuotas else []
 
@@ -709,7 +719,7 @@ async def execute_create(
                 "minimumValue": None,
                 "deadlines": [],
                 "cobrand": {"name": None},
-                "cardLevel": {"name": level},
+                "cardLevel": {"name": level} if level else None,
             }
 
             try:
@@ -749,7 +759,9 @@ async def execute_update(
     if cambios.begin_date: patch["begin_date"] = cambios.begin_date
     if cambios.end_date: patch["end_date"] = cambios.end_date
     if cambios.cuotas: patch["cuotas"] = cambios.cuotas
-    if cambios.level: patch["level"] = cambios.level
+    if cambios.level is not None:
+        # Sentinel "__no_level__" → limpiar cardLevel
+        patch["level"] = "" if cambios.level == "__no_level__" else cambios.level
     if cambios.enabled is not None: patch["enabled"] = cambios.enabled
 
     for m in matched:

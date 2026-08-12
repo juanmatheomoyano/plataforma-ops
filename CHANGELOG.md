@@ -5,6 +5,32 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [1.7.12] — 2026-08-12 — CRUD: soporte "Sin level" para reglas de 1 pago + fix chip Corporate T
+
+Cambio operativo pedido por VTEX (nuevo manual de medios de pago): las tarjetas de **1 pago** aplican a cualquier tipo de tarjeta y por lo tanto no llevan `cardLevel`.
+
+### Backend
+- **`crud_medios/service.py`**:
+  - `execute_create`: sentinel `"__no_level__"` en `accion.levels` (o levels vacío) genera una combinación por brand con `cardLevel: null`, y el nombre de la regla omite el segmento de level (ej: `PROMO_VISA_1` en vez de `PROMO_VISA_GOLD_1`).
+  - `_match_rule` (filtros): `"__no_level__"` en `filtros.levels` matchea reglas con `cardLevel` vacío/ausente. Coherente con include/exclude.
+  - `execute_update`: `cambios.level == "__no_level__"` limpia el `cardLevel` de la regla (envía `null` a VTEX).
+
+### Frontend
+- **`OperacionSelector.jsx`**: nuevo chip **"Sin level"** en la lista de levels.
+  - En Crear: el chip está deshabilitado hasta que `cuotas === 1`. Con cualquier otro valor queda gris con tooltip.
+  - `buildNamePreview` omite el segmento de level cuando el chip elegido es "Sin level".
+- **`FiltrosPanel.jsx`**: chip **"Sin level"** disponible como filtro regular en Leer/Actualizar/Eliminar. Si no se selecciona, las reglas sin level ya no aparecen en resultados (antes se colaban).
+- **`CrudMediosPage.jsx`**: nueva validación — `"Sin level"` solo se permite con cuotas = `1`; combinarlo con cuotas > 1 devuelve mensaje claro.
+- **Chip renombrado**: `Corporate` → `Corporate T` (valor `"corporate t"`). El chip anterior no matcheaba porque el `cardLevel.name` real en VTEX es `"Corporate T"`.
+
+### UX
+- Modal "¿Qué hay de nuevo?" cargará las notas amigables de esta versión al primer login post-update.
+
+### Sin migración
+No hay cambios de schema. Las reglas existentes con `cardLevel` siguen funcionando igual.
+
+---
+
 ## [1.7.11] — 2026-08-05 — Sprint 2 completo: audit_log, /auditoria, logs JSON, modal post-update, aviso WinRAR
 
 Cierre del Sprint 2. Todas las HU cerradas menos el badge de "hay update" en sidebar (menor, va a futuro).

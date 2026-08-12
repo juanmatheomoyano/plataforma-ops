@@ -24,7 +24,8 @@ const LEVEL_CHIPS = [
   { label: "Business",   value: "business" },
   { label: "Premier",    value: "premier" },
   { label: "Purchasing", value: "purchasing" },
-  { label: "Corporate",  value: "corporate" },
+  { label: "Corporate T", value: "corporate t" },
+  { label: "Sin level",  value: "__no_level__" },
 ]
 
 const ALL_LEVEL_VALUES = LEVEL_CHIPS.map((l) => l.value)

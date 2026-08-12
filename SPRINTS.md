@@ -93,6 +93,14 @@ Historias válidas pero sin sprint asignado. Se revisan al cerrar Sprint 6.
 
 ---
 
+## 🔥 Hotfix operativo — v1.7.12
+
+Fuera de sprint. Cambio pedido por VTEX (nuevo manual de medios de pago).
+
+- [x] [HU-45](BACKLOG.md#hu-45) `[usuario]` Soporte "Sin level" en CRUD para reglas de 1 pago + fix chip Corporate T — S ✅ v1.7.12
+
+---
+
 ## ✅ Sprints cerrados
 
 *(pendiente — se llena al cerrar Sprint 1)*

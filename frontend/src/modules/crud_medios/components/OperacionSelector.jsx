@@ -40,6 +40,8 @@ const BRANDS_CREATE = [
   { label: "Electron",   value: "electron" },
 ]
 
+const NO_LEVEL = "__no_level__"
+
 const LEVEL_CHIPS_CREATE = [
   { label: "Classic",    value: "classic" },
   { label: "Gold",       value: "gold" },
@@ -51,7 +53,8 @@ const LEVEL_CHIPS_CREATE = [
   { label: "Business",   value: "business" },
   { label: "Premier",    value: "premier" },
   { label: "Purchasing", value: "purchasing" },
-  { label: "Corporate",  value: "corporate" },
+  { label: "Corporate T", value: "corporate t" },
+  { label: "Sin level",  value: NO_LEVEL },
 ]
 
 function FieldRow({ label, children, hint }) {
@@ -73,12 +76,13 @@ function buildNamePreview(prefix, psBrands, levels, cuotasStr) {
   const examples = []
   for (const brand of psBrands.slice(0, 2)) {
     for (const level of levels.slice(0, 2)) {
-      const lp = level.toUpperCase().replace("/", "_").replace(" ", "_")
       const bp = brand.toUpperCase()
-      const name = prefix
-        ? maxC ? `${prefix}_${bp}_${lp}_${maxC}` : `${prefix}_${bp}_${lp}`
-        : maxC ? `${bp}_${lp}_${maxC}` : `${bp}_${lp}`
-      examples.push(name)
+      const parts = []
+      if (prefix) parts.push(prefix)
+      parts.push(bp)
+      if (level && level !== NO_LEVEL) parts.push(level.toUpperCase().replace("/", "_").replace(" ", "_"))
+      if (maxC) parts.push(String(maxC))
+      examples.push(parts.join("_"))
     }
   }
   const total = psBrands.length * levels.length
@@ -124,6 +128,12 @@ export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdat
         accionCreate?.cuotas ?? "",
       )
     : null
+
+  const createCuotasParsed = (accionCreate?.cuotas ?? "")
+    .split(",")
+    .map((s) => parseInt(s.trim()))
+    .filter((n) => !isNaN(n))
+  const isCreateOnePago = createCuotasParsed.length === 1 && createCuotasParsed[0] === 1
 
   return (
     <div className="space-y-4">
@@ -214,17 +224,25 @@ export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdat
           </FieldRow>
 
           {/* Levels */}
-          <FieldRow label="Levels *">
+          <FieldRow
+            label="Levels *"
+            hint='"Sin level" solo disponible cuando cuotas = 1 (aplica a todos los niveles)'
+          >
             <div className="flex flex-wrap gap-1.5">
               {LEVEL_CHIPS_CREATE.map(({ label, value }) => {
                 const selected = (accionCreate?.levels ?? []).includes(value)
+                const isNoLevel = value === NO_LEVEL
+                const disabled = isNoLevel && !isCreateOnePago
                 return (
                   <button
                     key={value}
                     type="button"
-                    onClick={() => toggleCreateLevel(value)}
+                    disabled={disabled}
+                    title={disabled ? "Solo disponible con cuota 1" : undefined}
+                    onClick={() => !disabled && toggleCreateLevel(value)}
                     className={[
                       "rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors",
+                      disabled ? "opacity-30 cursor-not-allowed" : "",
                       selected
                         ? "border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-300"
                         : "border-border bg-muted text-muted-foreground hover:text-foreground",

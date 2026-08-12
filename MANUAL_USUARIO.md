@@ -254,7 +254,7 @@ Al seleccionar la operación **Leer**, aparece un panel de validación con dos t
 
 Permiten acotar qué reglas se ven o se modifican. Podés filtrar por:
 - **Brand** (Visa, Mastercard, Electron)
-- **Level** (Gold, Platinum, etc.)
+- **Level** (Gold, Platinum, Corporate T, etc.) — incluye la opción **"Sin level"** para matchear reglas de 1 pago (que aplican a cualquier tipo de tarjeta)
 - **Estado** (activo/inactivo)
 - **Nombre** de la regla
 - **Conector** (Payway, Decidir)

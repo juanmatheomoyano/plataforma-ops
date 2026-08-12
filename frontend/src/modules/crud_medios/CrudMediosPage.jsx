@@ -143,14 +143,25 @@ export default function CrudMediosPage() {
 
     if (opConfig.operacion === "C" && opConfig.accionCreate) {
       const ac = opConfig.accionCreate
-      if (!ac.ps_names.length || !ac.levels.length) {
-        setExecError("Seleccioná al menos una firma y un level para crear reglas.")
-        setLoading(false)
-        return
-      }
       const cuotasList = ac.cuotas
         ? ac.cuotas.split(",").map((s) => parseInt(s.trim())).filter((n) => !isNaN(n))
         : []
+      const isOnePago = cuotasList.length === 1 && cuotasList[0] === 1
+      if (!ac.ps_names.length) {
+        setExecError("Seleccioná al menos una firma para crear reglas.")
+        setLoading(false)
+        return
+      }
+      if (!ac.levels.length) {
+        setExecError("Seleccioná al menos un level.")
+        setLoading(false)
+        return
+      }
+      if (ac.levels.includes("__no_level__") && !isOnePago) {
+        setExecError("El level 'Sin level' solo se puede usar cuando cuotas = 1.")
+        setLoading(false)
+        return
+      }
       body.accion_create = {
         rule_name_prefix: ac.rule_name_prefix || "",
         ps_names: ac.ps_names,
