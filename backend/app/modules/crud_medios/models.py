@@ -37,7 +37,7 @@ class CrudOperation(Base):
     )
     # Async job tracking (HU-47: async pattern con polling)
     status: Mapped[str] = mapped_column(
-        String(16), nullable=False, default="done", server_default="done"
+        String(16), nullable=False, default="done", server_default="done", index=True
     )  # pending | running | done | error
     total_units: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0, server_default="0"
