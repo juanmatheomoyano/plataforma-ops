@@ -98,6 +98,20 @@ class CrudResponse(BaseModel):
     duration_secs: float
     rows: list[CrudRowOut]
     dashboard: list[SellerDashboard] = []
+    # Async job status. Para R (sync) siempre "done". Para C/U/D vía async pattern:
+    # "pending" | "running" | "done" | "error"
+    status: str = "done"
+    total_units: int = 0
+    processed_units: int = 0
+    error_message: str | None = None
+
+
+class CrudStartResponse(BaseModel):
+    """Respuesta inmediata al POST /execute para operaciones async (C/U/D)."""
+    operation_id: uuid.UUID
+    operacion: str
+    dry_run: bool
+    status: str = "pending"
 
 
 class OperationSummary(BaseModel):

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { CheckCircle2, Loader2, Play, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-export function ExecutionPanel({ canExecute, loading, result, error, onExecute }) {
+export function ExecutionPanel({ canExecute, loading, result, error, progress, onExecute }) {
   const [elapsed, setElapsed] = useState(0)
   const timerRef = useRef(null)
 
@@ -27,7 +27,11 @@ export function ExecutionPanel({ canExecute, loading, result, error, onExecute }
         {loading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Consultando sellers… {elapsed}s
+            {progress && progress.total > 0
+              ? `Procesando ${progress.processed}/${progress.total}… ${elapsed}s`
+              : progress
+                ? `Iniciando… ${elapsed}s`
+                : `Consultando sellers… ${elapsed}s`}
           </>
         ) : (
           <>
@@ -36,6 +40,25 @@ export function ExecutionPanel({ canExecute, loading, result, error, onExecute }
           </>
         )}
       </Button>
+
+      {/* Progress bar (async ops) */}
+      {loading && progress && progress.total > 0 && (
+        <div className="space-y-1.5">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full bg-primary transition-all duration-300"
+              style={{
+                width: `${Math.min(100, Math.floor((progress.processed / progress.total) * 100))}%`,
+              }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground text-center">
+            {progress.status === "pending"
+              ? "Cargando en cola…"
+              : `${progress.processed} de ${progress.total} sellers procesados`}
+          </p>
+        </div>
+      )}
 
       {/* Error */}
       {error && !loading && (

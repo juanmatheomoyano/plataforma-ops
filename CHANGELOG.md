@@ -5,6 +5,29 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [1.7.14] — 2026-08-13 — CRUD async con polling + validación "1 pago" nueva + rebrand logo (HU-47, HU-48, HU-49)
+
+Fix crítico: las operaciones write (Create/Update/Delete) contra "todos los sellers" (~658) tiraban "Error al ejecutar operación" a los 300s por el timeout del proxy de Railway. Se resolvió con patrón async + polling y paralelización agresiva.
+
+### Backend
+- **HU-47** Nueva ruta `POST /api/crud-medios/execute-async` (status 202) para operaciones C/U/D. Devuelve `operation_id` inmediatamente; el trabajo corre en background con `asyncio.create_task` + sesión de BD propia.
+- **HU-47** Progreso persistido en `crud_operations.processed_units`/`total_units`/`status` (nueva migración `f7a8b9c0d1e2`). Estados: `pending → running → done | error`.
+- **HU-47** `GET /operations/{id}` extendido con `status`, `processed_units`, `total_units`, `error_message`. El frontend hace polling cada 2s.
+- **HU-47** Paralelización de `execute_create`, `execute_update`, `execute_delete` con `asyncio.Semaphore(16)` y `asyncio.gather`. Antes era serial por seller → cuello de botella real.
+- **HU-47** `fetch_all_sellers_parallel` concurrency 8 → 20.
+- **HU-48** Nueva `check_1pago_group()` — el grupo "Tarjetas en 1 pago" ahora valida contra el nuevo manual VTEX: OK requiere Visa (PS 2) 1 cuota sin cardLevel + Mastercard (PS 4) 1 cuota sin cardLevel + Visa Electron (PS 10) habilitada. Motivos claros de qué falta cuando "A corregir".
+
+### Frontend
+- **HU-47** `CrudMediosPage.jsx`: para C/U/D no-dry-run llama a `/execute-async` y hace polling hasta `status=done|error`. R y dry-runs mantienen el flujo sincrónico.
+- **HU-47** `ExecutionPanel.jsx`: nueva **barra de progreso** con contador `X de Y sellers procesados` durante la operación async.
+- **HU-49** Logo `logo_provincia_ops.svg` refinado: wordmark con contorno blanco fino elegante (paint-order stroke), cuadro "PO" con borde blanco 1.25px, tipografía peso 600.
+- **HU-49** Sidebar y Login: recuadro contenedor con fondo celeste Bapro (`#009EE0`) fijo (indiferente al tema claro/oscuro).
+
+### Migraciones
+- `f7a8b9c0d1e2_crud_operation_async_status`: agrega columnas `status`, `total_units`, `processed_units`, `error_message` a `crud_operations` + índice sobre `status`. Server defaults preservan compatibilidad con filas existentes.
+
+---
+
 ## [1.7.13] — 2026-08-12 — Repo público: rebrand + sanitización + updater con timeout/fallback (HU-44)
 
 Preparación para abrir el repo. Se sacaron todas las referencias a la empresa y a personas concretas del código y de la doc pública. Además se resolvió el bug histórico del auto-updater que quedaba pegado en "Descargando…" (HU-44).

@@ -105,6 +105,7 @@ export default function CrudMediosPage() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [execError, setExecError] = useState(null)
+  const [progress, setProgress] = useState(null)  // { processed, total, status } durante async
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [selectedGrupos, setSelectedGrupos] = useState(TODOS_GRUPOS.map((g) => g.key))
   const [selectedEventoIds, setSelectedEventoIds] = useState([])
@@ -187,24 +188,67 @@ export default function CrudMediosPage() {
       if (Object.keys(patch).length > 0) body.accion_update = patch
     }
 
-    try {
-      const { data } = await client.post("/crud-medios/execute", body)
-      setResult(data)
-      if (data.total_errors > 0) {
-        toast.error(`Completado con ${data.total_errors} error${data.total_errors !== 1 ? "es" : ""}`)
-      } else {
-        toast.success(`${data.total_matched} reglas procesadas`)
-      }
+    // Read y dry-run: siempre sincrónico (rápido).
+    // Write no-dry-run: patrón async con polling — evita el timeout de Railway (5min).
+    const useAsync =
+      (body.operacion === "C" || body.operacion === "U" || body.operacion === "D") &&
+      !body.dry_run
 
-      if (body.operacion === "R") {
-        _loadEventoColumns(body.scope, selectedEventoIds)
+    try {
+      if (useAsync) {
+        const { data: start } = await client.post("/crud-medios/execute-async", body)
+        setProgress({ processed: 0, total: 0, status: "pending" })
+        const final = await _pollOperation(start.operation_id)
+        setResult(final)
+        setProgress(null)
+        if (final.status === "error") {
+          const msg = final.error_message || "La operación falló en el servidor"
+          setExecError(msg)
+          toast.error(msg)
+        } else if (final.total_errors > 0) {
+          toast.error(`Completado con ${final.total_errors} error${final.total_errors !== 1 ? "es" : ""}`)
+        } else {
+          toast.success(`${final.total_matched} reglas procesadas`)
+        }
+      } else {
+        const { data } = await client.post("/crud-medios/execute", body)
+        setResult(data)
+        if (data.total_errors > 0) {
+          toast.error(`Completado con ${data.total_errors} error${data.total_errors !== 1 ? "es" : ""}`)
+        } else {
+          toast.success(`${data.total_matched} reglas procesadas`)
+        }
+        if (body.operacion === "R") {
+          _loadEventoColumns(body.scope, selectedEventoIds)
+        }
       }
     } catch (err) {
       const msg = err.response?.data?.detail ?? "Error al ejecutar la operación"
       setExecError(msg)
       toast.error(msg)
+      setProgress(null)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function _pollOperation(operationId) {
+    // Poll cada 2s hasta status=done|error. Actualiza el UI de progreso mientras tanto.
+    while (true) {
+      await new Promise((r) => setTimeout(r, 2000))
+      try {
+        const { data } = await client.get(`/crud-medios/operations/${operationId}`)
+        setProgress({
+          processed: data.processed_units || 0,
+          total: data.total_units || 0,
+          status: data.status || "running",
+        })
+        if (data.status === "done" || data.status === "error") {
+          return data
+        }
+      } catch {
+        // Fallo transitorio de red — seguir polling
+      }
     }
   }
 
@@ -338,6 +382,7 @@ export default function CrudMediosPage() {
               loading={loading}
               result={result}
               error={execError}
+              progress={progress}
               onExecute={handleExecuteClick}
             />
           </Card>

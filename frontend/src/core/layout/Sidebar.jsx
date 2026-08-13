@@ -17,12 +17,14 @@ export function Sidebar() {
   return (
     <aside className="flex h-screen w-60 flex-shrink-0 flex-col border-r border-border bg-card">
       {/* Logo */}
-      <div className="flex items-center px-5 py-4 border-b border-border">
-        <img
-          src="/logo_provincia_ops.svg"
-          alt="Provincia Ops"
-          className="h-9 w-auto text-foreground"
-        />
+      <div className="border-b border-border p-3">
+        <div className="flex items-center justify-center rounded-lg bg-[#009EE0] px-3 py-2">
+          <img
+            src="/logo_provincia_ops.svg"
+            alt="Provincia Ops"
+            className="h-11 w-auto"
+          />
+        </div>
       </div>
 
       {/* Navegación */}

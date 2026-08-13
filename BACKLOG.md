@@ -348,6 +348,56 @@ Nuevo manual VTEX indica que las reglas de 1 pago no llevan `cardLevel` (aplican
 
 ---
 
+### HU-49 `[usuario]`
+**Como** admin, **quiero** el logo de Provincia Ops con recuadro celeste Bapro fijo (independiente del tema) y bordes blancos elegantes en el wordmark, **para** que la marca visual sea reconocible y profesional.
+
+- Prioridad: 🟢 Media · Tamaño: XS · Estado: ✅ v1.7.14
+- Sprint: sin sprint (branding)
+
+**Criterios de aceptación**
+- [x] Logo SVG con "PO" en cuadro verde `#279D2E` + wordmark "Provincia Ops" verde, ambos con contorno blanco fino (`paint-order: stroke`).
+- [x] Contenedor con fondo celeste `#009EE0` fijo en sidebar y login (no cambia con tema).
+- [x] Tipografía peso 600 (elegante, no chunky).
+
+---
+
+### HU-48 `[usuario]`
+**Como** admin, **quiero** que la validación "Tarjetas en 1 pago" sea OK cuando el seller tiene Visa 1 cuota sin level + Mastercard 1 cuota sin level + Visa Electron habilitada, **para** alinear el dashboard con el nuevo manual VTEX.
+
+- Prioridad: 🟡 Alta · Tamaño: S · Estado: ✅ v1.7.14
+- Sprint: sin sprint (regla operativa)
+
+**Criterios de aceptación**
+- [x] Nueva `check_1pago_group()` en `service.py` que valida las 3 reglas obligatorias por PS id (2, 4, 10).
+- [x] "Visa Electron" no requiere cuotas (por naturaleza es débito).
+- [x] Motivos claros cuando falta alguna: "Visa: falta regla habilitada con cuota 1 y sin level", etc.
+- [x] `build_seller_dashboard` rutea al nuevo check cuando `col_name == "Tarjetas en 1 pago"`.
+
+---
+
+### HU-47 `[usuario]`
+**Como** admin, **quiero** poder ejecutar operaciones CRUD sobre "todos los sellers" (~658) sin que la app tire "Error al ejecutar operación" a los 5 minutos, **para** no tener que dividir manualmente en tandas.
+
+- Prioridad: 🔴 Crítica · Tamaño: L · Estado: ✅ v1.7.14
+- Sprint: sin sprint (hotfix operativo)
+
+**Contexto**
+Railway HTTP proxy tiene un timeout duro de 300s. Las operaciones write contra 658 sellers × N reglas × VTEX API serial se pasaban de largo. El backend seguía procesando pero el frontend perdía la conexión → toast "Error al ejecutar operación" sin resultados.
+
+**Criterios de aceptación**
+- [x] Migración `f7a8b9c0d1e2` agrega `status`, `total_units`, `processed_units`, `error_message` a `crud_operations` + índice.
+- [x] Nueva ruta `POST /crud-medios/execute-async` que devuelve 202 con `operation_id` y arranca la operación en background con sesión de BD propia.
+- [x] `execute_create/update/delete` paralelizadas con `asyncio.Semaphore(16)` — antes eran serial.
+- [x] `fetch_all_sellers_parallel` concurrency 8 → 20.
+- [x] `GET /operations/{id}` incluye `status`/`processed_units`/`total_units` para polling.
+- [x] Frontend: para C/U/D no-dry-run usa `/execute-async` + poll cada 2s. Progress bar visible con contador "X de Y sellers procesados".
+- [x] Frontend: R y dry-runs mantienen el flujo sync (rápido, no necesita async).
+- [x] Cancellation seguro: si el task background falla, marca `status='error'` con `error_message` para que el frontend lo muestre.
+
+**Notas técnicas:** el patrón background task en FastAPI es intencionalmente simple (`asyncio.create_task`). Si el pod de Railway se reinicia mid-op, la op queda en `status='running'` para siempre — habría que sumarle un timeout/watchdog en versiones futuras.
+
+---
+
 ### HU-46 `[usuario]`
 **Como** admin, **quiero** que el repo se pueda abrir al público sin exponer info de la empresa ni datos personales, **para** liberar el código y destrabar el auto-updater (que fallaba porque el repo era privado y GitHub no sirve assets sin auth).
 

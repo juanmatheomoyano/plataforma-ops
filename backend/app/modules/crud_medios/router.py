@@ -18,6 +18,7 @@ from .models import CrudOperation
 from .schemas import (
     CrudRequest,
     CrudResponse,
+    CrudStartResponse,
     EventoValidateRequest,
     EventoValidateResponse,
     ExportRequest,
@@ -31,6 +32,7 @@ from .service import (
     run_crud_operation,
     run_evento_export,
     run_evento_validation,
+    start_crud_operation_async,
 )
 
 router = APIRouter(prefix="/crud-medios", tags=["crud-medios"])
@@ -46,11 +48,14 @@ async def execute_crud(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    """Read (R): sincrónico, devuelve rows + dashboard al toque.
+    Write (C/U/D): sincrónico también, PERO solo para dry-run o scopes chicos
+    donde el volumen no excede el timeout de Railway (5min). Para volumen
+    grande, usar POST /execute-async (patrón polling)."""
     if body.operacion in ("C", "U", "D") and not body.dry_run:
         if current_user.role.value not in _WRITE_ROLES:
             raise HTTPException(status_code=403, detail="Insufficient permissions")
     result = await run_crud_operation(db, current_user.id, body)
-    # Solo auditamos operaciones write no-dry-run (los reads y dry-runs no cambian estado).
     if body.operacion in ("C", "U", "D") and not body.dry_run:
         await record_audit(
             db, action=f"crud_medios.{body.operacion.lower()}", user=current_user,
@@ -63,6 +68,38 @@ async def execute_crud(
             },
         )
     return result
+
+
+@router.post("/execute-async", response_model=CrudStartResponse, status_code=202)
+async def execute_crud_async(
+    request: Request,
+    body: CrudRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """Arranca la operación en background y devuelve el operation_id inmediatamente.
+    El frontend hace polling contra GET /operations/{id} hasta status=done|error.
+    Solo para write ops (C/U/D). Read sigue sync."""
+    if body.operacion not in ("C", "U", "D"):
+        raise HTTPException(status_code=400, detail="async solo soporta operaciones C/U/D; usar /execute para R")
+    if not body.dry_run and current_user.role.value not in _WRITE_ROLES:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+
+    op_id = await start_crud_operation_async(db, current_user.id, body)
+
+    if not body.dry_run:
+        await record_audit(
+            db, action=f"crud_medios.{body.operacion.lower()}.start", user=current_user,
+            entity="crud_operation", entity_id=str(op_id), ip=client_ip(request),
+            payload={"async": True, "scope_size": len(body.scope.seller_ids or [])},
+        )
+
+    return CrudStartResponse(
+        operation_id=op_id,
+        operacion=body.operacion,
+        dry_run=body.dry_run,
+        status="pending",
+    )
 
 
 @router.get("/operations", response_model=list[OperationSummary])
@@ -145,6 +182,10 @@ async def get_operation(
         total_errors=op.total_errors,
         duration_secs=op.duration_secs,
         rows=rows,
+        status=getattr(op, "status", "done") or "done",
+        total_units=getattr(op, "total_units", 0) or 0,
+        processed_units=getattr(op, "processed_units", 0) or 0,
+        error_message=getattr(op, "error_message", None),
     )
 
 

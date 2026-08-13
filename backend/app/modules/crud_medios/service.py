@@ -7,7 +7,7 @@ import logging
 import uuid
 from datetime import date, datetime, time, timedelta, timezone
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.sellers.models import EstadoKeys, Seller
@@ -261,6 +261,56 @@ def _valor_min_invalido_val(v) -> bool:
         return True
 
 
+def check_1pago_group(rules: list[dict]) -> tuple[str, list[str]]:
+    """
+    Validación específica para "Tarjetas en 1 pago".
+    OK si el seller tiene las 3 reglas habilitadas:
+      - Visa (PS 2) con cuotas={1} y sin cardLevel
+      - Mastercard (PS 4) con cuotas={1} y sin cardLevel
+      - Visa Electron (PS 10) — Electron no informa cuotas ni level, solo tiene que existir habilitada
+    """
+    def _is_no_level(r: dict) -> bool:
+        return not (r.get("nivel_tarjeta") or "").strip()
+
+    def _cuotas_1(r: dict) -> bool:
+        return _parse_cuotas_set_str(r.get("cuotas_disponibles")) == frozenset({1})
+
+    enabled = [r for r in rules if r.get("habilitada") == "Sí"]
+
+    visa_ok = any(
+        r for r in enabled
+        if str(r.get("id_sistema_pago", "")) == "2" and _is_no_level(r) and _cuotas_1(r)
+    )
+    master_ok = any(
+        r for r in enabled
+        if str(r.get("id_sistema_pago", "")) == "4" and _is_no_level(r) and _cuotas_1(r)
+    )
+    electron_ok = any(
+        r for r in enabled
+        if str(r.get("id_sistema_pago", "")) == "10"
+    )
+
+    # Nada configurado → "No configurado" (consistente con el resto de los grupos)
+    relevantes = [
+        r for r in rules
+        if str(r.get("id_sistema_pago", "")) in {"2", "4", "10"}
+    ]
+    if not relevantes:
+        return "No configurado", []
+
+    if visa_ok and master_ok and electron_ok:
+        return "Ok", []
+
+    motivos: list[str] = []
+    if not visa_ok:
+        motivos.append("Visa: falta regla habilitada con cuota 1 y sin level")
+    if not master_ok:
+        motivos.append("Mastercard: falta regla habilitada con cuota 1 y sin level")
+    if not electron_ok:
+        motivos.append("Visa Electron: falta regla habilitada")
+    return "A corregir", motivos
+
+
 def check_cuota_group(
     rules: list[dict],
     target_levels: frozenset,
@@ -386,7 +436,12 @@ def build_seller_dashboard(
     grupos: dict[str, GrupoDashboard] = {}
     all_motivos: list[str] = []
     for col_name, target_levels, expected in CUOTA_CONFIGS:
-        estado, motivos = check_cuota_group(rules_copy, target_levels, expected, col_name)
+        # "Tarjetas en 1 pago" tiene reglas específicas del nuevo manual VTEX
+        # (Visa/Master 1 cuota sin level + Visa Electron debito)
+        if col_name == "Tarjetas en 1 pago":
+            estado, motivos = check_1pago_group(rules_copy)
+        else:
+            estado, motivos = check_cuota_group(rules_copy, target_levels, expected, col_name)
         grupos[col_name] = GrupoDashboard(estado=estado, motivos=motivos)
         all_motivos.extend(motivos)
 
@@ -538,9 +593,13 @@ async def fetch_seller_rules(
         return {"seller": seller, "rules": [], "error": str(e)}
 
 
+async def _noop_progress(_n: int) -> None:
+    return None
+
+
 async def fetch_all_sellers_parallel(
     sellers_creds: list[tuple[Seller, str, str]],
-    max_concurrent: int = 8,
+    max_concurrent: int = 20,
 ) -> list[dict]:
     sem = asyncio.Semaphore(max_concurrent)
 
@@ -620,9 +679,9 @@ async def execute_create(
     accion: AcreateRequest,
     dry_run: bool,
     raw_data: list[dict] | None = None,
+    on_progress=None,
+    concurrency: int = 16,
 ) -> list[CrudRowOut]:
-    rows = []
-
     # Build connector lookup from pre-fetched rules (seller_id → connector tuple)
     connector_map: dict[str, tuple[str, str, str]] = {}
     if raw_data:
@@ -645,7 +704,6 @@ async def execute_create(
             logger.warning("execute_create: brand desconocida '%s', ignorada", ps_key)
             continue
         for level in levels_iter:
-            # Normalizar sentinel → None
             effective_level = None if (level is None or level == "__no_level__") else level
             ps_prefix = ps_key.upper()
             max_c = max(accion.cuotas) if accion.cuotas else 0
@@ -661,90 +719,111 @@ async def execute_create(
             combinations.append((ps, effective_level, rule_name))
 
     installments = _build_installments(accion.cuotas) if accion.cuotas else []
+    sem = asyncio.Semaphore(concurrency)
+    progress_lock = asyncio.Lock()
+    processed = {"n": 0}
 
-    for seller, app_key, app_token in sellers_creds:
+    async def _one_seller(seller: Seller, app_key: str, app_token: str) -> list[CrudRowOut]:
+        rows_local: list[CrudRowOut] = []
         conn_tuple = connector_map.get(seller.seller_id)
         conn_impl, aff_id, issuer = conn_tuple if conn_tuple else (None, None, None)
 
-        if not dry_run and not conn_impl:
-            for ps, level, rule_name in combinations:
-                rows.append(CrudRowOut(
-                    seller_id=seller.seller_id,
-                    id_ecommerce=getattr(seller, "id_ecommerce", None),
-                    rule_id=None,
-                    rule_name=rule_name,
-                    brand=ps["name"],
-                    level=level,
-                    estado=None,
-                    detalle="error: no se encontró connector en las reglas existentes del seller",
-                ))
-            continue
+        async with sem:
+            if not dry_run and not conn_impl:
+                for ps, level, rule_name in combinations:
+                    rows_local.append(CrudRowOut(
+                        seller_id=seller.seller_id,
+                        id_ecommerce=getattr(seller, "id_ecommerce", None),
+                        rule_id=None,
+                        rule_name=rule_name,
+                        brand=ps["name"],
+                        level=level,
+                        estado=None,
+                        detalle="error: no se encontró connector en las reglas existentes del seller",
+                    ))
+            else:
+                for ps, level, rule_name in combinations:
+                    if dry_run:
+                        rows_local.append(CrudRowOut(
+                            seller_id=seller.seller_id,
+                            id_ecommerce=getattr(seller, "id_ecommerce", None),
+                            rule_id=None,
+                            rule_name=rule_name,
+                            brand=ps["name"],
+                            level=level,
+                            estado="activo" if accion.enabled else "inactivo",
+                            detalle="dry_run — no ejecutado",
+                        ))
+                        continue
 
-        for ps, level, rule_name in combinations:
-            if dry_run:
-                rows.append(CrudRowOut(
-                    seller_id=seller.seller_id,
-                    id_ecommerce=getattr(seller, "id_ecommerce", None),
-                    rule_id=None,
-                    rule_name=rule_name,
-                    brand=ps["name"],
-                    level=level,
-                    estado="activo" if accion.enabled else "inactivo",
-                    detalle="dry_run — no ejecutado",
-                ))
-                continue
+                    body = {
+                        "name": rule_name,
+                        "salesChannels": [{"Id": 1, "Name": "Main", "IsActive": True}],
+                        "paymentSystem": {"id": ps["id"], "name": ps["name"], "implementation": None},
+                        "connector": {"implementation": conn_impl, "affiliationId": aff_id},
+                        "issuer": {"name": issuer},
+                        "antifraud": None,
+                        "installmentOptions": {
+                            "dueDateType": 0,
+                            "interestRateMethod": 0,
+                            "minimumInstallmentValue": 1.0,
+                            "installments": installments,
+                        } if installments else None,
+                        "enabled": accion.enabled,
+                        "installmentsService": False,
+                        "condition": None,
+                        "multiMerchantList": None,
+                        "country": {"isoCode": "ar", "name": None},
+                        "beginDate": accion.begin_date or None,
+                        "endDate": accion.end_date or None,
+                        "dateIntervals": None,
+                        "externalInterest": False,
+                        "minimumValue": None,
+                        "deadlines": [],
+                        "cobrand": {"name": None},
+                        "cardLevel": {"name": level} if level else None,
+                    }
 
-            body = {
-                "name": rule_name,
-                "salesChannels": [{"Id": 1, "Name": "Main", "IsActive": True}],
-                "paymentSystem": {"id": ps["id"], "name": ps["name"], "implementation": None},
-                "connector": {"implementation": conn_impl, "affiliationId": aff_id},
-                "issuer": {"name": issuer},
-                "antifraud": None,
-                "installmentOptions": {
-                    "dueDateType": 0,
-                    "interestRateMethod": 0,
-                    "minimumInstallmentValue": 1.0,
-                    "installments": installments,
-                } if installments else None,
-                "enabled": accion.enabled,
-                "installmentsService": False,
-                "condition": None,
-                "multiMerchantList": None,
-                "country": {"isoCode": "ar", "name": None},
-                "beginDate": accion.begin_date or None,
-                "endDate": accion.end_date or None,
-                "dateIntervals": None,
-                "externalInterest": False,
-                "minimumValue": None,
-                "deadlines": [],
-                "cobrand": {"name": None},
-                "cardLevel": {"name": level} if level else None,
-            }
+                    try:
+                        created = await vtex_client.create_rule(seller.seller_id, app_key, app_token, body)
+                        rows_local.append(CrudRowOut(
+                            seller_id=seller.seller_id,
+                            id_ecommerce=getattr(seller, "id_ecommerce", None),
+                            rule_id=str(created.get("id", "")),
+                            rule_name=rule_name,
+                            brand=ps["name"],
+                            level=level,
+                            estado="activo" if accion.enabled else "inactivo",
+                            detalle="creado",
+                        ))
+                    except Exception as e:
+                        rows_local.append(CrudRowOut(
+                            seller_id=seller.seller_id,
+                            id_ecommerce=getattr(seller, "id_ecommerce", None),
+                            rule_id=None,
+                            rule_name=rule_name,
+                            brand=ps["name"],
+                            level=level,
+                            estado=None,
+                            detalle=f"error: {e}",
+                        ))
 
-            try:
-                created = await vtex_client.create_rule(seller.seller_id, app_key, app_token, body)
-                rows.append(CrudRowOut(
-                    seller_id=seller.seller_id,
-                    id_ecommerce=getattr(seller, "id_ecommerce", None),
-                    rule_id=str(created.get("id", "")),
-                    rule_name=rule_name,
-                    brand=ps["name"],
-                    level=level,
-                    estado="activo" if accion.enabled else "inactivo",
-                    detalle="creado",
-                ))
-            except Exception as e:
-                rows.append(CrudRowOut(
-                    seller_id=seller.seller_id,
-                    id_ecommerce=getattr(seller, "id_ecommerce", None),
-                    rule_id=None,
-                    rule_name=rule_name,
-                    brand=ps["name"],
-                    level=level,
-                    estado=None,
-                    detalle=f"error: {e}",
-                ))
+        async with progress_lock:
+            processed["n"] += 1
+            if on_progress:
+                try:
+                    await on_progress(processed["n"])
+                except Exception as e:
+                    logger.warning("execute_create on_progress falló (no fatal): %s", e)
+        return rows_local
+
+    results = await asyncio.gather(
+        *(_one_seller(s, k, t) for (s, k, t) in sellers_creds),
+        return_exceptions=False,
+    )
+    rows: list[CrudRowOut] = []
+    for chunk in results:
+        rows.extend(chunk)
     return rows
 
 
@@ -752,65 +831,31 @@ async def execute_update(
     matched: list[dict],
     cambios: UpdateRequest,
     dry_run: bool,
+    on_progress=None,
+    concurrency: int = 16,
 ) -> list[CrudRowOut]:
-    rows = []
-
     patch = {}
     if cambios.begin_date: patch["begin_date"] = cambios.begin_date
     if cambios.end_date: patch["end_date"] = cambios.end_date
     if cambios.cuotas: patch["cuotas"] = cambios.cuotas
     if cambios.level is not None:
-        # Sentinel "__no_level__" → limpiar cardLevel
         patch["level"] = "" if cambios.level == "__no_level__" else cambios.level
     if cambios.enabled is not None: patch["enabled"] = cambios.enabled
 
-    for m in matched:
+    sem = asyncio.Semaphore(concurrency)
+    progress_lock = asyncio.Lock()
+    processed = {"n": 0}
+
+    async def _one(m: dict) -> CrudRowOut | None:
         seller = m["seller"]
         rule = m["rule"]
         rule_id = rule.get("id")
         if rule_id is None:
-            continue
+            return None
 
-        if dry_run:
-            rows.append(CrudRowOut(
-                seller_id=seller.seller_id,
-                id_ecommerce=getattr(seller, "id_ecommerce", None),
-                rule_id=str(rule_id),
-                rule_name=rule.get("name"),
-                brand=_rule_brands(rule),
-                level=_rule_level(rule),
-                estado=_rule_estado(rule),
-                detalle=f"dry_run — cambios: {list(patch.keys())}",
-            ))
-        else:
-            try:
-                app_key, app_token = get_decrypted_credentials(seller)
-                updated_body = {**rule}
-
-                if "begin_date" in patch:
-                    updated_body["beginDate"] = patch["begin_date"]
-                if "end_date" in patch:
-                    updated_body["endDate"] = patch["end_date"]
-                if "enabled" in patch:
-                    updated_body["enabled"] = patch["enabled"]
-                if "cuotas" in patch:
-                    inst = _build_installments(patch["cuotas"])
-                    if updated_body.get("installmentOptions"):
-                        updated_body["installmentOptions"]["installments"] = inst
-                    else:
-                        updated_body["installmentOptions"] = {
-                            "dueDateType": 0,
-                            "interestRateMethod": 0,
-                            "minimumInstallmentValue": 1.0,
-                            "installments": inst,
-                        }
-                if "level" in patch:
-                    updated_body["cardLevel"] = {"name": patch["level"]} if patch["level"] else None
-
-                await vtex_client.update_rule(
-                    seller.seller_id, app_key, app_token, rule_id, updated_body
-                )
-                rows.append(CrudRowOut(
+        async with sem:
+            if dry_run:
+                row = CrudRowOut(
                     seller_id=seller.seller_id,
                     id_ecommerce=getattr(seller, "id_ecommerce", None),
                     rule_id=str(rule_id),
@@ -818,70 +863,138 @@ async def execute_update(
                     brand=_rule_brands(rule),
                     level=_rule_level(rule),
                     estado=_rule_estado(rule),
-                    detalle=f"actualizado: {list(patch.keys())}",
-                ))
-            except Exception as e:
-                rows.append(CrudRowOut(
-                    seller_id=seller.seller_id,
-                    id_ecommerce=getattr(seller, "id_ecommerce", None),
-                    rule_id=str(rule_id),
-                    rule_name=rule.get("name"),
-                    brand=_rule_brands(rule),
-                    level=None,
-                    estado=None,
-                    detalle=f"error: {e}",
-                ))
-    return rows
+                    detalle=f"dry_run — cambios: {list(patch.keys())}",
+                )
+            else:
+                try:
+                    app_key, app_token = get_decrypted_credentials(seller)
+                    updated_body = {**rule}
+                    if "begin_date" in patch:
+                        updated_body["beginDate"] = patch["begin_date"]
+                    if "end_date" in patch:
+                        updated_body["endDate"] = patch["end_date"]
+                    if "enabled" in patch:
+                        updated_body["enabled"] = patch["enabled"]
+                    if "cuotas" in patch:
+                        inst = _build_installments(patch["cuotas"])
+                        if updated_body.get("installmentOptions"):
+                            updated_body["installmentOptions"]["installments"] = inst
+                        else:
+                            updated_body["installmentOptions"] = {
+                                "dueDateType": 0,
+                                "interestRateMethod": 0,
+                                "minimumInstallmentValue": 1.0,
+                                "installments": inst,
+                            }
+                    if "level" in patch:
+                        updated_body["cardLevel"] = {"name": patch["level"]} if patch["level"] else None
+
+                    await vtex_client.update_rule(
+                        seller.seller_id, app_key, app_token, rule_id, updated_body
+                    )
+                    row = CrudRowOut(
+                        seller_id=seller.seller_id,
+                        id_ecommerce=getattr(seller, "id_ecommerce", None),
+                        rule_id=str(rule_id),
+                        rule_name=rule.get("name"),
+                        brand=_rule_brands(rule),
+                        level=_rule_level(rule),
+                        estado=_rule_estado(rule),
+                        detalle=f"actualizado: {list(patch.keys())}",
+                    )
+                except Exception as e:
+                    row = CrudRowOut(
+                        seller_id=seller.seller_id,
+                        id_ecommerce=getattr(seller, "id_ecommerce", None),
+                        rule_id=str(rule_id),
+                        rule_name=rule.get("name"),
+                        brand=_rule_brands(rule),
+                        level=None,
+                        estado=None,
+                        detalle=f"error: {e}",
+                    )
+
+        async with progress_lock:
+            processed["n"] += 1
+            if on_progress:
+                try:
+                    await on_progress(processed["n"])
+                except Exception as e:
+                    logger.warning("execute_update on_progress falló (no fatal): %s", e)
+        return row
+
+    results = await asyncio.gather(*(_one(m) for m in matched), return_exceptions=False)
+    return [r for r in results if r is not None]
 
 
-async def execute_delete(matched: list[dict], dry_run: bool) -> list[CrudRowOut]:
-    rows = []
-    for m in matched:
+async def execute_delete(
+    matched: list[dict],
+    dry_run: bool,
+    on_progress=None,
+    concurrency: int = 16,
+) -> list[CrudRowOut]:
+    sem = asyncio.Semaphore(concurrency)
+    progress_lock = asyncio.Lock()
+    processed = {"n": 0}
+
+    async def _one(m: dict) -> CrudRowOut | None:
         seller = m["seller"]
         rule = m["rule"]
         rule_id = rule.get("id")
         if rule_id is None:
-            continue
+            return None
 
-        if dry_run:
-            rows.append(CrudRowOut(
-                seller_id=seller.seller_id,
-                id_ecommerce=getattr(seller, "id_ecommerce", None),
-                rule_id=str(rule_id),
-                rule_name=rule.get("name"),
-                brand=_rule_brands(rule),
-                level=_rule_level(rule),
-                estado=_rule_estado(rule),
-                detalle="dry_run — no eliminado",
-            ))
-        else:
-            try:
-                app_key, app_token = get_decrypted_credentials(seller)
-                await vtex_client.delete_rule(
-                    seller.seller_id, app_key, app_token, rule_id
-                )
-                rows.append(CrudRowOut(
+        async with sem:
+            if dry_run:
+                row = CrudRowOut(
                     seller_id=seller.seller_id,
                     id_ecommerce=getattr(seller, "id_ecommerce", None),
                     rule_id=str(rule_id),
                     rule_name=rule.get("name"),
                     brand=_rule_brands(rule),
                     level=_rule_level(rule),
-                    estado="eliminado",
-                    detalle="eliminado",
-                ))
-            except Exception as e:
-                rows.append(CrudRowOut(
-                    seller_id=seller.seller_id,
-                    id_ecommerce=getattr(seller, "id_ecommerce", None),
-                    rule_id=str(rule_id),
-                    rule_name=rule.get("name"),
-                    brand=_rule_brands(rule),
-                    level=None,
-                    estado=None,
-                    detalle=f"error: {e}",
-                ))
-    return rows
+                    estado=_rule_estado(rule),
+                    detalle="dry_run — no eliminado",
+                )
+            else:
+                try:
+                    app_key, app_token = get_decrypted_credentials(seller)
+                    await vtex_client.delete_rule(
+                        seller.seller_id, app_key, app_token, rule_id
+                    )
+                    row = CrudRowOut(
+                        seller_id=seller.seller_id,
+                        id_ecommerce=getattr(seller, "id_ecommerce", None),
+                        rule_id=str(rule_id),
+                        rule_name=rule.get("name"),
+                        brand=_rule_brands(rule),
+                        level=_rule_level(rule),
+                        estado="eliminado",
+                        detalle="eliminado",
+                    )
+                except Exception as e:
+                    row = CrudRowOut(
+                        seller_id=seller.seller_id,
+                        id_ecommerce=getattr(seller, "id_ecommerce", None),
+                        rule_id=str(rule_id),
+                        rule_name=rule.get("name"),
+                        brand=_rule_brands(rule),
+                        level=None,
+                        estado=None,
+                        detalle=f"error: {e}",
+                    )
+
+        async with progress_lock:
+            processed["n"] += 1
+            if on_progress:
+                try:
+                    await on_progress(processed["n"])
+                except Exception as e:
+                    logger.warning("execute_delete on_progress falló (no fatal): %s", e)
+        return row
+
+    results = await asyncio.gather(*(_one(m) for m in matched), return_exceptions=False)
+    return [r for r in results if r is not None]
 
 
 # ── Persistence ───────────────────────────────────────────────────────────────
@@ -950,7 +1063,12 @@ async def run_crud_operation(
     db: AsyncSession,
     user_id: uuid.UUID,
     request: CrudRequest,
+    progress_cb=None,
 ) -> CrudResponse:
+    """
+    Ejecuta la operación sincrónicamente y persiste una CrudOperation nueva.
+    Si progress_cb es async callable, se llama con (processed, total) durante execute_*.
+    """
     started_at = datetime.now(timezone.utc)
 
     # 1. Resolve sellers
@@ -980,7 +1098,6 @@ async def run_crud_operation(
                     detalle=sd["error"],
                 ))
                 continue
-            # Dashboard from ALL rules (unfiltered) for accurate validation
             all_enriched = [
                 parse_rule_enriched(seller.seller_id, seller.seller_name, r)
                 for r in sd.get("rules", [])
@@ -989,7 +1106,6 @@ async def run_crud_operation(
                 dashboards.append(
                     build_seller_dashboard(seller.seller_id, seller.seller_name, all_enriched)
                 )
-            # Rows from filtered rules only
             matched = build_matched_rules(sd, request.filtros)
             rows.extend(execute_read(matched))
 
@@ -997,7 +1113,11 @@ async def run_crud_operation(
         if not request.accion_create:
             raise ValueError("accion_create es requerido para operacion C")
         raw_data = await fetch_all_sellers_parallel(sellers_creds)
-        rows = await execute_create(sellers_creds, request.accion_create, request.dry_run, raw_data)
+        total_units = len(sellers_creds)
+        cb = (lambda n: progress_cb(n, total_units)) if progress_cb else None
+        rows = await execute_create(
+            sellers_creds, request.accion_create, request.dry_run, raw_data, on_progress=cb
+        )
 
     elif request.operacion == "U":
         if not request.accion_update:
@@ -1007,7 +1127,11 @@ async def run_crud_operation(
         for sd in raw_data:
             if not sd["error"]:
                 all_matched.extend(build_matched_rules(sd, request.filtros))
-        rows = await execute_update(all_matched, request.accion_update, request.dry_run)
+        total_units = len(all_matched)
+        cb = (lambda n: progress_cb(n, total_units)) if progress_cb else None
+        rows = await execute_update(
+            all_matched, request.accion_update, request.dry_run, on_progress=cb
+        )
 
     elif request.operacion == "D":
         raw_data = await fetch_all_sellers_parallel(sellers_creds)
@@ -1015,7 +1139,9 @@ async def run_crud_operation(
         for sd in raw_data:
             if not sd["error"]:
                 all_matched.extend(build_matched_rules(sd, request.filtros))
-        rows = await execute_delete(all_matched, request.dry_run)
+        total_units = len(all_matched)
+        cb = (lambda n: progress_cb(n, total_units)) if progress_cb else None
+        rows = await execute_delete(all_matched, request.dry_run, on_progress=cb)
 
     duration = (datetime.now(timezone.utc) - started_at).total_seconds()
 
@@ -1039,6 +1165,171 @@ async def run_crud_operation(
         rows=rows,
         dashboard=dashboards,
     )
+
+
+# ── Async job (para operaciones write largas > timeout de Railway) ────────────
+
+async def start_crud_operation_async(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    request: CrudRequest,
+) -> uuid.UUID:
+    """
+    Crea un stub CrudOperation en status='pending' y arranca la ejecución
+    en background (asyncio.create_task). Retorna el operation_id inmediatamente
+    para que el frontend haga polling contra /operations/{id}.
+    """
+    scope_ids = request.scope.seller_ids or []
+    sellers = await get_active_sellers(db, scope_ids if scope_ids else None)
+
+    op = CrudOperation(
+        user_id=user_id,
+        operacion=request.operacion,
+        dry_run=request.dry_run,
+        sellers_scope=[s.seller_id for s in sellers],
+        filtros_usados=request.filtros.model_dump(),
+        started_at=datetime.now(timezone.utc),
+        status="pending",
+        total_units=len(sellers),
+        processed_units=0,
+    )
+    db.add(op)
+    await db.commit()
+    await db.refresh(op)
+    op_id = op.id
+
+    asyncio.create_task(_run_crud_background(op_id, user_id, request))
+    return op_id
+
+
+async def _run_crud_background(
+    op_id: uuid.UUID,
+    user_id: uuid.UUID,
+    request: CrudRequest,
+) -> None:
+    """
+    Corre run_crud_operation en background con su propia sesión de BD.
+    Actualiza status/progress en la BD; el frontend hace polling.
+    Nunca deja el stub sin cerrar (siempre marca done o error).
+    """
+    from app.core.database import AsyncSessionLocal
+
+    started_at = datetime.now(timezone.utc)
+
+    # Progress callback: escribe processed_units en la BD en su propia sesión.
+    # Throttled a cada 3 unidades para no saturar la BD.
+    async def _persist_progress(processed: int, total: int) -> None:
+        if total > 20 and processed % 3 != 0 and processed != total:
+            return
+        try:
+            async with AsyncSessionLocal() as db_p:
+                await db_p.execute(
+                    update(CrudOperation)
+                    .where(CrudOperation.id == op_id)
+                    .values(processed_units=processed, total_units=total)
+                )
+                await db_p.commit()
+        except Exception as e:
+            logger.warning("progress update op=%s falló (no fatal): %s", op_id, e)
+
+    async with AsyncSessionLocal() as db_work:
+        # Marcar como running
+        try:
+            await db_work.execute(
+                update(CrudOperation).where(CrudOperation.id == op_id).values(status="running")
+            )
+            await db_work.commit()
+        except Exception as e:
+            logger.error("no se pudo marcar op=%s como running: %s", op_id, e)
+            return
+
+        try:
+            # Resolver sellers + credenciales
+            scope_ids = request.scope.seller_ids or []
+            sellers = await get_active_sellers(db_work, scope_ids if scope_ids else None)
+            sellers_creds: list[tuple[Seller, str, str]] = []
+            for s in sellers:
+                if s.app_key_enc and s.app_token_enc:
+                    app_key, app_token = get_decrypted_credentials(s)
+                    sellers_creds.append((s, app_key, app_token))
+
+            rows: list[CrudRowOut] = []
+
+            if request.operacion == "C":
+                if not request.accion_create:
+                    raise ValueError("accion_create es requerido para operacion C")
+                raw_data = await fetch_all_sellers_parallel(sellers_creds)
+                total = len(sellers_creds)
+                cb = (lambda n: _persist_progress(n, total))
+                rows = await execute_create(
+                    sellers_creds, request.accion_create, request.dry_run, raw_data, on_progress=cb
+                )
+            elif request.operacion == "U":
+                if not request.accion_update:
+                    raise ValueError("accion_update es requerido para operacion U")
+                raw_data = await fetch_all_sellers_parallel(sellers_creds)
+                all_matched = []
+                for sd in raw_data:
+                    if not sd["error"]:
+                        all_matched.extend(build_matched_rules(sd, request.filtros))
+                total = len(all_matched)
+                cb = (lambda n: _persist_progress(n, total))
+                rows = await execute_update(all_matched, request.accion_update, request.dry_run, on_progress=cb)
+            elif request.operacion == "D":
+                raw_data = await fetch_all_sellers_parallel(sellers_creds)
+                all_matched = []
+                for sd in raw_data:
+                    if not sd["error"]:
+                        all_matched.extend(build_matched_rules(sd, request.filtros))
+                total = len(all_matched)
+                cb = (lambda n: _persist_progress(n, total))
+                rows = await execute_delete(all_matched, request.dry_run, on_progress=cb)
+            else:
+                raise ValueError(f"operacion async no soportada: {request.operacion}")
+
+            duration = (datetime.now(timezone.utc) - started_at).total_seconds()
+            success = sum(1 for r in rows if r.detalle and "error" not in r.detalle.lower())
+            errors = len(rows) - success
+
+            # Actualizar la op existente + persistir filas
+            await db_work.execute(
+                update(CrudOperation).where(CrudOperation.id == op_id).values(
+                    total_matched=len(rows),
+                    total_success=success,
+                    total_errors=errors,
+                    duration_secs=round(duration, 3),
+                    finished_at=datetime.now(timezone.utc),
+                    status="done",
+                    processed_units=len(rows) if request.operacion != "C" else len(sellers_creds),
+                )
+            )
+            for r in rows:
+                db_work.add(CrudOperationRow(
+                    operation_id=op_id,
+                    seller_id=r.seller_id,
+                    rule_id=r.rule_id,
+                    rule_name=r.rule_name,
+                    brand=r.brand,
+                    level=r.level,
+                    estado=r.estado,
+                    detalle=r.detalle,
+                ))
+            await db_work.commit()
+            logger.info("crud async op=%s finalizada (rows=%d, errors=%d, dur=%.1fs)",
+                        op_id, len(rows), errors, duration)
+        except Exception as e:
+            logger.exception("crud async op=%s falló", op_id)
+            try:
+                await db_work.execute(
+                    update(CrudOperation).where(CrudOperation.id == op_id).values(
+                        status="error",
+                        error_message=str(e)[:500],
+                        finished_at=datetime.now(timezone.utc),
+                    )
+                )
+                await db_work.commit()
+            except Exception as e2:
+                logger.error("no se pudo marcar op=%s como error: %s", op_id, e2)
 
 
 async def fetch_enriched_for_export(

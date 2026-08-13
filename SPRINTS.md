@@ -110,6 +110,16 @@ Fuera de sprint. Rebrand + sanitización + fix HU-44 para poder abrir el repo (d
 
 ---
 
+## ⏱️ CRUD async + validación "1 pago" + branding — v1.7.14
+
+Fuera de sprint. Fix crítico del timeout de 300s en operaciones write masivas + nueva validación operativa + branding.
+
+- [x] [HU-47](BACKLOG.md#hu-47) `[usuario]` CRUD async con polling — resuelve timeout Railway 5min en operaciones sobre ~658 sellers — L ✅ v1.7.14
+- [x] [HU-48](BACKLOG.md#hu-48) `[usuario]` Nueva validación "Tarjetas en 1 pago" (Visa + Master 1 cuota sin level + Electron) — S ✅ v1.7.14
+- [x] [HU-49](BACKLOG.md#hu-49) `[usuario]` Logo con recuadro celeste Bapro + contornos blancos elegantes — XS ✅ v1.7.14
+
+---
+
 ## ✅ Sprints cerrados
 
 *(pendiente — se llena al cerrar Sprint 1)*

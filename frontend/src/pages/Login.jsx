@@ -33,12 +33,14 @@ export default function Login() {
     <div className="flex min-h-screen items-center justify-center bg-background">
       <div className="w-full max-w-sm space-y-6 px-4">
         {/* Logo / título */}
-        <div className="flex flex-col items-center gap-3 text-center">
-          <img
-            src="/logo_provincia_ops.svg"
-            alt="Provincia Ops"
-            className="h-12 w-auto text-foreground"
-          />
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div className="rounded-xl bg-[#009EE0] px-5 py-3 shadow-sm">
+            <img
+              src="/logo_provincia_ops.svg"
+              alt="Provincia Ops"
+              className="h-16 w-auto"
+            />
+          </div>
           <p className="text-sm text-muted-foreground">Iniciá sesión para continuar</p>
         </div>
 

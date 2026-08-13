@@ -35,6 +35,17 @@ class CrudOperation(Base):
     finished_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # Async job tracking (HU-47: async pattern con polling)
+    status: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="done", server_default="done"
+    )  # pending | running | done | error
+    total_units: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )  # sellers en scope (total esperado a procesar)
+    processed_units: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )  # sellers ya procesados
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     rows: Mapped[list["CrudOperationRow"]] = relationship(
         "CrudOperationRow", back_populates="operation", cascade="all, delete-orphan"

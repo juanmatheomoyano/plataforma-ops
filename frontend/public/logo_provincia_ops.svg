@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" width="200" height="48">
-  <rect x="2" y="6" width="36" height="36" rx="8" fill="currentColor"/>
-  <text x="20" y="32" text-anchor="middle" font-family="Segoe UI, Roboto, sans-serif" font-size="18" font-weight="700" fill="#fff">PO</text>
-  <text x="48" y="30" font-family="Segoe UI, Roboto, sans-serif" font-size="18" font-weight="600" fill="currentColor">Provincia Ops</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 72" width="320" height="72">
+  <rect x="4" y="10" width="52" height="52" rx="12" fill="#279D2E" stroke="#ffffff" stroke-width="1.25"/>
+  <text x="30" y="46" text-anchor="middle" font-family="Segoe UI, Inter, Roboto, Helvetica, Arial, sans-serif" font-size="26" font-weight="600" fill="#ffffff" letter-spacing="0.5">PO</text>
+  <text x="72" y="48" font-family="Segoe UI, Inter, Roboto, Helvetica, Arial, sans-serif" font-size="34" font-weight="600" fill="#279D2E" stroke="#ffffff" stroke-width="0.9" paint-order="stroke" stroke-linejoin="round" stroke-linecap="round" letter-spacing="0.6">Provincia Ops</text>
 </svg>
