@@ -34,7 +34,7 @@ Release grande. Cambio de imagen completo (Modelo A del branding), Dashboard eje
 
 ### Multi-rol infra (HU-38)
 - Backend: `ROLES_V2` con 6 roles (`owner`, `admin`, `categorias`, `catalogo`, `activacion`, `administrativo`) + `LEGACY_ROLE_MAPPING`.
-- Columna `users.roles` (ARRAY String(32) nullable) + migración `a1b2c3d4e5f6` con **backfill automático** desde `role` legacy:
+- Columna `users.roles` (ARRAY String(32) nullable) + migración `b1c2d3e4f5a6` con **backfill automático** desde `role` legacy:
   - admin → [owner, admin]
   - supervisor → [admin]
   - analista/viewer → [categorias]

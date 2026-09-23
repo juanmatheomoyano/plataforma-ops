@@ -1,8 +1,8 @@
 """user.roles v2 multi-rol
 
-Revision ID: a1b2c3d4e5f6
+Revision ID: b1c2d3e4f5a6
 Revises: f7a8b9c0d1e2
-Create Date: 2026-08-18 15:30:00.000000
+Create Date: 2026-09-23 13:15:00.000000
 
 Agrega `users.roles` como ARRAY(String(32)) para el sistema multi-rol v2 (HU-38).
 Backfill inicial desde `role` legacy vía LEGACY_ROLE_MAPPING:
@@ -19,7 +19,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import ARRAY
 
 
-revision = 'a1b2c3d4e5f6'
+revision = 'b1c2d3e4f5a6'
 down_revision = 'f7a8b9c0d1e2'
 branch_labels = None
 depends_on = None

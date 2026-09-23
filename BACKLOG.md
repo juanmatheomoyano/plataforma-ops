@@ -623,7 +623,7 @@ Propuesto por: `usuario` (commit `76ec65f`, 2026-07-27) · Prioridad: 🟡 Alta 
 **Progreso v2.0 (infra listo, guards pendientes)**
 - [x] Constante `ROLES_V2` en `auth/models.py` con 6 roles: owner, admin, categorías, catálogo, activación, administrativo
 - [x] Constante `LEGACY_ROLE_MAPPING` para fallback runtime desde rol único
-- [x] Columna `users.roles` (ARRAY String(32) nullable) — migración `a1b2c3d4e5f6` con backfill desde `role` legacy
+- [x] Columna `users.roles` (ARRAY String(32) nullable) — migración `b1c2d3e4f5a6` con backfill desde `role` legacy
 - [x] JWT incluye `roles: []` además del `role` legacy (tokens viejos siguen validando)
 - [x] `UserOut.effective_roles` computed field que resuelve el fallback
 - [x] Frontend `hasRole()` con any-overlap match — funciona con rol único y con array

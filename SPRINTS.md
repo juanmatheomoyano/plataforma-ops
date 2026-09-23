@@ -164,7 +164,7 @@ Release grande — basta chiquitadas. Basado en el pedido del usuario "pasar ya 
 
 **Bloque D · Permisos multi-rol** ✅ (infra + primer módulo gated)
 - [x] `ROLES_V2` en backend con 6 roles nuevos + `LEGACY_ROLE_MAPPING`
-- [x] Columna `users.roles` (ARRAY nullable) + migración `a1b2c3d4e5f6` con backfill desde `role` legacy
+- [x] Columna `users.roles` (ARRAY nullable) + migración `b1c2d3e4f5a6` con backfill desde `role` legacy
 - [x] JWT incluye `roles: []` además de `role` — sin romper tokens viejos
 - [x] `UserOut.effective_roles` computed field
 - [x] Frontend `hasRole()` con any-overlap match
