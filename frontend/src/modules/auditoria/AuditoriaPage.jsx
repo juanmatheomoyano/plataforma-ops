@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import client from "@/core/api/client"
+import { PageContainer, PageHeader } from "@/components/PageHeader"
 
 const PAGE_SIZE = 50
 
@@ -86,25 +87,31 @@ export default function AuditoriaPage() {
   const currentPage = Math.floor(offset / PAGE_SIZE) + 1
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">Auditoría</h1>
-          <p className="text-sm text-muted-foreground">
-            Registro de acciones sensibles del sistema. {total.toLocaleString("es-AR")} eventos totales.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => load(offset)} disabled={loading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Refrescar
-          </Button>
-          <Button variant="outline" onClick={handleExportCsv}>
-            <Download className="mr-2 h-4 w-4" />
-            Export CSV
-          </Button>
-        </div>
-      </div>
+    <PageContainer>
+      <PageHeader
+        eyebrow="Análisis"
+        title="Auditoría"
+        subtitle={
+          <>
+            Registro de acciones sensibles ·{" "}
+            <span className="mono text-[11px] uppercase tracking-widest text-muted-foreground">
+              {total.toLocaleString("es-AR")} eventos
+            </span>
+          </>
+        }
+        actions={
+          <>
+            <Button variant="outline" onClick={() => load(offset)} disabled={loading}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              Refrescar
+            </Button>
+            <Button variant="outline" onClick={handleExportCsv}>
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+          </>
+        }
+      />
 
       {/* Filtros */}
       <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3 rounded-lg border border-border bg-card p-4">
@@ -239,6 +246,6 @@ export default function AuditoriaPage() {
           </div>
         </div>
       )}
-    </div>
+    </PageContainer>
   )
 }

@@ -13,8 +13,15 @@ from app.core.security import (
     verify_password,
 )
 
-from .models import RefreshToken, User
+from .models import LEGACY_ROLE_MAPPING, RefreshToken, User
 from .schemas import LoginRequest, TokenResponse, UserOut
+
+
+def _resolve_roles(user: User) -> list[str]:
+    """Devuelve la lista de roles v2 del user. Fallback al mapping legacy."""
+    if user.roles:
+        return list(user.roles)
+    return LEGACY_ROLE_MAPPING.get(user.role.value, [user.role.value])
 
 
 async def login(data: LoginRequest, db: AsyncSession) -> TokenResponse:
@@ -28,8 +35,9 @@ async def login(data: LoginRequest, db: AsyncSession) -> TokenResponse:
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
         )
 
-    access_token = create_access_token(str(user.id), user.role.value)
-    refresh_token = create_refresh_token(str(user.id), user.role.value)
+    roles_v2 = _resolve_roles(user)
+    access_token = create_access_token(str(user.id), user.role.value, roles_v2)
+    refresh_token = create_refresh_token(str(user.id), user.role.value, roles_v2)
 
     payload = decode_token(refresh_token)
     expires_at = datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
@@ -83,7 +91,7 @@ async def refresh(refresh_token: str, db: AsyncSession) -> dict:
         raise exc
 
     return {
-        "access_token": create_access_token(str(user.id), user.role.value),
+        "access_token": create_access_token(str(user.id), user.role.value, _resolve_roles(user)),
         "token_type": "bearer",
     }
 

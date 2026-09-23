@@ -1,8 +1,8 @@
 import uuid
 
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field
 
-from .models import UserRole
+from .models import LEGACY_ROLE_MAPPING, UserRole
 
 
 class LoginRequest(BaseModel):
@@ -16,8 +16,17 @@ class UserOut(BaseModel):
     email: str
     full_name: str | None
     role: UserRole
+    roles: list[str] | None = None
 
     model_config = {"from_attributes": True}
+
+    @computed_field
+    @property
+    def effective_roles(self) -> list[str]:
+        """Roles v2 efectivos — usa `roles` si está seteado, sino mapping legacy."""
+        if self.roles:
+            return list(self.roles)
+        return LEGACY_ROLE_MAPPING.get(self.role.value, [self.role.value])
 
 
 class TokenResponse(BaseModel):

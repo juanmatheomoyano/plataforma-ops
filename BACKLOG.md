@@ -617,8 +617,39 @@ Historias completadas antes del formalizar este backlog (v1.0.0 → v1.7.7). Se 
 
 Ideas capturadas del usuario, sin sprint asignado todavía. Cuando maduren se transforman en HU con formato completo (criterios de aceptación, tamaño, sprint).
 
-### HU-38 `[usuario]` — Sistema de permisos estilo VTEX con roles múltiples
-Propuesto por: `usuario` (commit `76ec65f`, 2026-07-27) · Prioridad tentativa: 🟡 Alta · Tamaño estimado: L-XL · Sprint: por definir
+### HU-38 `[usuario]` — Sistema de permisos con roles múltiples
+Propuesto por: `usuario` (commit `76ec65f`, 2026-07-27) · Prioridad: 🟡 Alta · Tamaño: L · Sprint: v2.0
+
+**Progreso v2.0 (infra listo, guards pendientes)**
+- [x] Constante `ROLES_V2` en `auth/models.py` con 6 roles: owner, admin, categorías, catálogo, activación, administrativo
+- [x] Constante `LEGACY_ROLE_MAPPING` para fallback runtime desde rol único
+- [x] Columna `users.roles` (ARRAY String(32) nullable) — migración `a1b2c3d4e5f6` con backfill desde `role` legacy
+- [x] JWT incluye `roles: []` además del `role` legacy (tokens viejos siguen validando)
+- [x] `UserOut.effective_roles` computed field que resuelve el fallback
+- [x] Frontend `hasRole()` con any-overlap match — funciona con rol único y con array
+- [x] Ruta `/payway` con guard `["admin", "supervisor", "administrativo"]` — primer módulo gated por rol v2
+- [ ] Migrar el resto de `require_role()` del backend al chequeo any-match sobre `user.roles` (v2.0.1+)
+- [ ] Multi-select de roles en `UserFormModal` (v2.0.1+)
+- [ ] Endpoint `GET /roles` que devuelve la matriz de permisos declarativa
+- [ ] Deprecar `UserRole` legacy cuando se completen los guards
+
+---
+
+### HU-50 `[usuario]` — Módulo Automatización Payway
+Prioridad: 🟢 Media · Tamaño: L · Sprint: v2.0 (skeleton) + v2.1 (lógica real)
+
+**Contexto**
+Rotación programada de contraseñas de acceso Payway con verificación end-to-end y auditoría. Uso primario del rol nuevo "administrativo".
+
+**Progreso v2.0**
+- [x] Página skeleton `/payway` con hero de placeholder + tarjetas de features (Programación / Rotación segura / Auditoría)
+- [x] Entrada en sidebar sección "Automatización" (visible para admin/supervisor/administrativo)
+- [ ] Schema `payway_rotations` (id, seller_id, scheduled_at, status, prev_hash, new_hash, error_msg)
+- [ ] Cron scheduler (bajo `job_lock` como el sync marketplace)
+- [ ] Cliente API Payway con retry + backoff
+- [ ] Formulario de programación por seller o batch
+- [ ] Integración con `audit_log` (record por rotación)
+- [ ] Tests de rotación con mock Payway
 
 **Idea original**
 Reemplazar el sistema actual de rol único por un sistema de **roles múltiples por usuario** (un usuario puede tener 2 o más roles activos simultáneamente, ej. "Categorías + Activación").

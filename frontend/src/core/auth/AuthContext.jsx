@@ -43,8 +43,14 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
+  // v2.0 · match any-overlap contra roles v2 y también rol legacy.
+  // Un `hasRole(["admin"])` sigue funcionando para users con rol único.
   const hasRole = useCallback(
-    (roles) => (user ? roles.includes(user.role) : false),
+    (requested) => {
+      if (!user) return false
+      const userRoles = user.effective_roles ?? user.roles ?? [user.role]
+      return requested.some((r) => userRoles.includes(r))
+    },
     [user]
   )
 

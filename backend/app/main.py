@@ -23,6 +23,7 @@ from app.modules.auth.router import router as auth_router
 from app.modules.crud_medios.router import router as crud_medios_router
 from app.modules.crud_medios.service import cleanup_old_operations
 from app.modules.crud_medios.vtex_client import close_client as close_vtex_client
+from app.modules.dashboard.router import router as dashboard_router
 from app.modules.eventos.router import router as eventos_router
 from app.modules.sellers.marketplace_client import close_client as close_marketplace_client
 from app.modules.sellers.router import router as sellers_router
@@ -112,6 +113,7 @@ app.include_router(sellers_router, prefix="/api")
 app.include_router(crud_medios_router, prefix="/api")
 app.include_router(eventos_router, prefix="/api")
 app.include_router(auditoria_router, prefix="/api")
+app.include_router(dashboard_router, prefix="/api")
 app.include_router(updates_public_router)
 app.include_router(updates_router, prefix="/api")
 

@@ -57,3 +57,15 @@ frontend/.claude/
 
 # Carpeta destinada a SharePoint (duplicados + PDFs binarios)
 Provincia Ops - Documentación/
+
+# Artefactos locales de branding y manuales (no versionar)
+frontend/public/.thumbnail
+frontend/public/branding_hand_off/
+frontend/public/Branding profesional ecommerce.zip
+frontend/public/Provincia Ops Branding.html
+frontend/public/Provincia Ops Branding.dc.html
+frontend/public/support.js
+frontend/public/uploads/
+*Nuevo Manual*.pdf
+build-*.log
+

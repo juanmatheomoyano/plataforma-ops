@@ -263,14 +263,22 @@ def _valor_min_invalido_val(v) -> bool:
 
 def check_1pago_group(rules: list[dict]) -> tuple[str, list[str]]:
     """
-    Validación específica para "Tarjetas en 1 pago".
-    OK si el seller tiene las 3 reglas habilitadas:
-      - Visa (PS 2) con cuotas={1} y sin cardLevel
-      - Mastercard (PS 4) con cuotas={1} y sin cardLevel
-      - Visa Electron (PS 10) — Electron no informa cuotas ni level, solo tiene que existir habilitada
+    Validación específica para "Tarjetas en 1 pago" (nuevo manual VTEX).
+
+    OK si el seller cumple:
+      1) Tiene las 3 reglas habilitadas:
+         - Visa (PS 2) con cuotas={1} y sin cardLevel
+         - Mastercard (PS 4) con cuotas={1} y sin cardLevel
+         - Visa Electron (PS 10) — no informa cuotas ni level, solo tiene que existir habilitada
+      2) NO conviven reglas obsoletas de 1 cuota con level habilitadas
+         (Visa o Master con cuotas={1} y cardLevel no vacío deben eliminarse
+          porque el nuevo manual manda 1 pago sin level).
     """
     def _is_no_level(r: dict) -> bool:
         return not (r.get("nivel_tarjeta") or "").strip()
+
+    def _has_level(r: dict) -> bool:
+        return bool((r.get("nivel_tarjeta") or "").strip())
 
     def _cuotas_1(r: dict) -> bool:
         return _parse_cuotas_set_str(r.get("cuotas_disponibles")) == frozenset({1})
@@ -290,6 +298,18 @@ def check_1pago_group(rules: list[dict]) -> tuple[str, list[str]]:
         if str(r.get("id_sistema_pago", "")) == "10"
     )
 
+    # Reglas obsoletas: Visa/Master habilitadas con cuota={1} y ALGÚN level
+    obsoletas_visa = sorted({
+        (r.get("nivel_tarjeta") or "").strip()
+        for r in enabled
+        if str(r.get("id_sistema_pago", "")) == "2" and _has_level(r) and _cuotas_1(r)
+    })
+    obsoletas_master = sorted({
+        (r.get("nivel_tarjeta") or "").strip()
+        for r in enabled
+        if str(r.get("id_sistema_pago", "")) == "4" and _has_level(r) and _cuotas_1(r)
+    })
+
     # Nada configurado → "No configurado" (consistente con el resto de los grupos)
     relevantes = [
         r for r in rules
@@ -298,9 +318,6 @@ def check_1pago_group(rules: list[dict]) -> tuple[str, list[str]]:
     if not relevantes:
         return "No configurado", []
 
-    if visa_ok and master_ok and electron_ok:
-        return "Ok", []
-
     motivos: list[str] = []
     if not visa_ok:
         motivos.append("Visa: falta regla habilitada con cuota 1 y sin level")
@@ -308,6 +325,13 @@ def check_1pago_group(rules: list[dict]) -> tuple[str, list[str]]:
         motivos.append("Mastercard: falta regla habilitada con cuota 1 y sin level")
     if not electron_ok:
         motivos.append("Visa Electron: falta regla habilitada")
+    if obsoletas_visa:
+        motivos.append(f"Visa: reglas obsoletas de 1 cuota con level (eliminar): {obsoletas_visa}")
+    if obsoletas_master:
+        motivos.append(f"Mastercard: reglas obsoletas de 1 cuota con level (eliminar): {obsoletas_master}")
+
+    if not motivos:
+        return "Ok", []
     return "A corregir", motivos
 
 

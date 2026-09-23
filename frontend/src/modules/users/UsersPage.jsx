@@ -16,6 +16,7 @@ import client from "@/core/api/client"
 import { UserFormModal } from "./UserFormModal"
 import { ResetPasswordModal } from "./ResetPasswordModal"
 import { ImportResultModal } from "@/modules/sellers/ImportResultModal"
+import { PageContainer, PageHeader } from "@/components/PageHeader"
 
 const ROLE_BADGE = {
   admin:      "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/60 dark:text-violet-300 dark:border-violet-700",
@@ -227,45 +228,41 @@ export default function UsersPage() {
   })
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">Usuarios</h1>
-          <p className="text-sm text-muted-foreground">Gestión de accesos — solo admins</p>
-        </div>
-        <div className="flex gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx"
-            className="hidden"
-            onChange={handleImportFile}
-          />
-          <Button
-            variant="outline"
-            onClick={handleExport}
-            className="border-border bg-transparent text-foreground/80 hover:bg-accent hover:text-foreground"
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Exportar Excel
-          </Button>
-          <Button
-            variant="outline"
-            disabled={importing}
-            onClick={() => fileInputRef.current?.click()}
-            className="border-border bg-transparent text-foreground/80 hover:bg-accent hover:text-foreground"
-          >
-            <Upload className="mr-2 h-4 w-4" />
-            {importing ? "Importando…" : "Importar Excel"}
-          </Button>
-          <Button
-            className="bg-primary text-primary-foreground hover:bg-primary/90"
-            onClick={() => { setEditUser(null); setFormOpen(true) }}
-          >
-            + Nuevo usuario
-          </Button>
-        </div>
-      </div>
+    <PageContainer>
+      <PageHeader
+        eyebrow="Administración"
+        title="Usuarios"
+        subtitle="Cuentas y permisos del sistema"
+        actions={
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx"
+              className="hidden"
+              onChange={handleImportFile}
+            />
+            <Button variant="outline" onClick={handleExport}>
+              <Download className="mr-2 h-4 w-4" />
+              Exportar
+            </Button>
+            <Button
+              variant="outline"
+              disabled={importing}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              {importing ? "Importando…" : "Importar"}
+            </Button>
+            <Button
+              className="bg-brand-cyan text-white hover:bg-brand-cyan/90"
+              onClick={() => { setEditUser(null); setFormOpen(true) }}
+            >
+              + Nuevo usuario
+            </Button>
+          </>
+        }
+      />
 
       <Card className="border-border bg-card overflow-hidden p-0">
         {loading ? (
@@ -336,6 +333,6 @@ export default function UsersPage() {
         onClose={() => setImportOpen(false)}
         result={importResult}
       />
-    </div>
+    </PageContainer>
   )
 }

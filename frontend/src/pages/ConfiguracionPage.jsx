@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import client from "@/core/api/client"
 import { useManualUpdateCheck } from "@/core/hooks/useAutoUpdate"
+import { PageContainer, PageHeader } from "@/components/PageHeader"
 
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || "dev"
 
@@ -62,11 +63,12 @@ export default function ConfiguracionPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-lg">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold text-foreground">Configuración</h1>
-        <p className="text-sm text-muted-foreground">Preferencias de la aplicación</p>
-      </div>
+    <PageContainer className="max-w-2xl">
+      <PageHeader
+        eyebrow="Cuenta"
+        title="Configuración"
+        subtitle="Preferencias de la aplicación y de tu usuario"
+      />
 
       {/* Apariencia */}
       <Card className="border-border bg-card">
@@ -188,6 +190,6 @@ export default function ConfiguracionPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   )
 }

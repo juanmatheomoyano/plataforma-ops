@@ -120,6 +120,82 @@ Fuera de sprint. Fix crítico del timeout de 300s en operaciones write masivas +
 
 ---
 
+---
+
+## 🚀 v2.0 · "Plataforma pro"
+
+Release grande — basta chiquitadas. Basado en el pedido del usuario "pasar ya al 2.0".
+
+**Alcance aprobado**
+- **Bloque A · Cierre de rebrand** (base visual consistente)
+  - Tokens Modelo A aplicados a Dashboard, Sellers, CRUD, Eventos, Users, Configuración, Auditoría
+  - Componentes shadcn con paleta nueva (Card shadow-soft, Button variants, Badge, Table)
+  - Self-host Plus Jakarta Sans + IBM Plex Mono en `public/fonts/` (cero deps de red)
+- **Bloque B · Dashboard v2** (HU-12/13/14/15) — endpoint unificado, gráficos por rol, polling, bell alertas
+- **Bloque C · Sellers/CRUD/Eventos pro** (HU-16→26) — bulk, keys, historial, plantillas, undo, calendario
+- **Bloque D · Permisos multi-rol** (HU-38) — Owner/Admin/Categorías/Catálogo/Activación/Administrativo
+- **Bloque F · Módulo nuevo** — Automatización cambio de contraseñas Payway (rol Administrativo)
+- **Bloque E · Code-signing** → descartado en v2.0 (usuario dijo "no por ahora, seguir con rsign")
+
+**Decisiones**
+- Breaking changes: **aceptados** (schema roles, JWT nuevo → re-login único al instalar v2.0)
+- Release: **directo con hotfixes** (v2.0.0 → v2.0.1/2/3 según feedback en uso real)
+- Módulo nuevo: **Payway automation** (no Catálogo VTEX)
+
+**Orden de ejecución**
+1. Bloque A (base)
+2. Bloque D (permisos, para no rehacer guards después)
+3. Bloque B (dashboard)
+4. Bloque C (features paralelos)
+5. Bloque F (módulo Payway)
+
+### Progreso v2.0 (live)
+
+**Bloque A · Cierre de rebrand** ✅
+- [x] Self-host fuentes Plus Jakarta Sans (400-800) + IBM Plex Mono (400-600) en `public/fonts/` — cero deps de red
+- [x] Tokens Modelo A en tailwind + CSS variables (light/dark) — paleta `brand.*` cyan/green/lime/ink/mist/slate
+- [x] Sidebar rediseñada — Dashboard suelto arriba, secciones agrupadas (Operación/Análisis/Automatización/Administración), item activo brand-cyan + acento lima, user dropdown con Configuración/Feedback (stub)/Cerrar sesión
+- [x] Login split-hero (marca grande + panel tinta + form limpio)
+- [x] Logo component con variantes `on-dark`/`on-light`/`auto`
+- [x] Dashboard rediseñado — StatCards con accent icon, módulos como tarjetas con arrow-right, tabla con mono
+- [x] `PageHeader` + `PageContainer` compartidos — Sellers, CRUD, Eventos, Users, Auditoría, Configuración migrados
+- [x] Shell sin padding interno (PageContainer maneja layout)
+- [x] Fix `check_1pago_group` — flaggea reglas obsoletas con level (pendiente deploy)
+
+**Bloque D · Permisos multi-rol** ✅ (infra + primer módulo gated)
+- [x] `ROLES_V2` en backend con 6 roles nuevos + `LEGACY_ROLE_MAPPING`
+- [x] Columna `users.roles` (ARRAY nullable) + migración `a1b2c3d4e5f6` con backfill desde `role` legacy
+- [x] JWT incluye `roles: []` además de `role` — sin romper tokens viejos
+- [x] `UserOut.effective_roles` computed field
+- [x] Frontend `hasRole()` con any-overlap match
+- [ ] Migrar guards backend al chequeo any-match sobre `user.roles` (v2.0.1)
+- [ ] Multi-select de roles en `UserFormModal` (v2.0.1)
+
+**Bloque F · Módulo Automatización Payway** ✅ skeleton
+- [x] Página `/payway` con hero placeholder + 3 features
+- [x] Entrada en sidebar sección "Automatización" (gated por admin/supervisor/administrativo)
+- [ ] Schema + cron + cliente API Payway (v2.1)
+
+**Bloque B · Dashboard v2 (Owner/Admin)** ✅ hecho — resto por rol pendiente
+- [x] Endpoint `GET /api/dashboard/summary` con cache in-memory 5min
+- [x] `orders_client.py` contra `{MARKETPLACE_URL}/api/oms/pvt/orders` con credenciales BaproAR
+- [x] `build_owner_summary()` — GMV 30d + delta vs 30d previos, serie diaria, órdenes 24h por status (torta), sellers activos, top 10 sellers por GMV
+- [x] Frontend `DashboardOwner` con Recharts (LineChart GMV + PieChart status + BarChart top sellers), KPI cards con delta animado
+- [x] Router `Dashboard.jsx` que rutea Owner/Admin → DashboardOwner, resto → DashboardLegacy (temporal)
+- [x] Polling 5min (coincide con TTL cache backend) + skeleton loader
+- [ ] Dashboard Categorías (heatmap seller × grupo, adopción 1 pago) — v2.0.2
+- [ ] Dashboards Catálogo/Activación/Administrativo — v2.0.3
+- [ ] Bell icon con alertas (keys venciendo, sellers "A corregir", sync fallido) — v2.0.2
+
+**Bloque C · Sellers/CRUD/Eventos pro** — pendiente v2.0.2/3
+- [ ] Sellers: bulk actions, alertas keys venciendo, historial
+- [ ] CRUD: plantillas de filtros, diff preview, undo
+- [ ] Eventos: calendario visual, estado computado
+
+**Bloque E · Code-signing** — descartado en v2.0 (sigue rsign)
+
+---
+
 ## ✅ Sprints cerrados
 
 *(pendiente — se llena al cerrar Sprint 1)*

@@ -18,22 +18,20 @@ def verify_password(plain: str, hashed: str) -> bool:
     return bcrypt.checkpw(plain.encode(), hashed.encode())
 
 
-def create_access_token(user_id: str, role: str) -> str:
+def create_access_token(user_id: str, role: str, roles: list[str] | None = None) -> str:
     expire = datetime.now(timezone.utc) + timedelta(minutes=settings.JWT_EXPIRE_MINUTES)
-    return jwt.encode(
-        {"sub": user_id, "role": role, "exp": expire},
-        settings.JWT_SECRET_KEY,
-        algorithm=settings.JWT_ALGORITHM,
-    )
+    payload = {"sub": user_id, "role": role, "exp": expire}
+    if roles:
+        payload["roles"] = roles
+    return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
-def create_refresh_token(user_id: str, role: str) -> str:
+def create_refresh_token(user_id: str, role: str, roles: list[str] | None = None) -> str:
     expire = datetime.now(timezone.utc) + timedelta(days=settings.JWT_REFRESH_EXPIRE_DAYS)
-    return jwt.encode(
-        {"sub": user_id, "role": role, "exp": expire},
-        settings.JWT_SECRET_KEY,
-        algorithm=settings.JWT_ALGORITHM,
-    )
+    payload = {"sub": user_id, "role": role, "exp": expire}
+    if roles:
+        payload["roles"] = roles
+    return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
 def decode_token(token: str) -> dict:

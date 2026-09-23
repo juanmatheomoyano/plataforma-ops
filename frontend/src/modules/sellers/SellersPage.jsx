@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { useAuth } from "@/core/auth/useAuth"
 import client from "@/core/api/client"
+import { PageContainer, PageHeader } from "@/components/PageHeader"
 import { SellerFormModal } from "./SellerFormModal"
 import { ImportResultModal } from "./ImportResultModal"
 import { ExportSellersModal } from "./ExportSellersModal"
@@ -317,69 +318,67 @@ export default function SellersPage() {
   })
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">Sellers</h1>
-          <p className="text-sm text-muted-foreground">
+    <PageContainer>
+      <PageHeader
+        eyebrow="Módulo"
+        title="Sellers"
+        subtitle={
+          <>
             Gestión de sellers y credenciales VTEX
             {lastSync && (
-              <span className="ml-2 text-muted-foreground/60">
-                · Marketplace sincronizado {lastSync.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
+              <span className="ml-2 mono text-[11px] uppercase tracking-widest text-muted-foreground/70">
+                · sync {lastSync.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
               </span>
             )}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx"
-            className="hidden"
-            onChange={handleFileChange}
-          />
-          {canExport && (
-            <Button
-              variant="outline"
-              disabled={syncing}
-              onClick={handleSyncMarketplace}
-              className="border-border bg-transparent text-foreground/80 hover:bg-accent hover:text-foreground"
-            >
-              <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
-              {syncing ? "Sincronizando…" : "Sync Marketplace"}
-            </Button>
-          )}
-          {canExport && (
-            <Button
-              variant="outline"
-              onClick={handleExport}
-              className="border-border bg-transparent text-foreground/80 hover:bg-accent hover:text-foreground"
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Exportar Excel
-            </Button>
-          )}
-          {canExport && (
-            <Button
-              variant="outline"
-              disabled={importing}
-              onClick={() => fileInputRef.current?.click()}
-              className="border-border bg-transparent text-foreground/80 hover:bg-accent hover:text-foreground"
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              {importing ? "Importando…" : "Importar Excel"}
-            </Button>
-          )}
-          {canManage && (
-            <Button
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-              onClick={() => { setEditSeller(null); setFormOpen(true) }}
-            >
-              + Nuevo seller
-            </Button>
-          )}
-        </div>
-      </div>
+          </>
+        }
+        actions={
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            {canExport && (
+              <Button
+                variant="outline"
+                disabled={syncing}
+                onClick={handleSyncMarketplace}
+                className="border-border bg-transparent"
+              >
+                <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+                {syncing ? "Sincronizando…" : "Sync"}
+              </Button>
+            )}
+            {canExport && (
+              <Button variant="outline" onClick={handleExport}>
+                <Download className="mr-2 h-4 w-4" />
+                Exportar
+              </Button>
+            )}
+            {canExport && (
+              <Button
+                variant="outline"
+                disabled={importing}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                {importing ? "Importando…" : "Importar"}
+              </Button>
+            )}
+            {canManage && (
+              <Button
+                className="bg-brand-cyan text-white hover:bg-brand-cyan/90"
+                onClick={() => { setEditSeller(null); setFormOpen(true) }}
+              >
+                + Nuevo seller
+              </Button>
+            )}
+          </>
+        }
+      />
 
       {/* Search + filters */}
       <div className="flex flex-wrap items-center gap-2">
@@ -501,6 +500,6 @@ export default function SellersPage() {
         onClose={() => setExportOpen(false)}
         isAdmin={isAdmin}
       />
-    </div>
+    </PageContainer>
   )
 }

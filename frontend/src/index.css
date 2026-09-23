@@ -2,97 +2,89 @@
 @tailwind components;
 @tailwind utilities;
 
-@font-face {
-  font-family: 'Encode Sans';
-  src: url('/fonts/EncodeSans-Light.ttf') format('truetype');
-  font-weight: 300;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Encode Sans';
-  src: url('/fonts/EncodeSans-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Encode Sans';
-  src: url('/fonts/EncodeSans-Medium.ttf') format('truetype');
-  font-weight: 500;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Encode Sans';
-  src: url('/fonts/EncodeSans-SemiBold.ttf') format('truetype');
-  font-weight: 600;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Encode Sans';
-  src: url('/fonts/EncodeSans-Bold.ttf') format('truetype');
-  font-weight: 700;
-  font-display: swap;
-}
+/* Fuentes self-hosted — cero dependencia de red, se ven igual online y offline (Tauri). */
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/jakarta/PlusJakartaSans-400.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/jakarta/PlusJakartaSans-500.ttf') format('truetype'); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/jakarta/PlusJakartaSans-600.ttf') format('truetype'); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/jakarta/PlusJakartaSans-700.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/jakarta/PlusJakartaSans-800.ttf') format('truetype'); font-weight: 800; font-style: normal; font-display: swap; }
+@font-face { font-family: 'IBM Plex Mono'; src: url('/fonts/plex-mono/IBMPlexMono-400.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'IBM Plex Mono'; src: url('/fonts/plex-mono/IBMPlexMono-500.ttf') format('truetype'); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'IBM Plex Mono'; src: url('/fonts/plex-mono/IBMPlexMono-600.ttf') format('truetype'); font-weight: 600; font-style: normal; font-display: swap; }
+
+/* Encode Sans se mantiene como fallback ultimo (por si un usuario tiene v1.7.x cache). */
+@font-face { font-family: 'Encode Sans'; src: url('/fonts/EncodeSans-Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Encode Sans'; src: url('/fonts/EncodeSans-Medium.ttf') format('truetype'); font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Encode Sans'; src: url('/fonts/EncodeSans-SemiBold.ttf') format('truetype'); font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Encode Sans'; src: url('/fonts/EncodeSans-Bold.ttf') format('truetype'); font-weight: 700; font-display: swap; }
 
 @layer base {
   :root {
-    /* Light mode */
-    --background: 210 40% 98%;
-    --foreground: 217 33% 17%;
-    --card: 0 0% 100%;
-    --card-foreground: 217 33% 17%;
+    /* ==== Modelo A · light ====
+       fondo #F6F9FB · tinta #0B2230 · verde acción #1F9E48 · cian marca #0AA0DC */
+    --background: 210 33% 97%;             /* #F6F9FB */
+    --foreground: 203 63% 12%;             /* #0B2230 */
+    --card: 0 0% 100%;                     /* #FFFFFF */
+    --card-foreground: 203 63% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 217 33% 17%;
-    --primary: 124 60% 38%;
+    --popover-foreground: 203 63% 12%;
+    --primary: 136 67% 37%;                /* #1F9E48 verde acción */
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 40% 94%;
-    --secondary-foreground: 217 33% 17%;
-    --muted: 210 40% 94%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 210 40% 92%;
-    --accent-foreground: 217 33% 17%;
-    --destructive: 0 84% 60%;
+    --secondary: 210 22% 92%;              /* #E4EBF1 */
+    --secondary-foreground: 203 63% 12%;
+    --muted: 210 22% 94%;
+    --muted-foreground: 202 18% 44%;       /* #5B7383 */
+    --accent: 197 91% 45%;                 /* #0AA0DC cian marca — hover / highlight */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 78% 52%;
     --destructive-foreground: 0 0% 100%;
-    --border: 214 32% 88%;
-    --input: 214 32% 88%;
-    --ring: 124 60% 38%;
-    --radius: 0.5rem;
-    --sidebar: 0 0% 100%;
-    --sidebar-foreground: 217 33% 17%;
-    --sidebar-border: 214 32% 88%;
-    --sidebar-accent: 210 40% 94%;
-    --sidebar-accent-foreground: 217 33% 17%;
-    --sidebar-active: 124 60% 38%;
+    --border: 210 22% 89%;                 /* #DCE5EC */
+    --input: 210 22% 92%;
+    --ring: 197 91% 45%;                   /* cian marca */
+    --radius: 0.75rem;
+
+    /* Sidebar SIEMPRE oscura (tinta), incluso en light — patrón del hand-off Modelo A */
+    --sidebar: 203 63% 12%;                /* #0B2230 */
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-border: 202 40% 20%;         /* #22384A tenue */
+    --sidebar-accent: 202 40% 18%;         /* hover suave */
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-active: 197 91% 45%;         /* cian marca */
     --sidebar-active-foreground: 0 0% 100%;
+    --sidebar-muted: 202 18% 62%;          /* #7E96A6 texto secundario */
   }
 
   .dark {
-    /* Dark mode */
-    --background: 222 47% 7%;
-    --foreground: 210 40% 95%;
-    --card: 217 33% 17%;
-    --card-foreground: 210 40% 95%;
-    --popover: 217 33% 17%;
-    --popover-foreground: 210 40% 95%;
-    --primary: 124 60% 38%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 217 33% 22%;
-    --secondary-foreground: 210 40% 95%;
-    --muted: 217 33% 22%;
-    --muted-foreground: 215 20% 60%;
-    --accent: 217 33% 25%;
-    --accent-foreground: 210 40% 95%;
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 95%;
-    --border: 217 33% 28%;
-    --input: 217 33% 22%;
-    --ring: 124 60% 38%;
-    --sidebar: 217 33% 17%;
-    --sidebar-foreground: 210 40% 95%;
-    --sidebar-border: 217 33% 28%;
-    --sidebar-accent: 217 33% 25%;
-    --sidebar-accent-foreground: 210 40% 95%;
-    --sidebar-active: 124 60% 38%;
+    /* ==== Modelo A · dark ====
+       fondo tinta #0B2230 · card ink-2 #142C3D · verde bright #26B554 · cian claro #3EC0F0 */
+    --background: 203 63% 12%;
+    --foreground: 210 33% 97%;
+    --card: 205 51% 16%;                   /* #142C3D */
+    --card-foreground: 210 33% 97%;
+    --popover: 205 51% 16%;
+    --popover-foreground: 210 33% 97%;
+    --primary: 139 65% 43%;                /* #26B554 verde brillante */
+    --primary-foreground: 148 78% 8%;      /* verde muy oscuro para contraste */
+    --secondary: 205 40% 22%;
+    --secondary-foreground: 210 33% 97%;
+    --muted: 205 40% 20%;
+    --muted-foreground: 206 25% 72%;       /* #B8C8D3 */
+    --accent: 197 87% 59%;                 /* #3EC0F0 cian claro */
+    --accent-foreground: 203 63% 12%;
+    --destructive: 0 63% 45%;
+    --destructive-foreground: 210 33% 97%;
+    --border: 205 40% 22%;                 /* #22384A */
+    --input: 205 40% 22%;
+    --ring: 197 87% 59%;
+
+    --sidebar: 203 63% 9%;                 /* aún más profundo que el fondo */
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-border: 205 40% 18%;
+    --sidebar-accent: 205 40% 18%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-active: 197 91% 45%;
     --sidebar-active-foreground: 0 0% 100%;
+    --sidebar-muted: 202 18% 62%;
   }
 }
 
@@ -100,8 +92,45 @@
   * {
     @apply border-border;
   }
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Encode Sans', system-ui, sans-serif;
+    font-family: 'Plus Jakarta Sans', 'Encode Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+  }
+  /* Type refinement — títulos con tracking tight, mono para códigos */
+  h1, h2, h3, h4, .display {
+    font-family: 'Plus Jakarta Sans', 'Encode Sans', system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+  code, kbd, pre, samp, .mono {
+    font-family: 'IBM Plex Mono', 'JetBrains Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  }
+}
+
+@layer utilities {
+  /* Etiqueta mono estilo hand-off: uppercase, muy espaciada, ideal para secciones */
+  .eyebrow {
+    font-family: 'IBM Plex Mono', SFMono-Regular, Menlo, Consolas, monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 0.6875rem;
+    font-weight: 500;
+  }
+  .eyebrow-lg {
+    font-family: 'IBM Plex Mono', SFMono-Regular, Menlo, Consolas, monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+  .surface-noise {
+    background-image:
+      radial-gradient(circle at 20% 15%, rgba(10, 160, 220, 0.06), transparent 55%),
+      radial-gradient(circle at 85% 80%, rgba(31, 158, 72, 0.05), transparent 60%);
   }
 }

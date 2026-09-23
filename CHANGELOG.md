@@ -5,6 +5,62 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [2.0.0] — 2026-09-23 — Plataforma pro: rebrand total + Dashboard v2 (Owner) + multi-rol infra + módulo Payway (skeleton)
+
+Release grande. Cambio de imagen completo (Modelo A del branding), Dashboard ejecutivo con datos reales del marketplace, fundamentos para multi-rol y skeleton del módulo Payway.
+
+**Breaking**: JWT ahora incluye `roles: []` — todos los usuarios re-loguean una vez al abrir v2.0.
+
+### Frontend — rebrand Modelo A
+- Fuentes self-hosted **Plus Jakarta Sans** (400-800) + **IBM Plex Mono** (400-600) en `public/fonts/` — cero deps de red, se ve igual online y offline.
+- Paleta nueva: cyan marca `#0AA0DC` · verde acción `#1F9E48` · lima acento `#B9D400` · tinta `#0B2230` · fondo `#F6F9FB`.
+- Tokens `brand.*` en Tailwind + variables CSS en `index.css` (light/dark).
+- **Sidebar rediseñada**: Dashboard suelto arriba, secciones agrupadas (Operación/Análisis/Automatización/Administración), eyebrows mono, item activo con brand-cyan + acento lima lateral, user dropdown ↑ con Configuración/Feedback (stub)/Cerrar sesión.
+- **Login split-hero**: panel tinta con marca grande + mesh gradient + grid blueprint · panel derecho form limpio con labels mono.
+- Logo con variantes `on-dark`/`on-light`/`auto` — arregla el "Provincia" negro en dark mode.
+- **PageHeader + PageContainer** compartidos aplicados a Sellers, CRUD, Eventos, Users, Auditoría, Configuración.
+
+### Dashboard v2 (Owner/Admin)
+- Backend: nuevo módulo `app/modules/dashboard/` con `orders_client.py` (VTEX Orders API) y `service.py` con cache in-memory 5min.
+- Endpoint `GET /api/dashboard/summary` gateado por admin/supervisor — devuelve GMV 30d con delta vs 30d previos, serie diaria, órdenes 24h por status, sellers activos/inactivos, top 10 sellers por GMV.
+- Frontend: `DashboardOwner.jsx` con **Recharts**:
+  - KPI cards con delta_pct animado (↑verde / ↓rojo) y tabular-nums.
+  - **LineChart** GMV últimos 30 días con gradient cyan.
+  - **PieChart** órdenes 24h por estado (verde/ámbar/rojo/gris).
+  - **BarChart horizontal** top 10 sellers.
+  - Polling 5min matcheando TTL backend + skeleton loader.
+  - Fallback transparente a `DashboardLegacy` si el endpoint responde 404.
+- `Dashboard.jsx` rutea por rol: Owner/Admin → DashboardOwner, resto → DashboardLegacy (dashboards por rol restantes en v2.0.2+).
+
+### Multi-rol infra (HU-38)
+- Backend: `ROLES_V2` con 6 roles (`owner`, `admin`, `categorias`, `catalogo`, `activacion`, `administrativo`) + `LEGACY_ROLE_MAPPING`.
+- Columna `users.roles` (ARRAY String(32) nullable) + migración `a1b2c3d4e5f6` con **backfill automático** desde `role` legacy:
+  - admin → [owner, admin]
+  - supervisor → [admin]
+  - analista/viewer → [categorias]
+- JWT incluye `roles: []` además del `role` legacy — tokens viejos siguen validando durante la transición.
+- `UserOut.effective_roles` computed field.
+- Frontend `hasRole()` con any-overlap match — funciona con rol único legacy y con array v2.
+- Guards de endpoints y multi-select en `UserFormModal` quedan para v2.0.1.
+
+### Módulo Payway (skeleton)
+- Ruta `/payway` gateada por `["admin", "supervisor", "administrativo"]` — primer módulo del rol v2 nuevo.
+- Página placeholder con hero de "próximamente v2.0.1" + 3 feature cards (Programación / Rotación segura / Auditoría).
+- Entrada en sidebar sección "Automatización".
+- Lógica real (schema + cron + cliente API Payway + auditoría) en v2.1.
+
+### Fix operativo
+- `check_1pago_group` ahora flaggea reglas obsoletas de 1 cuota **con** level (Visa/Master con `cuotas={1}` y `cardLevel != null` habilitadas) — pide eliminarlas para cumplir el nuevo manual VTEX.
+
+### Notas técnicas
+- Al primer arranque de v2.0 los usuarios re-loguean una vez (JWT nuevo con `roles`). Fricción mínima aceptada para no arrastrar capas de compatibilidad.
+- El primer GET a `/dashboard/summary` en un pod recién levantado tarda 3-6s (call real a BaproAR Orders API); siguientes requests <10ms hasta que expira cache (5min).
+- Si BaproAR falla, el endpoint devuelve series vacías sin romper la UI (log-only).
+- Recharts (~50KB gz) sumado como dep.
+- Encode Sans queda como fallback ultimo (por si algún usuario tiene cache del v1.7.x).
+
+---
+
 ## [1.7.14] — 2026-08-13 — CRUD async con polling + validación "1 pago" nueva + rebrand logo (HU-47, HU-48, HU-49)
 
 Fix crítico: las operaciones write (Create/Update/Delete) contra "todos los sellers" (~658) tiraban "Error al ejecutar operación" a los 300s por el timeout del proxy de Railway. Se resolvió con patrón async + polling y paralelización agresiva.

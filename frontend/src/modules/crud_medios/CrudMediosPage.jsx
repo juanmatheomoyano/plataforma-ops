@@ -21,6 +21,7 @@ import { OperacionSelector } from "./components/OperacionSelector"
 import { ReadValidacionConfig, TODOS_GRUPOS } from "./components/ReadValidacionConfig"
 import { ResultsTable } from "./components/ResultsTable"
 import { ScopeSelector } from "./components/ScopeSelector"
+import { PageContainer, PageHeader } from "@/components/PageHeader"
 
 const WRITE_ROLES = ["admin", "supervisor"]
 
@@ -298,14 +299,15 @@ export default function CrudMediosPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground">CRUD Medios de Pago</h1>
-        <p className="text-sm text-muted-foreground">Gestión masiva de reglas de pago VTEX</p>
-      </div>
+    <PageContainer>
+      <PageHeader
+        eyebrow="Módulo"
+        title="CRUD Medios de Pago"
+        subtitle="Gestión masiva de reglas de pago VTEX"
+      />
 
       <Tabs defaultValue="ejecutar">
-        <TabsList className="bg-muted border border-border">
+        <TabsList className="border border-border bg-muted">
           <TabsTrigger value="ejecutar">Ejecutar</TabsTrigger>
           <TabsTrigger value="historial">Historial</TabsTrigger>
         </TabsList>
@@ -446,6 +448,6 @@ export default function CrudMediosPage() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+    </PageContainer>
   )
 }

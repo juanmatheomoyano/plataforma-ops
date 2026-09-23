@@ -1,24 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 80" width="340" height="80" role="img" aria-label="Provincia Ops">
   <defs>
-    <linearGradient id="poShine" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#26B554"/>
+    <linearGradient id="poShineD" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2FCB5F"/>
       <stop offset="1" stop-color="#1F9E48"/>
     </linearGradient>
   </defs>
   <g>
-    <rect x="4" y="12" width="56" height="56" rx="14" fill="url(#poShine)"/>
-    <rect x="4" y="12" width="56" height="56" rx="14" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="1"/>
+    <rect x="4" y="12" width="56" height="56" rx="14" fill="url(#poShineD)"/>
+    <rect x="4" y="12" width="56" height="56" rx="14" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>
     <text x="32" y="52"
           text-anchor="middle"
           font-family="'Plus Jakarta Sans', 'Segoe UI', Inter, system-ui, sans-serif"
           font-size="26" font-weight="800" letter-spacing="-1"
-          fill="#FFFFFF">PO</text>
+          fill="#06251A">PO</text>
   </g>
   <g transform="translate(76 0)">
     <text x="0" y="52"
           font-family="'Plus Jakarta Sans', 'Segoe UI', Inter, system-ui, sans-serif"
           font-size="36" font-weight="800" letter-spacing="-1.2">
-      <tspan fill="#0B2230">Provincia</tspan><tspan dx="6" fill="#0AA0DC">Ops</tspan>
+      <tspan fill="#F6F9FB">Provincia</tspan><tspan dx="6" fill="#3EC0F0">Ops</tspan>
     </text>
   </g>
 </svg>

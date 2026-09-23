@@ -17,6 +17,7 @@ import SellersPage from "@/modules/sellers/SellersPage"
 import CrudMediosPage from "@/modules/crud_medios/CrudMediosPage"
 import EventosPage from "@/modules/eventos/EventosPage"
 import AuditoriaPage from "@/modules/auditoria/AuditoriaPage"
+import PaywayPage from "@/modules/payway/PaywayPage"
 import "./index.css"
 
 function RoleRoute({ roles, children }) {
@@ -87,6 +88,14 @@ export default function App() {
                 element={
                   <RoleRoute roles={["admin"]}>
                     <AuditoriaPage />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="payway"
+                element={
+                  <RoleRoute roles={["admin", "supervisor", "administrativo"]}>
+                    <PaywayPage />
                   </RoleRoute>
                 }
               />
