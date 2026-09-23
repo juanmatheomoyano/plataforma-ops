@@ -20,7 +20,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 
-from .excel_io import build_consolidado_xlsx
+from .excel_io import build_report_zip
 from .jobs import Job, store
 from .sac_client import SACClient, SACSite
 
@@ -164,18 +164,17 @@ async def run_report(
     El progreso se persiste en `job.processed_units` (días procesados) sobre
     `job.total_units` (días × sites totales). El frontend hace polling cada 2s.
 
-    Al terminar, genera el XLSX consolidado y lo deja en `job.result_xlsx`.
+    Al terminar, empaqueta un ZIP con:
+      - Consolidado.xlsx (todas las filas)
+      - Payway_IDSITES.xlsx (índice por site con estados)
+      - Transacciones/Payway_{idsite}_{nombre}.xlsx (uno por seller)
+      - Logs/descarga_YYYYMMDD_HHMMSS.log (bitácora legible)
+    y lo deja en `job.result_xlsx` (nombre legacy — ahora contiene un ZIP).
     """
     job.status = "running"
     job.started_at = time.time()
     await store.update(job)
 
-    # Precomputamos total_units haciendo un login rápido para saber cuántos
-    # sites tiene cada usuario. En la práctica es mejor pasarlo desde afuera
-    # (el frontend ya lo tiene del validate) — acá lo calculamos como fallback.
-    #
-    # Nota: `credentials` acá ya viene validado desde el endpoint, cada dict
-    # incluye "username", "password", "sites" (lista de {idsite, nombre}).
     days_span = (date_to - date_from).days + 1
     total_sites = sum(len(c.get("sites", [])) for c in credentials)
     job.total_units = total_sites * days_span
@@ -186,10 +185,25 @@ async def run_report(
         job.id, len(credentials), total_sites, days_span, job.total_units,
     )
 
-    # Lista mutable compartida entre workers — cada uno appendea sus filas.
-    # No hace falta lock: solo appends, y GIL garantiza atomicidad para .append().
+    # Estructuras compartidas entre workers
+    # - all_rows: para el Consolidado.xlsx
+    # - per_seller: lista de {"username","idsite","nombre","rows"} para archivos individuales
+    # - site_results: para IDSITES.xlsx y para el meta del job
+    # - log_lines: bitácora legible del proceso
     all_rows: list[list[str]] = []
+    per_seller: list[dict] = []
     site_results: list[SiteReportResult] = []
+    log_lines: list[str] = []
+    log_lock = asyncio.Lock()
+
+    async def _log(level: str, msg: str) -> None:
+        stamp = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
+        line = f"[{stamp}] [{level:5}] {msg}"
+        async with log_lock:
+            log_lines.append(line)
+
+    await _log("INFO", f"Rango {date_from} .. {date_to} · estado={estado_id} · ambiente={ambiente}")
+    await _log("INFO", f"Credenciales: {len(credentials)} · sites totales: {total_sites}")
 
     sem = asyncio.Semaphore(_REPORT_USER_CONCURRENCY)
 
@@ -200,11 +214,11 @@ async def run_report(
             sites_meta = cred.get("sites", [])
 
             if not sites_meta:
-                # Sin sites -> nada para descargar. Registramos error para reportar.
                 site_results.append(SiteReportResult(
                     username=username, idsite="", nombre="",
                     error="Sin sites asignados",
                 ))
+                await _log("WARN", f"{username}: sin sites asignados — skip")
                 return
 
             try:
@@ -217,22 +231,38 @@ async def run_report(
                                 nombre=s.get("nombre", ""),
                                 error="Login fallido",
                             ))
-                            # Contamos como procesados para no colgar el %
                             job.processed_units += days_span
                         await store.update(job)
+                        await _log("ERROR", f"{username}: login fallido — todos los sites marcados como error")
                         return
 
+                    await _log("INFO", f"{username}: login OK ({len(sites_meta)} site/s)")
+
                     for site_meta in sites_meta:
+                        idsite = site_meta.get("idsite", "")
+                        nombre = site_meta.get("nombre", "")
+                        site_rows: list[list[str]] = []
                         result = await _download_site(
-                            client, username,
-                            site_meta.get("idsite", ""),
-                            site_meta.get("nombre", ""),
+                            client, username, idsite, nombre,
                             date_from, date_to, estado_id,
-                            all_rows,
-                            job,
+                            all_rows, site_rows, job,
                         )
                         site_results.append(result)
+                        per_seller.append({
+                            "username": username,
+                            "idsite": idsite,
+                            "nombre": nombre,
+                            "rows": site_rows,
+                        })
                         await store.update(job)
+                        if result.error:
+                            await _log("ERROR", f"{username}/{idsite} {nombre[:30]}: {result.error}")
+                        else:
+                            await _log(
+                                "INFO",
+                                f"{username}/{idsite} {nombre[:30]}: "
+                                f"{result.rows} filas · days_ok={result.days_ok} days_err={result.days_error}",
+                            )
 
             except Exception as e:
                 logger.warning("payway.report user=%s exception: %s", username, e, exc_info=True)
@@ -243,6 +273,7 @@ async def run_report(
                         nombre=s.get("nombre", ""),
                         error=f"Excepción: {e}",
                     ))
+                await _log("ERROR", f"{username}: excepción — {e}")
 
     try:
         await asyncio.gather(*(_process_user(c) for c in credentials))
@@ -254,15 +285,36 @@ async def run_report(
         logger.exception("payway.report job=%s failed", job.id)
         return
 
-    # Consolidado XLSX en memoria
+    # Reconstruimos sites_data para IDSITES.xlsx (necesita password + estado + rows)
+    # Match por (username, idsite): traemos la contraseña desde las credentials originales.
+    pwd_by_user = {c["username"]: c["password"] for c in credentials}
+    sites_data_for_index: list[dict] = []
+    for sr in site_results:
+        sites_data_for_index.append({
+            "idsite": sr.idsite,
+            "nombre": sr.nombre,
+            "username": sr.username,
+            "password": pwd_by_user.get(sr.username, ""),
+            "rows": sr.rows,
+            "error": sr.error or "",
+        })
+
+    await _log("INFO", "Empaquetando ZIP...")
+
     try:
-        job.result_xlsx = build_consolidado_xlsx(all_rows)
+        from .excel_io import build_report_zip
+        job.result_xlsx = build_report_zip(
+            consolidado_rows=all_rows,
+            per_seller=per_seller,
+            sites_data=sites_data_for_index,
+            log_lines=log_lines,
+        )
     except Exception as e:
         job.status = "error"
-        job.error_message = f"No se pudo generar el XLSX: {e}"
+        job.error_message = f"No se pudo generar el ZIP: {e}"
         job.finished_at = time.time()
         await store.update(job)
-        logger.exception("payway.report job=%s xlsx build failed", job.id)
+        logger.exception("payway.report job=%s zip build failed", job.id)
         return
 
     ok_sites = sum(1 for s in site_results if not s.error)
@@ -274,6 +326,7 @@ async def run_report(
         "date_from": date_from.isoformat(),
         "date_to": date_to.isoformat(),
         "estado_id": estado_id,
+        "format": "zip",
         "site_results": [
             {
                 "username": s.username,
@@ -291,8 +344,8 @@ async def run_report(
     job.finished_at = time.time()
     await store.update(job)
     logger.info(
-        "payway.report done job=%s rows=%d sites=%d/%d ok",
-        job.id, len(all_rows), ok_sites, len(site_results),
+        "payway.report done job=%s rows=%d sites=%d/%d ok zip=%d bytes",
+        job.id, len(all_rows), ok_sites, len(site_results), len(job.result_xlsx or b""),
     )
 
 
@@ -305,11 +358,16 @@ async def _download_site(
     date_to: date,
     estado_id: str,
     all_rows: list[list[str]],
+    site_rows: list[list[str]],
     job: Job,
 ) -> SiteReportResult:
     """
     Descarga día por día un site completo. Reintenta hasta 3 veces por día.
     Deduplica por Id_Operacion (primera columna del TSV).
+
+    Appendea las filas nuevas tanto al buffer global (`all_rows`) como al
+    buffer por-seller (`site_rows`). El primero es para el Consolidado.xlsx,
+    el segundo para generar el archivo individual del seller dentro del ZIP.
     """
     result = SiteReportResult(username=username, idsite=idsite, nombre=nombre)
     seen: set[str] = set()
@@ -319,11 +377,11 @@ async def _download_site(
         for attempt in range(1, _MAX_RETRIES_PER_DAY + 1):
             dl = await client.download_day(idsite, current, estado_id)
             if not dl.error:
-                # OK — dedup y append
                 for row in dl.rows:
                     if row and row[0] and row[0] not in seen:
                         seen.add(row[0])
                         all_rows.append(row)
+                        site_rows.append(row)
                         result.rows += 1
                 last_error = None
                 break

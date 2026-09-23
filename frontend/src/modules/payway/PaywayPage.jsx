@@ -35,7 +35,6 @@ const POLL_INTERVAL_MS = 2000
 export default function PaywayPage() {
   const [tab, setTab] = useState("credenciales")
   const [file, setFile] = useState(null)
-  const [ambiente, setAmbiente] = useState("produccion")
   const [validation, setValidation] = useState(null) // { ok, total, results: [...] }
 
   return (
@@ -70,8 +69,6 @@ export default function PaywayPage() {
           <CredentialsTab
             file={file}
             onFile={setFile}
-            ambiente={ambiente}
-            onAmbiente={setAmbiente}
             validation={validation}
             onValidation={setValidation}
             onGoNext={() => setTab("reporte")}
@@ -82,7 +79,6 @@ export default function PaywayPage() {
         <TabsContent value="reporte" className="mt-4">
           <ReportTab
             file={file}
-            ambiente={ambiente}
             validation={validation}
           />
         </TabsContent>
@@ -93,7 +89,7 @@ export default function PaywayPage() {
 
 // ─── Tab 1: Credenciales ────────────────────────────────────────────────
 
-function CredentialsTab({ file, onFile, ambiente, onAmbiente, validation, onValidation, onGoNext }) {
+function CredentialsTab({ file, onFile, validation, onValidation, onGoNext }) {
   const [loading, setLoading] = useState(false)
   const inputRef = useRef(null)
 
@@ -104,7 +100,6 @@ function CredentialsTab({ file, onFile, ambiente, onAmbiente, validation, onVali
     try {
       const fd = new FormData()
       fd.append("file", file)
-      fd.append("ambiente", ambiente)
       const { data } = await client.post("/payway/validate", fd, {
         headers: { "Content-Type": "multipart/form-data" },
         timeout: 5 * 60 * 1000,
@@ -162,21 +157,6 @@ function CredentialsTab({ file, onFile, ambiente, onAmbiente, validation, onVali
                 </span>
               )}
             </div>
-          </div>
-
-          <div className="min-w-[160px]">
-            <Label className="mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              Ambiente
-            </Label>
-            <select
-              value={ambiente}
-              onChange={(e) => onAmbiente(e.target.value)}
-              disabled={loading}
-              className="mt-1.5 block h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand-cyan"
-            >
-              <option value="produccion">Producción</option>
-              <option value="sandbox">Sandbox</option>
-            </select>
           </div>
 
           <Button
@@ -277,7 +257,7 @@ function ValidationResults({ validation, onGoNext }) {
 
 // ─── Tab 2: Descargar reporte ───────────────────────────────────────────
 
-function ReportTab({ file, ambiente, validation }) {
+function ReportTab({ file, validation }) {
   const today = new Date().toISOString().slice(0, 10)
   const [dateFrom, setDateFrom] = useState(today)
   const [dateTo, setDateTo] = useState(today)
@@ -335,7 +315,6 @@ function ReportTab({ file, ambiente, validation }) {
     try {
       const fd = new FormData()
       fd.append("file", file)
-      fd.append("ambiente", ambiente)
       fd.append("date_from", dateFrom)
       fd.append("date_to", dateTo)
       fd.append("estado_id", estadoId)
@@ -351,7 +330,7 @@ function ReportTab({ file, ambiente, validation }) {
     } finally {
       setStarting(false)
     }
-  }, [file, ambiente, dateFrom, dateTo, estadoId, validatedSitesJson, totalUnitsEstimate])
+  }, [file, dateFrom, dateTo, estadoId, validatedSitesJson, totalUnitsEstimate])
 
   const handleDownload = useCallback(async () => {
     if (!job?.id) return
@@ -362,9 +341,10 @@ function ReportTab({ file, ambiente, validation }) {
       const resp = await client.get(`/payway/jobs/${job.id}/download`, {
         responseType: "arraybuffer",
       })
-      const defaultName = `Payway_Transacciones_${dateFrom}_${dateTo}.xlsx`
+      // v2.1.2+: el backend arma un ZIP con Consolidado + XLSX por seller + Logs.
+      const defaultName = `Payway_Reporte_${dateFrom}_${dateTo}.zip`
       const filePath = await save({
-        filters: [{ name: "Excel", extensions: ["xlsx"] }],
+        filters: [{ name: "ZIP", extensions: ["zip"] }],
         defaultPath: defaultName,
       })
       if (!filePath) return // user canceló el diálogo
@@ -466,7 +446,7 @@ function ReportTab({ file, ambiente, validation }) {
               </div>
               <Button onClick={handleDownload} className="bg-brand-green text-white hover:bg-brand-green/90">
                 <Download className="mr-2 h-4 w-4" />
-                Descargar XLSX
+                Descargar ZIP
               </Button>
             </div>
           )}

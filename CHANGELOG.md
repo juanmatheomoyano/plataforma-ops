@@ -5,6 +5,32 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [2.1.2] — 2026-09-23 — Reporte Payway como ZIP + IDSITES enriquecido + ambiente hardcoded
+
+### Reporte Payway ahora es un ZIP con estructura completa
+Antes bajabas un solo `Consolidado.xlsx`. Ahora bajás un `Payway_Reporte_YYYY-MM-DD_YYYY-MM-DD.zip` con:
+- `Logs/descarga_YYYYMMDD_HHMMSS.log` — bitácora legible con timestamps por usuario/site (info/warn/error)
+- `Consolidado.xlsx` — todas las transacciones en una hoja
+- `Payway_IDSITES.xlsx` — índice por site con 3 estados visuales
+- `Transacciones/Payway_{idsite}_{seller}.xlsx` — un archivo por seller (solo los que tienen filas)
+
+### `Payway_IDSITES.xlsx` enriquecido
+Antes solo destacaba errores. Ahora tiene 3 estados con color en toda la fila:
+- 🟢 **OK** — verde claro con conteo de transacciones descargadas
+- 🟡 **SIN FILAS** — amarillo, login OK pero 0 transacciones en el rango
+- 🔴 **ERROR** — rojo con mensaje del fallo
+
+Nueva columna `Transacciones` con el conteo alineado a la derecha. Freeze del header.
+
+### Ambiente hardcoded a Producción
+El selector Sandbox/Producción quedó fuera — la app siempre apunta a producción (el SAC de sandbox no tiene datos útiles). Constante interna por si en el futuro se reabre.
+
+### Fixes
+- Bug latente: `router.py::generate_report` referenciaba `ambiente` (indefinido) en la rama sin `validated_sites_json`. Corregido a `_AMBIENTE`.
+- Frontend `handleDownload` renombra `.xlsx` → `.zip` y filtro del diálogo actualizado.
+
+---
+
 ## [2.1.1] — 2026-09-23 — Hotfix: descarga XLSX Payway en Tauri
 
 Bug de v2.1.0: al tocar "Descargar XLSX" en el módulo Payway no pasaba nada. El código usaba el patrón `<a download>` del browser que Tauri WebView no soporta.

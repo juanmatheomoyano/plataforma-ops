@@ -34,7 +34,10 @@ router = APIRouter(prefix="/payway", tags=["payway"])
 # 5 MB — tope generoso para el PaywayKeys.xlsx (típico son ~50 KB).
 _MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 
-_ALLOWED_AMBIENTES = {"produccion", "sandbox"}
+# Ambiente hardcoded a producción — el sandbox se descarto para simplificar UX
+# (el SAC de sandbox no tiene datos útiles para operar). El param queda solo
+# como constante interna por si en el futuro se quiere reabrir sandbox.
+_AMBIENTE = "produccion"
 
 
 # ─── Fase 1: validate ─────────────────────────────────────────────────────
@@ -43,7 +46,6 @@ _ALLOWED_AMBIENTES = {"produccion", "sandbox"}
 @router.post("/validate")
 async def validate_payway_keys(
     file: UploadFile = File(...),
-    ambiente: str = Form("produccion"),
     user: User = Depends(require_role(["admin", "supervisor"])),
 ) -> dict:
     """
@@ -51,11 +53,6 @@ async def validate_payway_keys(
     Para cada credencial hace login SAC de prueba y devuelve estado + sites.
     Nada persiste.
     """
-    if ambiente not in _ALLOWED_AMBIENTES:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"ambiente inválido: {ambiente}. Válidos: {sorted(_ALLOWED_AMBIENTES)}",
-        )
     if not file.filename or not file.filename.lower().endswith(".xlsx"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -75,13 +72,13 @@ async def validate_payway_keys(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     logger.info(
-        "payway.validate started user=%s ambiente=%s creds=%d",
-        user.username, ambiente, len(creds),
+        "payway.validate started user=%s creds=%d",
+        user.username, len(creds),
     )
-    summary = await validate_credentials(creds, ambiente=ambiente)
+    summary = await validate_credentials(creds, ambiente=_AMBIENTE)
     logger.info(
-        "payway.validate done user=%s ambiente=%s ok=%d/%d sites=%d",
-        user.username, ambiente, summary.ok, summary.total, summary.total_sites,
+        "payway.validate done user=%s ok=%d/%d sites=%d",
+        user.username, summary.ok, summary.total, summary.total_sites,
     )
     return summary.to_dict()
 
@@ -103,7 +100,6 @@ async def list_estados(
 @router.post("/reports/generate", status_code=status.HTTP_202_ACCEPTED)
 async def generate_report(
     file: UploadFile = File(...),
-    ambiente: str = Form("produccion"),
     date_from: str = Form(...),  # YYYY-MM-DD
     date_to: str = Form(...),
     estado_id: str = Form("0"),
@@ -124,11 +120,6 @@ async def generate_report(
     Si no se pasa, hacemos login inicial durante el job para obtener sites.
     """
     # ── Validación de inputs ──
-    if ambiente not in _ALLOWED_AMBIENTES:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"ambiente inválido: {ambiente}",
-        )
     try:
         df = date.fromisoformat(date_from)
         dt = date.fromisoformat(date_to)
@@ -196,7 +187,7 @@ async def generate_report(
             "payway.reports.generate discovering sites user=%s creds=%d",
             user.username, len(creds),
         )
-        summary = await validate_credentials(creds, ambiente=ambiente)
+        summary = await validate_credentials(creds, ambiente=_AMBIENTE)
         result_map = {r.username: r for r in summary.results}
         enriched = [
             {
@@ -221,7 +212,7 @@ async def generate_report(
         try:
             await run_report(
                 job, enriched, df, dt,
-                estado_id=estado_id, ambiente=ambiente,
+                estado_id=estado_id, ambiente=_AMBIENTE,
             )
         except Exception as e:
             logger.exception("payway.reports background failed job=%s", job.id)
@@ -271,13 +262,18 @@ async def download_job_result(
     if not job.result_xlsx:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Sin resultado")
 
-    filename = f"Payway_Transacciones_{job.meta.get('date_from', '')}_{job.meta.get('date_to', '')}.xlsx"
+    # v2.1.2+: el resultado ahora es un ZIP con Consolidado + XLSX por seller + Logs.
+    fmt = (job.meta or {}).get("format", "zip")
+    is_zip = fmt == "zip"
+    ext = "zip" if is_zip else "xlsx"
+    mime = "application/zip" if is_zip else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    filename = f"Payway_Reporte_{job.meta.get('date_from', '')}_{job.meta.get('date_to', '')}.{ext}"
 
     async def _iter():
         yield job.result_xlsx
 
     return StreamingResponse(
         _iter(),
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        media_type=mime,
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
