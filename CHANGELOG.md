@@ -5,6 +5,45 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [2.1.0] — 2026-09-23 — Módulo Payway operativo (validar credenciales + descarga de reporte) + ventana responsive
+
+Primer módulo funcional de Payway. Reemplaza al skeleton que quedó en v2.0. Cero persistencia: todo vive en memoria durante el job.
+
+### Payway — Fase 1 y 2 (Fase 3 rotación queda para v2.2)
+- **Backend nuevo** `app/modules/payway/`:
+  - `sac_client.py` — cliente async httpx contra `live.decidir.com` (SAC). Login + get sites + descarga día por día + re-login automático si la sesión expira. Portado del standalone `descargador_sac.py`.
+  - `excel_io.py` — parseo del `PaywayKeys.xlsx` (columnas usuario/contraseña) + generación del XLSX consolidado en memoria (con "Vencido" calculado client-side).
+  - `service.py`:
+    - `validate_credentials()` — Semaphore(5), login SAC de prueba por credencial, devuelve estados + sites.
+    - `run_report()` — descarga masiva con Semaphore(10) por usuario (los sites de un mismo user van secuenciales para no romper la cookie SAC). Retry x3 por día, dedup por `Id_Operacion`, dedup, actualiza progreso en el job.
+  - `jobs.py` — Job store in-memory con TTL 30min, Lock async, auto-purge de jobs terminados. Modelo `Job` con `processed_units`/`total_units`, `result_xlsx` (bytes para stream), `meta` (metadata para UI).
+- **Endpoints** (`/api/payway/*`, todos gateados por `admin`/`supervisor`):
+  - `POST /validate` — sube xlsx, valida logins, devuelve tabla de estados.
+  - `GET /estados` — catálogo estados SAC para dropdown.
+  - `POST /reports/generate` (202) — arranca job async con `validated_sites_json` opcional para saltear descubrimiento.
+  - `GET /jobs/{id}` — polling status/progress (owner-only via `user_id`).
+  - `GET /jobs/{id}/download` — stream del XLSX consolidado.
+- **Frontend** `PaywayPage.jsx` rediseñado end-to-end:
+  - Tab **Credenciales**: dropzone xlsx + select ambiente + botón validar. Cards con Total/OK/Error/Sites. Tabla con Estado/Usuario/Sites/Detalle. Botón "Descargar reporte con estas credenciales →" salta al Tab 2.
+  - Tab **Descargar reporte**: guard si no hay validación previa. Grid con Desde/Hasta/Estado/Generar. Estimación `sites × días` visible. Progress bar con polling cada 2s. Card verde con resumen + botón "Descargar XLSX" cuando termina. Tabla por site con errores destacados.
+  - Tab **Rotar contraseñas**: visible pero disabled con badge "v2.2".
+- **Deps nuevas**: `beautifulsoup4>=4.13,<5.0` en `requirements.txt`.
+- **Scripts local test**:
+  - `scripts/test_payway_validate.py <xlsx>` — valida el flujo de login SAC sin backend levantado.
+  - `scripts/test_payway_report.py <xlsx> <from> <to>` — corre `run_report()` completo, guarda XLSX en `scripts/_out/`.
+
+### Ventana Tauri responsive
+- Arranque en 1180×720 (antes 1280×800), min 900×560 (antes 1024×600), `center: true` para pantallas chicas.
+- Sidebar colapsable con toggle manual + auto-collapse cuando `window.innerWidth < 1180`. Preferencia persistida en `localStorage`. Tooltips en modo colapsado. Dropdown de usuario se abre a la derecha cuando la sidebar está cerrada.
+- `PageHeader` responsive: título 3xl→2xl en <640px, acciones a línea nueva en mobile, padding container 16px mobile / 24px desktop.
+
+### Notas técnicas
+- Sin migraciones nuevas — el módulo Payway es efímero por diseño (no persiste credenciales ni XLSX).
+- El job store es in-memory; con múltiples réplicas de Railway habría que migrarlo a Redis/BD. Por ahora corre 1 instancia y alcanza.
+- La rotación de contraseñas (v2.2) usa las mismas credenciales del `PaywayKeys.xlsx` — el user sube el mismo archivo y el backend genera un nuevo xlsx con las contraseñas actualizadas.
+
+---
+
 ## [2.0.0] — 2026-09-23 — Plataforma pro: rebrand total + Dashboard v2 (Owner) + multi-rol infra + módulo Payway (skeleton)
 
 Release grande. Cambio de imagen completo (Modelo A del branding), Dashboard ejecutivo con datos reales del marketplace, fundamentos para multi-rol y skeleton del módulo Payway.

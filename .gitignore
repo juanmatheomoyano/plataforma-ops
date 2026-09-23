@@ -69,3 +69,6 @@ frontend/public/uploads/
 *Nuevo Manual*.pdf
 build-*.log
 
+# Outputs de scripts locales de test (Payway, etc.)
+backend/scripts/_out/
+
