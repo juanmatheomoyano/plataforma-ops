@@ -5,6 +5,19 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [2.1.1] — 2026-09-23 — Hotfix: descarga XLSX Payway en Tauri
+
+Bug de v2.1.0: al tocar "Descargar XLSX" en el módulo Payway no pasaba nada. El código usaba el patrón `<a download>` del browser que Tauri WebView no soporta.
+
+### Fix
+- `PaywayPage.jsx::handleDownload` migrado al patrón nativo Tauri (`save` dialog + `writeFile`), consistente con Sellers/CRUD/Users que ya usan lo mismo.
+- Response bajado como `arraybuffer` (antes `blob`) para que `writeFile` reciba `Uint8Array` correctamente.
+
+### Sin otros cambios
+Backend Payway idéntico. Solo hotfix frontend.
+
+---
+
 ## [2.1.0] — 2026-09-23 — Módulo Payway operativo (validar credenciales + descarga de reporte) + ventana responsive
 
 Primer módulo funcional de Payway. Reemplaza al skeleton que quedó en v2.0. Cero persistencia: todo vive en memoria durante el job.

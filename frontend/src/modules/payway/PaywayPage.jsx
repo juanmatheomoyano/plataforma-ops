@@ -10,6 +10,8 @@ import {
   Upload,
   X,
 } from "lucide-react"
+import { save } from "@tauri-apps/plugin-dialog"
+import { writeFile } from "@tauri-apps/plugin-fs"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -354,19 +356,22 @@ function ReportTab({ file, ambiente, validation }) {
   const handleDownload = useCallback(async () => {
     if (!job?.id) return
     try {
+      // Tauri WebView no soporta <a download> — usamos el save dialog nativo
+      // + writeFile. En build web puro caeríamos a otro path, pero acá la app
+      // siempre corre en Tauri.
       const resp = await client.get(`/payway/jobs/${job.id}/download`, {
-        responseType: "blob",
+        responseType: "arraybuffer",
       })
-      const url = URL.createObjectURL(resp.data)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = `Payway_Transacciones_${dateFrom}_${dateTo}.xlsx`
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      URL.revokeObjectURL(url)
+      const defaultName = `Payway_Transacciones_${dateFrom}_${dateTo}.xlsx`
+      const filePath = await save({
+        filters: [{ name: "Excel", extensions: ["xlsx"] }],
+        defaultPath: defaultName,
+      })
+      if (!filePath) return // user canceló el diálogo
+      await writeFile(filePath, new Uint8Array(resp.data))
+      toast.success("Reporte guardado")
     } catch (e) {
-      toast.error(e.response?.data?.detail ?? "Error al descargar")
+      toast.error(e?.response?.data?.detail ?? e?.message ?? "Error al descargar")
     }
   }, [job?.id, dateFrom, dateTo])
 
