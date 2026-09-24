@@ -1619,15 +1619,37 @@ async def run_evento_export(
     return await _run_evento_core(db, request)
 
 
-async def cleanup_old_operations(db: AsyncSession) -> int:
-    cutoff = datetime.now(timezone.utc) - timedelta(days=90)
-    result = await db.execute(
-        select(CrudOperation).where(CrudOperation.started_at < cutoff)
+async def cleanup_old_operations(db: AsyncSession, days: int = 30) -> int:
+    """Borra operaciones y sus filas de detalle con más de `days` días.
+
+    Usa bulk DELETE directo en lugar de ORM row-by-row para no cargar
+    cientos de miles de filas en memoria (crud_operation_rows puede crecer
+    rápido — ~5K filas/día con uso normal de 464 sellers).
+    """
+    from sqlalchemy import delete as sa_delete
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+
+    # Primero las filas de detalle (FK hacia crud_operations)
+    rows_result = await db.execute(
+        sa_delete(CrudOperationRow).where(
+            CrudOperationRow.operation_id.in_(
+                select(CrudOperation.id).where(CrudOperation.started_at < cutoff)
+            )
+        )
     )
-    ops = list(result.scalars().all())
-    for op in ops:
-        await db.delete(op)
-    if ops:
+    rows_deleted = rows_result.rowcount
+
+    # Luego los encabezados
+    ops_result = await db.execute(
+        sa_delete(CrudOperation).where(CrudOperation.started_at < cutoff)
+    )
+    ops_deleted = ops_result.rowcount
+
+    if ops_deleted:
         await db.commit()
-    logger.info("Cleanup: eliminadas %d operaciones con más de 90 días", len(ops))
-    return len(ops)
+
+    logger.info(
+        "Cleanup: %d operaciones y %d filas de detalle eliminadas (> %d días)",
+        ops_deleted, rows_deleted, days,
+    )
+    return ops_deleted

@@ -39,6 +39,9 @@ _logger = logging.getLogger(__name__)
 _MARKETPLACE_SYNC_JOB = "marketplace_sync"
 _MARKETPLACE_SYNC_TTL_SECONDS = 30 * 60  # 30 min — cubre worst case de sync completo
 
+_CLEANUP_JOB = "crud_cleanup"
+_CLEANUP_TTL_SECONDS = 10 * 60
+
 
 async def _run_marketplace_sync(label: str) -> None:
     """Ejecuta el sync marketplace bajo lock DB. No re-raise: solo loguea."""
@@ -53,19 +56,31 @@ async def _run_marketplace_sync(label: str) -> None:
         _logger.warning("Marketplace sync (%s) falló (no fatal): %s", label, e)
 
 
+async def _run_cleanup(label: str) -> None:
+    """Borra operaciones CRUD con más de 30 días bajo lock. No re-raise."""
+    try:
+        async with AsyncSessionLocal() as db:
+            async with job_lock(db, _CLEANUP_JOB, _CLEANUP_TTL_SECONDS) as acquired:
+                if not acquired:
+                    _logger.info("Cleanup (%s) skipped: otra réplica corriendo", label)
+                    return
+                await cleanup_old_operations(db, days=30)
+    except Exception as e:
+        _logger.warning("Cleanup (%s) falló (no fatal): %s", label, e)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Limpieza de historial — IO contra BD propia, seguro dentro del lifespan.
-    async with AsyncSessionLocal() as db:
-        await cleanup_old_operations(db)
+    # Limpieza de historial al arrancar.
+    asyncio.create_task(_run_cleanup("startup"))
 
     # Sync marketplace en background — NO bloquea el startup ni el health check.
-    # Si el marketplace está caído, la app arranca igual y el sync fallará silenciosamente.
     startup_task = asyncio.create_task(_run_marketplace_sync("startup"))
 
-    # Sync diario programado.
+    # Jobs diarios.
     scheduler = AsyncIOScheduler()
     scheduler.add_job(lambda: asyncio.create_task(_run_marketplace_sync("daily")), "interval", hours=24)
+    scheduler.add_job(lambda: asyncio.create_task(_run_cleanup("daily")), "interval", hours=24)
     scheduler.start()
 
     yield
