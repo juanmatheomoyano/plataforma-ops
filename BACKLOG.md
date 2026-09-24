@@ -681,6 +681,30 @@ Reemplazar el sistema actual de rol único por un sistema de **roles múltiples 
 
 ---
 
+### HU-52 `[usuario]` — Completar catálogo de estados SAC Payway 🔴
+Prioridad: 🔴 Crítica · Tamaño: S · Estado: 📋 Backlog
+
+**Contexto**
+El selector de estados del reporte Payway tiene solo 8 opciones hardcodeadas en `sac_client.py::SAC_ESTADO_IDS`. El SAC de producción tiene más estados que no están cubiertos — el usuario no puede filtrar por ellos al descargar el reporte.
+
+**Estados actuales (incompletos)**
+```
+"Todos": "0", "Aprobadas": "6", "Rechazadas": "5", "Anuladas": "7",
+"Devueltas": "9", "Vencidas": "12", "Pre autorizada": "11", "Autorizada": "4"
+```
+
+**Tarea**
+- [ ] Ingresar al SAC de producción (`live.decidir.com`) y relevar todos los estados disponibles en el selector `sacparam_idestado` (HTML del `VistaDownloadServlet` o del `VistaBrowserServlet`)
+- [ ] Completar `SAC_ESTADO_IDS` en `backend/app/modules/payway/sac_client.py` con todos los IDs reales
+- [ ] Verificar que el frontend (`/payway/estados`) los muestre correctamente en el select del reporte
+- [ ] Deploy backend — sin migración de BD ni rebuild de Tauri
+
+**Notas**
+- El ID numérico de cada estado se puede ver inspeccionando el `<select name="sacparam_idestado">` del HTML del SAC
+- El endpoint `GET /payway/estados` ya sirve el diccionario dinámicamente — solo hay que completar el dict
+
+---
+
 ### HU-51 `[usuario]` — Mantenimiento base de datos Railway
 Prioridad: ✅ Hecho · Tamaño: S · Estado: ✅ 2026-09-24
 
