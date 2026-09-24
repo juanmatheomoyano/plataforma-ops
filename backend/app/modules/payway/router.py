@@ -46,7 +46,7 @@ _AMBIENTE = "produccion"
 @router.post("/validate")
 async def validate_payway_keys(
     file: UploadFile = File(...),
-    user: User = Depends(require_role(["admin", "supervisor"])),
+    user: User = Depends(require_role(["admin", "supervisor", "analista"])),
 ) -> dict:
     """
     Sube el `PaywayKeys.xlsx` (columnas: usuario, contraseña).
@@ -88,7 +88,7 @@ async def validate_payway_keys(
 
 @router.get("/estados")
 async def list_estados(
-    user: User = Depends(require_role(["admin", "supervisor"])),
+    user: User = Depends(require_role(["admin", "supervisor", "analista"])),
 ) -> list[dict]:
     """
     Catálogo de estados SAC disponibles para el filtro del reporte.
@@ -106,7 +106,7 @@ async def generate_report(
     # Cuando el frontend viene del validate, ya sabe qué usernames tienen sites.
     # Enviarlos como JSON opcional evita re-hacer los logins solo para descubrir sites.
     validated_sites_json: str | None = Form(None),
-    user: User = Depends(require_role(["admin", "supervisor"])),
+    user: User = Depends(require_role(["admin", "supervisor", "analista"])),
 ) -> dict:
     """
     Arranca el job de descarga en background y devuelve `job_id` para polling.
@@ -228,7 +228,7 @@ async def generate_report(
 @router.get("/jobs/{job_id}")
 async def get_job(
     job_id: str,
-    user: User = Depends(require_role(["admin", "supervisor"])),
+    user: User = Depends(require_role(["admin", "supervisor", "analista"])),
 ) -> dict:
     """
     Polling del estado del job. Devuelve progreso + metadata.
@@ -244,7 +244,7 @@ async def get_job(
 @router.get("/jobs/{job_id}/download")
 async def download_job_result(
     job_id: str,
-    user: User = Depends(require_role(["admin", "supervisor"])),
+    user: User = Depends(require_role(["admin", "supervisor", "analista"])),
 ) -> StreamingResponse:
     """
     Descarga el XLSX consolidado del job. Solo válido cuando status=done.
