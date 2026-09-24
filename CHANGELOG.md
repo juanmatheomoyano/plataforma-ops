@@ -5,12 +5,53 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [2.1.4] — 2026-09-24 — Jobs Payway en segundo plano + fix crash validación
+
+### Persistencia de jobs al navegar
+Tanto la validación de credenciales como la descarga de reportes Payway ahora sobreviven si el usuario navega a otro módulo y vuelve. El `job_id` se guarda en `localStorage` y se restaura al montar el componente — la barra de progreso retoma automáticamente.
+
+### Fix: pantalla en blanco al hacer click en Validar
+Al iniciar la validación, `validateJob` era `null` mientras `starting=true`, lo que causaba un acceso nulo en la barra de progreso y crasheaba el componente. Corregido con estado `starting` explícito y optional chaining en el JSX.
+
+### Tab "Descargar reporte" habilitada con job activo
+La tab permanece habilitada aunque el usuario no tenga una sesión de validación activa en la pestaña, siempre que haya un job de reporte en curso restaurado desde localStorage.
+
+---
+
+## [2.1.3] — 2026-09-24 — Validación SAC async + localStorage + fix crash
+
+### Validación de credenciales ahora async con progress bar
+Con 650+ sellers, la validación sincrónica superaba los 300s de timeout de Railway. Ahora es un job async (202 + polling cada 1s). Concurrencia 5→20, timeout por credencial 10s (fail-fast).
+
+### Fix crash pantalla blanca
+`validateJob` nulo durante `starting=true` causaba TypeError en la barra de progreso. Corregido.
+
+---
+
 ## [2.1.2+] — 2026-09-24 — Permisos Payway extendidos a rol analista
 
 ### Cambio de autorización
 - Los 5 endpoints de Payway (`/validate`, `/estados`, `/reports/generate`, `/jobs/{id}`, `/jobs/{id}/download`) ahora aceptan `analista` además de `admin` y `supervisor`.
 - `viewer` sigue sin acceso.
 - Sin migración de BD — es un cambio de guard en `backend/app/modules/payway/router.py`.
+
+---
+
+## [2026-09-24] — Mantenimiento BD: limpieza `crud_operation_rows` + retención automática
+
+### Problema
+`crud_operation_rows` había crecido a 576K filas / 202 MB (95% del disco en el plan $5 Railway).
+
+### Acciones realizadas
+- VACUUM ANALYZE en todas las tablas
+- Bulk DELETE de 326K filas con más de 30 días (SQL directo, no ORM)
+- TRUNCATE de las 249K filas restantes para reclamar espacio físico (VACUUM FULL no podía correr con disco lleno)
+- VACUUM FULL post-truncate: BD bajó de **213 MB → 12 MB**
+
+### Cleanup automático implementado
+- `cleanup_old_operations()` reescrita con bulk DELETE (antes ORM row-by-row sobre 576K filas)
+- Retención: **3 días** (antes 90 días)
+- Corre al startup del backend y cada 24h vía `AsyncIOScheduler`, bajo `job_lock` distribuido
 
 ---
 

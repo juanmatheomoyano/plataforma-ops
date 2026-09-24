@@ -648,6 +648,9 @@ Rotación programada de contraseñas de acceso Payway con verificación end-to-e
 - [x] Fase 1: validación de credenciales SAC (`POST /validate`) — v2.1.0
 - [x] Fase 2: descarga masiva de reportes como ZIP con polling (`POST /reports/generate`) — v2.1.0 / v2.1.2
 - [x] Acceso extendido a rol `analista` en todos los endpoints — 2026-09-24
+- [x] Validación async con progress bar + polling (evita timeout Railway 300s con 650+ sellers) — v2.1.3
+- [x] Persistencia de jobs en localStorage: validación y reporte sobreviven navegación entre módulos — v2.1.4
+- [x] Fix crash pantalla blanca al iniciar validación — v2.1.3/v2.1.4
 - [ ] Fase 3: rotación de contraseñas (tab visible pero disabled, badge "v2.2")
 - [ ] Schema `payway_rotations` (id, seller_id, scheduled_at, status, prev_hash, new_hash, error_msg)
 - [ ] Cron scheduler (bajo `job_lock` como el sync marketplace)
@@ -675,3 +678,23 @@ Reemplazar el sistema actual de rol único por un sistema de **roles múltiples 
 - Depende de que existan los nuevos módulos "Alta de Sellers" y "Automatización Payway" (aún no en backlog).
 
 **Próximo paso:** convertir en HU formal cuando se planifique el sprint que la incluya. Antes de eso, definir con el usuario las preguntas abiertas.
+
+---
+
+### HU-51 `[usuario]` — Mantenimiento base de datos Railway
+Prioridad: ✅ Hecho · Tamaño: S · Estado: ✅ 2026-09-24
+
+**Contexto**
+`crud_operation_rows` creció a 576K filas / 202 MB → 95% del disco del plan $5 Railway (límite 500 MB).
+
+**Resuelto**
+- [x] Diagnóstico con Railway dashboard + queries directas a Postgres
+- [x] VACUUM ANALYZE en todas las tablas
+- [x] Bulk DELETE + TRUNCATE + VACUUM FULL: BD bajó de 213 MB → 12 MB
+- [x] `cleanup_old_operations()` reescrita con bulk DELETE (antes ORM row-by-row, muy lento para 576K filas)
+- [x] Retención reducida a 3 días (antes 90 días — la historia vieja no se usa)
+- [x] Cleanup corre al startup y cada 24h vía scheduler bajo `job_lock`
+
+**Notas**
+- `crud_operation_rows` crece ~5K filas/día con uso normal (464 sellers). Con 3 días de retención: ~15K filas / ~1 MB. Margen amplio.
+- Con el plan $5 de Railway (500 MB) estamos ahora al ~2% de uso.
