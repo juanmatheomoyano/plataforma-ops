@@ -23,6 +23,8 @@ import client from "@/core/api/client"
 
 const NUMBER = new Intl.NumberFormat("es-AR")
 const POLL_INTERVAL_MS = 2000
+const VALIDATE_JOB_KEY = "payway_validate_job_id"
+const REPORT_JOB_KEY = "payway_report_job_id"
 
 /**
  * Payway — Fase 1 (Validar) + Fase 2 (Descargar reporte).
@@ -91,9 +93,22 @@ export default function PaywayPage() {
 
 function CredentialsTab({ file, onFile, validation, onValidation, onGoNext }) {
   const [validateJob, setValidateJob] = useState(null) // {job_id, status, processed_units, total_units, error_message}
+  const [starting, setStarting] = useState(false)
   const inputRef = useRef(null)
 
-  const isValidating = validateJob?.status === "pending" || validateJob?.status === "running"
+  const isValidating = starting || validateJob?.status === "pending" || validateJob?.status === "running"
+
+  // Restore job from localStorage on mount (survives navigation)
+  useEffect(() => {
+    const savedId = localStorage.getItem(VALIDATE_JOB_KEY)
+    if (!savedId) return
+    client.get(`/payway/validate-jobs/${savedId}`)
+      .then(({ data }) => {
+        setValidateJob(data)
+        if (data.status === "done" && data.summary) onValidation(data.summary)
+      })
+      .catch(() => localStorage.removeItem(VALIDATE_JOB_KEY))
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Poll cada 1s mientras corre la validación
   useEffect(() => {
@@ -105,12 +120,14 @@ function CredentialsTab({ file, onFile, validation, onValidation, onGoNext }) {
         if (cancelled) return
         setValidateJob(data)
         if (data.status === "done" && data.summary) {
+          localStorage.removeItem(VALIDATE_JOB_KEY)
           const s = data.summary
           onValidation(s)
           if (s.ok === 0) toast.error("Ninguna credencial validó correctamente. Revisá el archivo.")
           else if (s.error > 0) toast.warning(`${s.ok}/${s.total} OK. Revisá las que fallaron.`)
           else toast.success(`Todas las credenciales OK — ${s.total_sites} sites detectados.`)
         } else if (data.status === "error") {
+          localStorage.removeItem(VALIDATE_JOB_KEY)
           toast.error(data.error_message ?? "Error al validar credenciales")
         }
       } catch { /* sigue polleando */ }
@@ -121,17 +138,22 @@ function CredentialsTab({ file, onFile, validation, onValidation, onGoNext }) {
 
   async function handleValidate() {
     if (!file) return
+    setStarting(true)
     onValidation(null)
     setValidateJob(null)
+    localStorage.removeItem(VALIDATE_JOB_KEY)
     try {
       const fd = new FormData()
       fd.append("file", file)
       const { data } = await client.post("/payway/validate", fd, {
         headers: { "Content-Type": "multipart/form-data" },
       })
+      localStorage.setItem(VALIDATE_JOB_KEY, data.job_id)
       setValidateJob({ job_id: data.job_id, status: data.status, processed_units: 0, total_units: 0 })
     } catch (e) {
       toast.error(e.response?.data?.detail ?? "Error al iniciar validación")
+    } finally {
+      setStarting(false)
     }
   }
 
@@ -199,7 +221,7 @@ function CredentialsTab({ file, onFile, validation, onValidation, onGoNext }) {
           <div className="mt-4">
             <div className="mb-1.5 flex items-center justify-between">
               <span className="eyebrow text-muted-foreground">Validando credenciales…</span>
-              {validateJob.total_units > 0 && (
+              {validateJob?.total_units > 0 && (
                 <span className="mono text-xs tabular-nums text-foreground">
                   {validateJob.processed_units} / {validateJob.total_units} ({pct}%)
                 </span>
@@ -209,9 +231,9 @@ function CredentialsTab({ file, onFile, validation, onValidation, onGoNext }) {
               <div
                 className={[
                   "h-full transition-all duration-500 ease-out bg-brand-cyan",
-                  validateJob.total_units === 0 ? "animate-pulse w-full" : "",
+                  !validateJob?.total_units ? "animate-pulse w-full" : "",
                 ].join(" ")}
-                style={validateJob.total_units > 0 ? { width: `${pct}%` } : undefined}
+                style={validateJob?.total_units > 0 ? { width: `${pct}%` } : undefined}
               />
             </div>
           </div>
@@ -235,7 +257,7 @@ function CredentialsTab({ file, onFile, validation, onValidation, onGoNext }) {
 }
 
 function ValidationResults({ validation, onGoNext }) {
-  const { total, ok, error, total_sites, results } = validation
+  const { total = 0, ok = 0, error = 0, total_sites = 0, results = [] } = validation ?? {}
   return (
     <Card className="border-border bg-card p-6 shadow-soft">
       <div className="mb-4 flex flex-wrap items-center gap-3">
