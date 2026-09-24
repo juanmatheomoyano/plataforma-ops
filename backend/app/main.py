@@ -64,7 +64,7 @@ async def _run_cleanup(label: str) -> None:
                 if not acquired:
                     _logger.info("Cleanup (%s) skipped: otra réplica corriendo", label)
                     return
-                await cleanup_old_operations(db, days=30)
+                await cleanup_old_operations(db, days=3)
     except Exception as e:
         _logger.warning("Cleanup (%s) falló (no fatal): %s", label, e)
 
