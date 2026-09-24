@@ -628,6 +628,7 @@ Propuesto por: `usuario` (commit `76ec65f`, 2026-07-27) · Prioridad: 🟡 Alta 
 - [x] `UserOut.effective_roles` computed field que resuelve el fallback
 - [x] Frontend `hasRole()` con any-overlap match — funciona con rol único y con array
 - [x] Ruta `/payway` con guard `["admin", "supervisor", "administrativo"]` — primer módulo gated por rol v2
+- [x] Guards de Payway extendidos a `analista` (todos los endpoints) — 2026-09-24
 - [ ] Migrar el resto de `require_role()` del backend al chequeo any-match sobre `user.roles` (v2.0.1+)
 - [ ] Multi-select de roles en `UserFormModal` (v2.0.1+)
 - [ ] Endpoint `GET /roles` que devuelve la matriz de permisos declarativa
@@ -641,9 +642,13 @@ Prioridad: 🟢 Media · Tamaño: L · Sprint: v2.0 (skeleton) + v2.1 (lógica r
 **Contexto**
 Rotación programada de contraseñas de acceso Payway con verificación end-to-end y auditoría. Uso primario del rol nuevo "administrativo".
 
-**Progreso v2.0**
-- [x] Página skeleton `/payway` con hero de placeholder + tarjetas de features (Programación / Rotación segura / Auditoría)
-- [x] Entrada en sidebar sección "Automatización" (visible para admin/supervisor/administrativo)
+**Progreso v2.1**
+- [x] Página skeleton `/payway` con hero de placeholder + tarjetas de features — v2.0
+- [x] Entrada en sidebar sección "Automatización" (visible para admin/supervisor/analista) — v2.0
+- [x] Fase 1: validación de credenciales SAC (`POST /validate`) — v2.1.0
+- [x] Fase 2: descarga masiva de reportes como ZIP con polling (`POST /reports/generate`) — v2.1.0 / v2.1.2
+- [x] Acceso extendido a rol `analista` en todos los endpoints — 2026-09-24
+- [ ] Fase 3: rotación de contraseñas (tab visible pero disabled, badge "v2.2")
 - [ ] Schema `payway_rotations` (id, seller_id, scheduled_at, status, prev_hash, new_hash, error_msg)
 - [ ] Cron scheduler (bajo `job_lock` como el sync marketplace)
 - [ ] Cliente API Payway con retry + backoff

@@ -5,6 +5,15 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [2.1.2+] — 2026-09-24 — Permisos Payway extendidos a rol analista
+
+### Cambio de autorización
+- Los 5 endpoints de Payway (`/validate`, `/estados`, `/reports/generate`, `/jobs/{id}`, `/jobs/{id}/download`) ahora aceptan `analista` además de `admin` y `supervisor`.
+- `viewer` sigue sin acceso.
+- Sin migración de BD — es un cambio de guard en `backend/app/modules/payway/router.py`.
+
+---
+
 ## [2.1.2] — 2026-09-23 — Reporte Payway como ZIP + IDSITES enriquecido + ambiente hardcoded
 
 ### Reporte Payway ahora es un ZIP con estructura completa

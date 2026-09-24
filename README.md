@@ -27,6 +27,7 @@ Reemplaza el script Python de consola `crud_medios_de_pago_v6.py` con una interf
 | **Dashboard** | todos | Métricas por rol, últimas operaciones, accesos rápidos |
 | **Sellers** | todos (ABM: admin/supervisor) | Gestión de sellers y credenciales VTEX encriptadas. Columna Marketplace: muestra estado Marketplace (Activo/Inactivo) y permite toggle directo. Sync automático al startup y cada 24 hs; botón de sync manual (admin/supervisor) |
 | **CRUD Medios de Pago** | todos (C/U/D: admin, supervisor) | Operaciones R/C/U/D masivas sobre reglas de pago VTEX. Scope selector con modos: todos, por analista, seller específico, lista. Resultados incluyen `id_ecommerce` del seller. Read incluye validación por grupos de cuotas (1p/6c/9c/12c/18c/24c) y eventos vigentes/próximos. Export Excel completo: RESUMEN (gráfico de torta), DASHBOARD_VENDEDORES (colores, grupos y eventos seleccionados), PAGOS_CONSOLIDADO, ERRORES |
+| **Payway** | admin, supervisor, analista | Validación de credenciales SAC + descarga masiva de reportes de transacciones como ZIP (Consolidado + IDSITES + un XLSX por seller). Job async con polling y barra de progreso. Tab "Rotar contraseñas" pendiente (v2.2) |
 | **Eventos** | admin, supervisor | Crear y administrar eventos planificados (Hot Sale, Cyber Monday, etc.). Muestra eventos vigentes y próximos. La validación por seller se ejecuta desde CRUD Read |
 | **Usuarios** | admin, supervisor | ABM de usuarios y roles |
 | **Configuración** | todos | Toggle dark/light mode, cambio de contraseña |
