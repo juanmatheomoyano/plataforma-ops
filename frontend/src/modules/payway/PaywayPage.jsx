@@ -38,6 +38,10 @@ export default function PaywayPage() {
   const [tab, setTab] = useState("credenciales")
   const [file, setFile] = useState(null)
   const [validation, setValidation] = useState(null) // { ok, total, results: [...] }
+  // Permite acceder a la tab de reporte si hay un job activo aunque no haya validación en sesión
+  const [reportJobActive, setReportJobActive] = useState(
+    () => !!localStorage.getItem(REPORT_JOB_KEY)
+  )
 
   return (
     <PageContainer>
@@ -53,7 +57,7 @@ export default function PaywayPage() {
             <KeyRound className="mr-2 h-4 w-4" />
             Credenciales
           </TabsTrigger>
-          <TabsTrigger value="reporte" disabled={!validation?.ok}>
+          <TabsTrigger value="reporte" disabled={!validation?.ok && !reportJobActive}>
             <FileSpreadsheet className="mr-2 h-4 w-4" />
             Descargar reporte
           </TabsTrigger>
@@ -82,6 +86,7 @@ export default function PaywayPage() {
           <ReportTab
             file={file}
             validation={validation}
+            onJobActiveChange={setReportJobActive}
           />
         </TabsContent>
       </Tabs>
@@ -327,7 +332,7 @@ function ValidationResults({ validation, onGoNext }) {
 
 // ─── Tab 2: Descargar reporte ───────────────────────────────────────────
 
-function ReportTab({ file, validation }) {
+function ReportTab({ file, validation, onJobActiveChange }) {
   const today = new Date().toISOString().slice(0, 10)
   const [dateFrom, setDateFrom] = useState(today)
   const [dateTo, setDateTo] = useState(today)
@@ -343,6 +348,15 @@ function ReportTab({ file, validation }) {
       .catch(() => setEstados([{ label: "Todos", id: "0" }]))
   }, [])
 
+  // Restore report job from localStorage on mount
+  useEffect(() => {
+    const savedId = localStorage.getItem(REPORT_JOB_KEY)
+    if (!savedId) return
+    client.get(`/payway/jobs/${savedId}`)
+      .then(({ data }) => setJob(data))
+      .catch(() => localStorage.removeItem(REPORT_JOB_KEY))
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Poll cada 2s cuando hay un job corriendo
   useEffect(() => {
     if (!job?.id || (job.status !== "pending" && job.status !== "running")) return
@@ -350,7 +364,13 @@ function ReportTab({ file, validation }) {
     const tick = async () => {
       try {
         const { data } = await client.get(`/payway/jobs/${job.id}`)
-        if (!cancelled) setJob(data)
+        if (!cancelled) {
+          setJob(data)
+          if (data.status === "done" || data.status === "error") {
+            localStorage.removeItem(REPORT_JOB_KEY)
+            onJobActiveChange(false)
+          }
+        }
       } catch {
         // sigue polleando
       }
@@ -382,6 +402,7 @@ function ReportTab({ file, validation }) {
     }
     setStarting(true)
     setJob(null)
+    localStorage.removeItem(REPORT_JOB_KEY)
     try {
       const fd = new FormData()
       fd.append("file", file)
@@ -392,7 +413,8 @@ function ReportTab({ file, validation }) {
       const { data } = await client.post("/payway/reports/generate", fd, {
         headers: { "Content-Type": "multipart/form-data" },
       })
-      // Kickstart poll con estado inicial
+      localStorage.setItem(REPORT_JOB_KEY, data.job_id)
+      onJobActiveChange(true)
       setJob({ id: data.job_id, status: data.status, processed_units: 0, total_units: totalUnitsEstimate })
       toast.success("Descarga iniciada — puede tardar varios minutos.")
     } catch (e) {
