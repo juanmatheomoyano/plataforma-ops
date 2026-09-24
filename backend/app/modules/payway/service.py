@@ -26,9 +26,9 @@ from .sac_client import SACClient, SACSite
 
 logger = logging.getLogger(__name__)
 
-# Concurrencia limitada — el SAC va lento, más de 5 logins en paralelo
-# empieza a devolver timeouts. Ajustar cuando empíricamente veamos.
-_VALIDATION_CONCURRENCY = 5
+# 20 logins en paralelo — empíricamente seguro con el SAC de producción.
+# Con 60-100 credenciales termina en ~20-30s. Antes era 5 → timeout Railway.
+_VALIDATION_CONCURRENCY = 20
 
 # Descargas: 1 worker por usuario (no paralelizar sites de un mismo usuario
 # porque comparten la sesión SAC — 2 hits paralelos rompen la cookie).
@@ -83,39 +83,53 @@ class CredentialValidationSummary:
 async def validate_credentials(
     credentials: list[dict],
     ambiente: str = "produccion",
+    job: "Job | None" = None,
 ) -> CredentialValidationSummary:
     """
     Para cada credencial, hace login SAC de prueba y obtiene los sites.
 
-    Corre en paralelo con Semaphore(5) — sin esto, el SAC devuelve 429 o
-    corta conexiones. Con 5, ~600 sellers / 60 users tardan ~1-2 min.
+    Corre en paralelo con Semaphore(20). Si se pasa un `job`, actualiza
+    processed_units a medida que cada credencial termina (para polling).
+    Usa timeout corto (10s) para fallar rápido en credenciales lentas.
     """
     sem = asyncio.Semaphore(_VALIDATION_CONCURRENCY)
+
+    if job is not None:
+        job.total_units = len(credentials)
+        job.processed_units = 0
+        await store.update(job)
 
     async def _validate_one(cred: dict) -> CredentialValidation:
         async with sem:
             username = cred["username"]
             password = cred["password"]
             try:
-                async with SACClient(ambiente) as client:
+                async with SACClient(ambiente, fast=True) as client:
                     ok = await client.login(username, password)
                     if not ok:
-                        return CredentialValidation(
+                        result = CredentialValidation(
                             username=username,
                             ok=False,
                             error="Login fallido — credenciales inválidas o SAC caído",
                         )
-                    sites = await client.get_sites()
-                    if not sites:
-                        return CredentialValidation(
-                            username=username,
-                            ok=False,
-                            error="Login OK pero el usuario no tiene sites asignados",
-                        )
-                    return CredentialValidation(username=username, ok=True, sites=sites)
+                    else:
+                        sites = await client.get_sites()
+                        if not sites:
+                            result = CredentialValidation(
+                                username=username,
+                                ok=False,
+                                error="Login OK pero el usuario no tiene sites asignados",
+                            )
+                        else:
+                            result = CredentialValidation(username=username, ok=True, sites=sites)
             except Exception as e:
                 logger.warning("payway.validate error user=%s: %s", username, e)
-                return CredentialValidation(username=username, ok=False, error=str(e))
+                result = CredentialValidation(username=username, ok=False, error=str(e))
+
+            if job is not None:
+                job.processed_units += 1
+                await store.update(job)
+            return result
 
     results = await asyncio.gather(*(_validate_one(c) for c in credentials))
 

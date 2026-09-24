@@ -14,6 +14,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
 from datetime import date
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
@@ -43,15 +44,17 @@ _AMBIENTE = "produccion"
 # ─── Fase 1: validate ─────────────────────────────────────────────────────
 
 
-@router.post("/validate")
+@router.post("/validate", status_code=status.HTTP_202_ACCEPTED)
 async def validate_payway_keys(
     file: UploadFile = File(...),
     user: User = Depends(require_role(["admin", "supervisor", "analista"])),
 ) -> dict:
     """
-    Sube el `PaywayKeys.xlsx` (columnas: usuario, contraseña).
-    Para cada credencial hace login SAC de prueba y devuelve estado + sites.
-    Nada persiste.
+    Sube el `PaywayKeys.xlsx` y arranca la validación en background.
+    Devuelve `job_id` inmediatamente — el frontend hace polling a
+    `GET /validate-jobs/{id}` cada 1s hasta que status=done|error.
+
+    Evita el timeout de Railway (300s) con 600+ credenciales.
     """
     if not file.filename or not file.filename.lower().endswith(".xlsx"):
         raise HTTPException(
@@ -71,16 +74,52 @@ async def validate_payway_keys(
     except InvalidPaywayKeysFile as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-    logger.info(
-        "payway.validate started user=%s creds=%d",
-        user.username, len(creds),
-    )
-    summary = await validate_credentials(creds, ambiente=_AMBIENTE)
-    logger.info(
-        "payway.validate done user=%s ok=%d/%d sites=%d",
-        user.username, summary.ok, summary.total, summary.total_sites,
-    )
-    return summary.to_dict()
+    job = await store.create(kind="validate", user_id=str(user.id))
+    logger.info("payway.validate scheduled job=%s user=%s creds=%d", job.id, user.username, len(creds))
+
+    async def _run() -> None:
+        try:
+            summary = await validate_credentials(creds, ambiente=_AMBIENTE, job=job)
+            job.meta = {"summary": summary.to_dict()}
+            job.status = "done"
+            logger.info(
+                "payway.validate done job=%s user=%s ok=%d/%d sites=%d",
+                job.id, user.username, summary.ok, summary.total, summary.total_sites,
+            )
+        except Exception as e:
+            logger.exception("payway.validate failed job=%s", job.id)
+            job.status = "error"
+            job.error_message = str(e)
+        job.finished_at = time.time()
+        await store.update(job)
+
+    asyncio.create_task(_run())
+    return {"job_id": job.id, "status": job.status}
+
+
+@router.get("/validate-jobs/{job_id}")
+async def get_validate_job(
+    job_id: str,
+    user: User = Depends(require_role(["admin", "supervisor", "analista"])),
+) -> dict:
+    """
+    Polling del estado de un job de validación. Devuelve progreso y,
+    cuando status=done, el summary completo con resultados por credencial.
+    """
+    job = await store.get(job_id)
+    if not job or job.user_id != str(user.id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job no encontrado")
+    result = {
+        "job_id": job.id,
+        "status": job.status,
+        "processed_units": job.processed_units,
+        "total_units": job.total_units,
+        "error_message": job.error_message,
+        "summary": None,
+    }
+    if job.status == "done":
+        result["summary"] = (job.meta or {}).get("summary")
+    return result
 
 
 # ─── Fase 2: reports (async job) ──────────────────────────────────────────

@@ -54,8 +54,10 @@ USER_AGENT = (
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Safari/537.36"
 )
 
-# Timeouts — más generosos que VTEX porque el SAC va lento.
+# Timeout para descarga de reportes — generoso porque el SAC va lento.
 _TIMEOUT = httpx.Timeout(30.0, connect=10.0)
+# Timeout para validación de credenciales — fail-fast para no bloquear.
+_LOGIN_TIMEOUT = httpx.Timeout(10.0, connect=5.0)
 
 # 26 columnas TSV que devuelve el SAC (más "Vencido" que se calcula client-side).
 TSV_COLUMNS = [
@@ -124,18 +126,19 @@ class SACClient:
                     rows = await client.download_day(s.idsite, day, estado_id)
     """
 
-    def __init__(self, ambiente: str = "produccion"):
+    def __init__(self, ambiente: str = "produccion", fast: bool = False):
         if ambiente not in SAC_BASE_URLS:
             raise ValueError(f"ambiente inválido: {ambiente}")
         self.base = SAC_BASE_URLS[ambiente]
         self.ambiente = ambiente
+        self._fast = fast
         self._username: str | None = None
         self._password: str | None = None
         self._client: httpx.AsyncClient | None = None
 
     async def __aenter__(self) -> "SACClient":
         self._client = httpx.AsyncClient(
-            timeout=_TIMEOUT,
+            timeout=_LOGIN_TIMEOUT if self._fast else _TIMEOUT,
             verify=False,  # El SAC tiene certificados intermedios que no siempre validan
             follow_redirects=True,
             headers={

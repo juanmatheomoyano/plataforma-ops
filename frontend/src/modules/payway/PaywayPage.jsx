@@ -90,34 +90,54 @@ export default function PaywayPage() {
 // ─── Tab 1: Credenciales ────────────────────────────────────────────────
 
 function CredentialsTab({ file, onFile, validation, onValidation, onGoNext }) {
-  const [loading, setLoading] = useState(false)
+  const [validateJob, setValidateJob] = useState(null) // {job_id, status, processed_units, total_units, error_message}
   const inputRef = useRef(null)
+
+  const isValidating = validateJob?.status === "pending" || validateJob?.status === "running"
+
+  // Poll cada 1s mientras corre la validación
+  useEffect(() => {
+    if (!isValidating || !validateJob?.job_id) return
+    let cancelled = false
+    const tick = async () => {
+      try {
+        const { data } = await client.get(`/payway/validate-jobs/${validateJob.job_id}`)
+        if (cancelled) return
+        setValidateJob(data)
+        if (data.status === "done" && data.summary) {
+          const s = data.summary
+          onValidation(s)
+          if (s.ok === 0) toast.error("Ninguna credencial validó correctamente. Revisá el archivo.")
+          else if (s.error > 0) toast.warning(`${s.ok}/${s.total} OK. Revisá las que fallaron.`)
+          else toast.success(`Todas las credenciales OK — ${s.total_sites} sites detectados.`)
+        } else if (data.status === "error") {
+          toast.error(data.error_message ?? "Error al validar credenciales")
+        }
+      } catch { /* sigue polleando */ }
+    }
+    const t = setInterval(tick, 1000)
+    return () => { cancelled = true; clearInterval(t) }
+  }, [isValidating, validateJob?.job_id, onValidation])
 
   async function handleValidate() {
     if (!file) return
-    setLoading(true)
     onValidation(null)
+    setValidateJob(null)
     try {
       const fd = new FormData()
       fd.append("file", file)
       const { data } = await client.post("/payway/validate", fd, {
         headers: { "Content-Type": "multipart/form-data" },
-        timeout: 5 * 60 * 1000,
       })
-      onValidation(data)
-      if (data.ok === 0) {
-        toast.error("Ninguna credencial validó correctamente. Revisá el archivo.")
-      } else if (data.error > 0) {
-        toast.warning(`${data.ok}/${data.total} OK. Revisá las que fallaron.`)
-      } else {
-        toast.success(`Todas las credenciales OK — ${data.total_sites} sites detectados.`)
-      }
+      setValidateJob({ job_id: data.job_id, status: data.status, processed_units: 0, total_units: 0 })
     } catch (e) {
-      toast.error(e.response?.data?.detail ?? "Error al validar credenciales")
-    } finally {
-      setLoading(false)
+      toast.error(e.response?.data?.detail ?? "Error al iniciar validación")
     }
   }
+
+  const pct = validateJob?.total_units > 0
+    ? Math.min(100, Math.floor((validateJob.processed_units / validateJob.total_units) * 100))
+    : 0
 
   return (
     <div className="space-y-4">
@@ -139,7 +159,7 @@ function CredentialsTab({ file, onFile, validation, onValidation, onGoNext }) {
                 type="button"
                 variant="outline"
                 onClick={() => inputRef.current?.click()}
-                disabled={loading}
+                disabled={isValidating}
               >
                 <Upload className="mr-2 h-4 w-4" />
                 {file ? "Cambiar archivo" : "Seleccionar"}
@@ -148,7 +168,7 @@ function CredentialsTab({ file, onFile, validation, onValidation, onGoNext }) {
                 <span className="mono text-xs text-muted-foreground truncate max-w-[280px]">
                   {file.name}
                   <button
-                    onClick={() => { onFile(null); onValidation(null); }}
+                    onClick={() => { onFile(null); onValidation(null); setValidateJob(null) }}
                     className="ml-2 rounded-full p-0.5 hover:bg-muted"
                     aria-label="Quitar archivo"
                   >
@@ -161,10 +181,10 @@ function CredentialsTab({ file, onFile, validation, onValidation, onGoNext }) {
 
           <Button
             onClick={handleValidate}
-            disabled={!file || loading}
+            disabled={!file || isValidating}
             className="bg-brand-cyan text-white hover:bg-brand-cyan/90"
           >
-            {loading ? (
+            {isValidating ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Validando…
@@ -174,6 +194,34 @@ function CredentialsTab({ file, onFile, validation, onValidation, onGoNext }) {
             )}
           </Button>
         </div>
+
+        {isValidating && (
+          <div className="mt-4">
+            <div className="mb-1.5 flex items-center justify-between">
+              <span className="eyebrow text-muted-foreground">Validando credenciales…</span>
+              {validateJob.total_units > 0 && (
+                <span className="mono text-xs tabular-nums text-foreground">
+                  {validateJob.processed_units} / {validateJob.total_units} ({pct}%)
+                </span>
+              )}
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className={[
+                  "h-full transition-all duration-500 ease-out bg-brand-cyan",
+                  validateJob.total_units === 0 ? "animate-pulse w-full" : "",
+                ].join(" ")}
+                style={validateJob.total_units > 0 ? { width: `${pct}%` } : undefined}
+              />
+            </div>
+          </div>
+        )}
+
+        {validateJob?.status === "error" && (
+          <div className="mt-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-300">
+            {validateJob.error_message ?? "Error desconocido"}
+          </div>
+        )}
 
         <p className="mt-3 text-xs text-muted-foreground">
           Formato esperado del xlsx: columna A = usuario SAC, columna B = contraseña, primera fila = header.
