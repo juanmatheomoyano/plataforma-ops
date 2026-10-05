@@ -152,7 +152,7 @@ def _load_release_info() -> dict:
     Lee release_info.json (generado por el workflow de GitHub Actions).
     Si no existe, cae a las env vars legacy para compatibilidad.
     """
-    info_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "release_info.json")
+    info_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "release_info.json")
     info_path = os.path.normpath(info_path)
     try:
         if os.path.exists(info_path):
