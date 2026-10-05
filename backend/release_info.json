@@ -1,0 +1,6 @@
+{
+  "version": "2.1.5",
+  "pub_date": "2026-10-05T00:00:00Z",
+  "notes": "Fix auto-updater: instalador con guiones en nombre de archivo (URL sin %20). Estados SAC completados: 57 estados incluyendo Devolucion Confirmada.",
+  "signature": ""
+}

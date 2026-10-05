@@ -147,14 +147,38 @@ async def download_page():
     return HTMLResponse(content=html)
 
 
+def _load_release_info() -> dict:
+    """
+    Lee release_info.json (generado por el workflow de GitHub Actions).
+    Si no existe, cae a las env vars legacy para compatibilidad.
+    """
+    info_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "release_info.json")
+    info_path = os.path.normpath(info_path)
+    try:
+        if os.path.exists(info_path):
+            import json
+            with open(info_path, encoding="utf-8") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {}
+
+
 @router.get("/latest")
 async def get_latest_version():
-    version = os.getenv("APP_VERSION", "1.0.0")
-    release_url = os.getenv("RELEASE_URL", "")
-    pub_date = os.getenv("RELEASE_DATE", "2026-05-25T00:00:00Z")
-    notes = os.getenv("RELEASE_NOTES", "Nueva versión disponible")
+    info = _load_release_info()
 
-    signature = os.getenv("RELEASE_SIGNATURE", "")
+    version = info.get("version") or os.getenv("APP_VERSION", "1.0.0")
+    pub_date = info.get("pub_date") or os.getenv("RELEASE_DATE", "2026-05-25T00:00:00Z")
+    notes = info.get("notes") or os.getenv("RELEASE_NOTES", "Nueva versión disponible")
+    signature = info.get("signature") or os.getenv("RELEASE_SIGNATURE", "")
+
+    # URL se construye desde la versión si no está explícita
+    release_url = os.getenv("RELEASE_URL") or (
+        f"https://github.com/juanmatheomoyano/plataforma-ops/releases/download/"
+        f"v{version}/Provincia-Ops_{version}_x64-setup.exe"
+        if version != "1.0.0" else ""
+    )
 
     return {
         "version": version,
