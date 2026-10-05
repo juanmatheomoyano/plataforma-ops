@@ -5,6 +5,28 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [2.1.5] — 2026-10-05 — Fix auto-updater + estados SAC completos + pipeline de releases
+
+### Fix auto-updater (roto desde v2.0.0)
+El auto-updater fallaba silenciosamente en todas las versiones 2.x. Causa raíz: el nombre del instalador usa espacios (`Provincia Ops_X.Y.Z_x64-setup.exe`) que GitHub convierte a puntos al subir el asset, pero `RELEASE_URL` en Railway guardaba `%20` → 404 al descargar. Corregido cambiando `productName` a `"Provincia-Ops"` (con guion) — los instaladores futuros se llaman `Provincia-Ops_X.Y.Z_x64-setup.exe`, sin ambigüedad.
+
+### Pipeline de releases totalmente automatizado
+Cada release ahora se dispara con un `git tag vX.Y.Z && git push origin vX.Y.Z`. GitHub Actions se encarga de todo:
+- Build en Windows runner (sin restricciones de Smart App Control)
+- Firma del instalador con la clave Tauri
+- Creación del GitHub Release con `.exe` y `.sig`
+- Actualización de `backend/release_info.json` con versión, firma y fecha → commit automático a `main` → Railway redeploy automático
+
+No se requiere ninguna acción manual ni acceso al dashboard de Railway para publicar futuras versiones.
+
+### Backend: metadata de release versionada en el repo
+`backend/release_info.json` reemplaza las env vars `RELEASE_URL`, `RELEASE_DATE`, `RELEASE_NOTES` y `RELEASE_SIGNATURE` de Railway. El endpoint `GET /api/updates/latest` lee este archivo primero; las env vars quedan como fallback legacy. La URL se construye automáticamente desde la versión del archivo.
+
+### Estados SAC Payway completos
+`SAC_ESTADO_IDS` en `sac_client.py` ampliado de 8 a 57 estados con todos los IDs reales del SAC de producción. Incluye los críticos faltantes: Devolución Confirmada, Anulación Confirmada, Procesada, Fallida, Reversada, entre otros. El selector del frontend se actualiza automáticamente vía `GET /payway/estados`.
+
+---
+
 ## [2.1.4] — 2026-09-24 — Jobs Payway en segundo plano + fix crash validación
 
 ### Persistencia de jobs al navegar

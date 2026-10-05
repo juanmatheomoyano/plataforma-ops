@@ -651,6 +651,7 @@ Rotación programada de contraseñas de acceso Payway con verificación end-to-e
 - [x] Validación async con progress bar + polling (evita timeout Railway 300s con 650+ sellers) — v2.1.3
 - [x] Persistencia de jobs en localStorage: validación y reporte sobreviven navegación entre módulos — v2.1.4
 - [x] Fix crash pantalla blanca al iniciar validación — v2.1.3/v2.1.4
+- [x] Estados SAC completos (57 estados, incluye Devolución Confirmada) — v2.1.5
 - [ ] Fase 3: rotación de contraseñas (tab visible pero disabled, badge "v2.2")
 - [ ] Schema `payway_rotations` (id, seller_id, scheduled_at, status, prev_hash, new_hash, error_msg)
 - [ ] Cron scheduler (bajo `job_lock` como el sync marketplace)
@@ -678,6 +679,28 @@ Reemplazar el sistema actual de rol único por un sistema de **roles múltiples 
 - Depende de que existan los nuevos módulos "Alta de Sellers" y "Automatización Payway" (aún no en backlog).
 
 **Próximo paso:** convertir en HU formal cuando se planifique el sprint que la incluya. Antes de eso, definir con el usuario las preguntas abiertas.
+
+---
+
+### HU-53 `[usuario]` — Fix auto-updater + pipeline de releases automatizado
+Prioridad: 🔴 Crítica · Tamaño: M · Estado: ✅ v2.1.5
+
+**Contexto**
+El auto-updater estaba roto desde v2.0.0: `RELEASE_URL` en Railway usaba `%20` (espacios) pero GitHub convierte los espacios a puntos en los nombres de archivo → 404 al descargar. Además, cada release requería actualizar manualmente 4 env vars en Railway dashboard.
+
+**Resuelto**
+- [x] `productName` cambiado de `"Provincia Ops"` a `"Provincia-Ops"` en `tauri.conf.json` — instaladores futuros sin espacios en el nombre
+- [x] `bundle.createUpdaterArtifacts: "v1Compatible"` agregado a `tauri.conf.json`
+- [x] GitHub Actions workflow `.github/workflows/release.yml`: build Windows, firma Tauri, GitHub Release, actualiza `release_info.json` y commitea a main
+- [x] `backend/release_info.json`: metadata de release versionada en el repo (version, pub_date, notes, signature)
+- [x] `updates/router.py`: lee `release_info.json` primero; URL construida desde versión del archivo; env vars como fallback legacy
+- [x] Secrets `TAURI_SIGNING_PRIVATE_KEY` y `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` cargados en GitHub
+- [x] Smart App Control desactivado en la máquina de desarrollo (bloqueaba build scripts de Rust)
+- [x] Para hacer un release: `git tag vX.Y.Z && git push origin vX.Y.Z` — sin tocar Railway
+
+**Notas**
+- El cambio de `productName` rompe el upgrade path automático desde v2.1.4 (Windows ve "Provincia-Ops" como app distinta). Aceptable — el updater ya venía roto.
+- `RELEASE_URL` en Railway queda obsoleta pero no se elimina (fallback legacy).
 
 ---
 
