@@ -173,12 +173,15 @@ async def get_latest_version():
     notes = info.get("notes") or os.getenv("RELEASE_NOTES", "Nueva versión disponible")
     signature = info.get("signature") or os.getenv("RELEASE_SIGNATURE", "")
 
-    # URL se construye desde la versión si no está explícita
-    release_url = os.getenv("RELEASE_URL") or (
-        f"https://github.com/juanmatheomoyano/plataforma-ops/releases/download/"
-        f"v{version}/Provincia-Ops_{version}_x64-setup.exe"
-        if version != "1.0.0" else ""
-    )
+    # Si hay release_info.json, construye la URL desde la versión del archivo.
+    # RELEASE_URL env var solo se usa cuando el archivo no existe (legacy fallback).
+    if info:
+        release_url = (
+            f"https://github.com/juanmatheomoyano/plataforma-ops/releases/download/"
+            f"v{version}/Provincia-Ops_{version}_x64-setup.exe"
+        )
+    else:
+        release_url = os.getenv("RELEASE_URL", "")
 
     return {
         "version": version,
