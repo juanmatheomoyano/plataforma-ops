@@ -9,10 +9,17 @@ public_router = APIRouter(tags=["updates"])
 
 @public_router.get("/updates/download", include_in_schema=False)
 async def download_page():
-    version = os.getenv("APP_VERSION", "1.7.2")
-    release_url = os.getenv("RELEASE_URL", "")
-    release_date = os.getenv("RELEASE_DATE", "")
-    release_notes = os.getenv("RELEASE_NOTES", "")
+    info = _load_release_info()
+    version = info.get("version") or os.getenv("APP_VERSION", "1.7.2")
+    release_date = info.get("pub_date") or os.getenv("RELEASE_DATE", "")
+    release_notes = info.get("notes") or os.getenv("RELEASE_NOTES", "")
+    if info:
+        release_url = (
+            f"https://github.com/juanmatheomoyano/plataforma-ops/releases/download/"
+            f"v{version}/Provincia-Ops_{version}_x64-setup.exe"
+        )
+    else:
+        release_url = os.getenv("RELEASE_URL", "")
 
     date_str = ""
     if release_date:
