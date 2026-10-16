@@ -36,119 +36,238 @@ async def download_page():
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Provincia Ops — Descarga</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+        *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
+
         body {{
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #0f172a;
-            color: #e2e8f0;
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            background: #F6F9FB;
+            color: #0B2230;
             min-height: 100vh;
+            display: flex;
+        }}
+
+        /* ── Layout split ── */
+        .hero {{
+            position: relative;
+            flex: 1;
+            min-height: 220px;
+            background: #0B2230;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 24px;
+            overflow: hidden;
         }}
-        .card {{
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 16px;
+        .hero-gradient {{
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 20% 20%, rgba(10,160,220,0.30), transparent 55%),
+                radial-gradient(circle at 85% 75%, rgba(38,181,84,0.22), transparent 55%);
+        }}
+        .hero-grid {{
+            position: absolute;
+            inset: 0;
+            opacity: 0.06;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px);
+            background-size: 44px 44px;
+            -webkit-mask-image: radial-gradient(ellipse at 50% 40%, black 40%, transparent 80%);
+            mask-image: radial-gradient(ellipse at 50% 40%, black 40%, transparent 80%);
+        }}
+        .hero-content {{
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 56px 48px;
+        }}
+
+        .panel {{
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             padding: 48px 40px;
-            max-width: 480px;
+        }}
+        .panel-inner {{
             width: 100%;
-            text-align: center;
+            max-width: 400px;
         }}
-        .logo-wrap {{
-            margin-bottom: 24px;
+
+        /* ── Logo ── */
+        .logo {{
+            display: inline-flex;
+            align-items: center;
+            gap: 14px;
+            text-decoration: none;
         }}
-        .logo-wrap img {{
-            height: 48px;
-            width: auto;
+        .logo-wordmark {{
+            display: flex;
+            flex-direction: column;
+            line-height: 1;
         }}
-        h1 {{
+        .logo-name {{
+            font-size: 30px;
+            font-weight: 800;
+            letter-spacing: -0.035em;
+            color: #F6F9FB;
+        }}
+        .logo-name span {{ color: #3EC0F0; }}
+
+        /* ── Panel typography ── */
+        .panel h1 {{
             font-size: 22px;
-            font-weight: 700;
-            color: #f8fafc;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            color: #0B2230;
             margin-bottom: 4px;
         }}
-        .subtitle {{
-            color: #94a3b8;
+        .panel .sub {{
             font-size: 13px;
+            color: #5B7383;
             margin-bottom: 32px;
         }}
-        .version-badge {{
-            display: inline-block;
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            padding: 12px 20px;
-            margin-bottom: 32px;
-            text-align: left;
-            width: 100%;
+
+        /* ── Version badge ── */
+        .badge {{
+            background: #fff;
+            border: 1px solid #E4EBF1;
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-bottom: 28px;
+            box-shadow: 0 1px 2px rgba(11,34,48,0.04), 0 12px 32px -18px rgba(11,34,48,0.10);
         }}
-        .version-badge .label {{
-            font-size: 11px;
+        .badge-label {{
+            font-size: 10px;
+            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: .05em;
-            color: #64748b;
-            margin-bottom: 2px;
+            letter-spacing: 0.18em;
+            color: #5B7383;
+            margin-bottom: 4px;
         }}
-        .version-badge .val {{
-            font-size: 14px;
-            color: #e2e8f0;
-            font-weight: 500;
+        .badge-version {{
+            font-size: 15px;
+            font-weight: 700;
+            color: #0B2230;
         }}
-        .version-badge .notes {{
+        .badge-notes {{
             font-size: 12px;
-            color: #94a3b8;
+            color: #5B7383;
             margin-top: 6px;
+            line-height: 1.5;
         }}
+
+        /* ── Button ── */
         .btn {{
             display: block;
-            background: #279D2E;
+            background: #0B2230;
             color: #fff;
             text-decoration: none;
-            font-size: 15px;
-            font-weight: 600;
-            padding: 14px 24px;
+            font-size: 14px;
+            font-weight: 700;
+            padding: 13px 24px;
             border-radius: 10px;
-            transition: background .15s;
-            margin-bottom: 16px;
+            text-align: center;
+            transition: background 0.15s, box-shadow 0.15s;
+            margin-bottom: 12px;
+            position: relative;
+            overflow: hidden;
         }}
-        .btn:hover {{ background: #1f7d24; }}
+        .btn::after {{
+            content: '';
+            position: absolute;
+            left: 16px; right: 16px; bottom: -10px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(10,160,220,0.50);
+            filter: blur(14px);
+            opacity: 0.7;
+        }}
+        .btn:hover {{ background: #142C3D; }}
+
+        /* ── Footer notes ── */
         .note {{
-            color: #475569;
-            font-size: 12px;
+            font-size: 11.5px;
+            color: #5B7383;
+            text-align: center;
         }}
         .divider {{
             border: none;
-            border-top: 1px solid #334155;
-            margin: 28px 0;
+            border-top: 1px solid #E4EBF1;
+            margin: 24px 0;
+        }}
+        .eyebrow {{
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            color: #5B7383;
+        }}
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {{
+            body {{ flex-direction: column; }}
+            .hero {{ min-height: 180px; }}
+            .hero-content {{ padding: 36px 28px; }}
+            .logo-name {{ font-size: 24px; }}
+            .panel {{ padding: 36px 24px; }}
         }}
     </style>
 </head>
 <body>
-    <div class="card">
-        <div class="logo-wrap">
-            <svg width="180" height="40" viewBox="0 0 260 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <text x="0" y="40" font-family="Arial, sans-serif" font-size="32" font-weight="700" fill="#279D2E">Provincia</text>
-                <text x="168" y="40" font-family="Arial, sans-serif" font-size="32" font-weight="300" fill="#e2e8f0"> Ops</text>
-            </svg>
+
+    <!-- Hero izquierdo -->
+    <section class="hero">
+        <div class="hero-gradient"></div>
+        <div class="hero-grid"></div>
+        <div class="hero-content">
+            <div class="logo">
+                <!-- Escudo PO -->
+                <svg width="52" height="52" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg" aria-label="Provincia Ops">
+                    <defs>
+                        <linearGradient id="po-g" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#26B554"/>
+                            <stop offset="100%" stop-color="#1F9E48"/>
+                        </linearGradient>
+                    </defs>
+                    <rect x="1" y="1" width="50" height="50" rx="14" fill="url(#po-g)"/>
+                    <rect x="1" y="1" width="50" height="50" rx="14" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+                    <text x="50%" y="50%" dy="0.06em" text-anchor="middle" dominant-baseline="central"
+                          fill="#fff" font-family="'Plus Jakarta Sans',system-ui,sans-serif"
+                          font-weight="800" font-size="18" letter-spacing="-1">PO</text>
+                </svg>
+                <div class="logo-wordmark">
+                    <span class="logo-name">Provincia<span> Ops</span></span>
+                </div>
+            </div>
         </div>
-        <h1>Herramienta operativa interna</h1>
-        <p class="subtitle">Gestión de medios de pago VTEX</p>
+    </section>
 
-        <div class="version-badge">
-            <div class="label">Versión disponible</div>
-            <div class="val">v{version}{f" — {date_str}" if date_str else ""}</div>
-            {f'<div class="notes">{release_notes}</div>' if release_notes else ""}
+    <!-- Panel derecho -->
+    <section class="panel">
+        <div class="panel-inner">
+            <p class="eyebrow" style="margin-bottom:10px;">Herramienta operativa interna</p>
+            <h1>Descargá el instalador</h1>
+            <p class="sub">Gestión de medios de pago VTEX · Windows 10/11 64 bits</p>
+
+            <div class="badge">
+                <div class="badge-label">Versión disponible</div>
+                <div class="badge-version">v{version}{f" &nbsp;·&nbsp; {date_str}" if date_str else ""}</div>
+                {f'<div class="badge-notes">{release_notes}</div>' if release_notes else ""}
+            </div>
+
+            <a href="{release_url}" class="btn">Descargar instalador &nbsp;↓</a>
+            <p class="note">~10 MB · Se instala sin intervención del administrador</p>
+
+            <hr class="divider">
+            <p class="note">La aplicación verifica actualizaciones automáticamente al iniciarse.</p>
         </div>
+    </section>
 
-        <a href="{release_url}" class="btn">⬇ &nbsp; Descargar instalador</a>
-        <p class="note">Windows 10 / 11 &nbsp;·&nbsp; 64 bits &nbsp;·&nbsp; ~10 MB</p>
-
-        <hr class="divider">
-        <p class="note">La aplicación verifica actualizaciones automáticamente al iniciarse.</p>
-    </div>
 </body>
 </html>"""
     return HTMLResponse(content=html)
