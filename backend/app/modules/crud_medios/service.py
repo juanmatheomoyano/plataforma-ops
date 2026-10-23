@@ -1075,7 +1075,6 @@ async def get_active_sellers(
 ) -> list[Seller]:
     q = select(Seller).where(
         Seller.is_active.is_(True),
-        Seller.estado_keys == EstadoKeys.activo,
     )
     if seller_ids:
         q = q.where(Seller.seller_id.in_(seller_ids))

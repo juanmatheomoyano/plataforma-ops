@@ -44,7 +44,7 @@ INTEGRACIONES = [
 
 @router.get("", response_model=list[SellerOut], dependencies=[_auth])
 async def list_sellers(
-    skip: int = 0, limit: int = 200, db: AsyncSession = Depends(get_db)
+    skip: int = 0, limit: int = 10000, db: AsyncSession = Depends(get_db)
 ):
     return await service.get_all_sellers(db, skip=skip, limit=limit)
 
