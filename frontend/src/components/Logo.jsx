@@ -134,7 +134,7 @@ export function ProvinciaMark({ size = 40, radius = 10, monoSize = 15 }) {
       <text
         x="50%"
         y="50%"
-        dy="0.06em"
+        dy="-0.02em"
         textAnchor="middle"
         dominantBaseline="central"
         fill="#FFFFFF"

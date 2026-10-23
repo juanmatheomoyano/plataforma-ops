@@ -37,6 +37,10 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      - name: Generate app icons from SVG source
+        working-directory: frontend
+        run: npx @tauri-apps/cli@2 icon src-tauri/icons/icon-source.svg
+
       - name: Build Tauri app
         working-directory: frontend
         env:
@@ -44,17 +48,27 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: npm run tauri build
 
-      - name: Sign installer
+      - name: Rename and sign installer
         id: sign
         shell: pwsh
         env:
           KEY_CONTENT: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
-          $exePath = (Get-ChildItem "frontend\src-tauri\target\release\bundle\nsis\*.exe" | Select-Object -First 1).FullName
+          # Renombrar spaces → guiones para URL limpia
+          $orig = (Get-ChildItem "frontend\src-tauri\target\release\bundle\nsis\*.exe" | Select-Object -First 1).FullName
+          $renamed = $orig -replace " ", "-"
+          if ($orig -ne $renamed) { Rename-Item $orig $renamed }
+          $exePath = $renamed
           $sigPath = "$exePath.sig"
 
-          # Si el auto-sign ya generó el .sig, usarlo. Si no, firmar manualmente.
+          # Si el auto-sign ya generó el .sig, renombrar también
+          $origSig = "$orig.sig"
+          if ((Test-Path $origSig) -and ($origSig -ne $sigPath)) {
+            Rename-Item $origSig $sigPath
+          }
+
+          # Si no hay .sig, firmar manualmente
           if (-not (Test-Path $sigPath)) {
             $keyFile = Join-Path $env:RUNNER_TEMP "tauri-signing.key"
             Set-Content -Path $keyFile -Value $env:KEY_CONTENT -Encoding utf8 -NoNewline

@@ -1,0 +1,22 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#26B554"/>
+      <stop offset="100%" stop-color="#1F9E48"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="504" height="504" rx="112" fill="url(#g)"/>
+  <rect x="4" y="4" width="504" height="504" rx="112" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="4"/>
+  <text
+    x="256"
+    y="256"
+    dy="-0.02em"
+    text-anchor="middle"
+    dominant-baseline="central"
+    fill="#FFFFFF"
+    font-family="'Plus Jakarta Sans','Encode Sans',system-ui,sans-serif"
+    font-weight="800"
+    font-size="188"
+    letter-spacing="-8"
+  >PO</text>
+</svg>
