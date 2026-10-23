@@ -682,6 +682,22 @@ Reemplazar el sistema actual de rol único por un sistema de **roles múltiples 
 
 ---
 
+### HU-54 `[usuario]` — Fix instalación duplicada + ícono PO + mejoras UX desktop
+Prioridad: 🟡 Alta · Tamaño: S · Estado: ✅ v2.1.6
+
+**Contexto**
+Al cambiar `productName` en v2.1.5 para arreglar las URLs del auto-updater, Windows registraba la nueva versión como una aplicación distinta → se instalaban dos entradas en "Agregar o quitar programas". Además el ícono de la app seguía siendo el default de Tauri y el texto "PO" del escudo estaba visualmente descentrado.
+
+**Resuelto**
+- [x] Hook NSIS (`nsis-hooks.nsi`): desinstala silenciosamente versiones previas ("Provincia Ops" y "Provincia-Ops") antes de instalar — el usuario no ve ningún prompt extra
+- [x] `productName` restaurado a `"Provincia Ops"` (display correcto en Start Menu, taskbar, ventana)
+- [x] CI renombra el `.exe` spaces→guiones antes de subir el release — URL sigue siendo `Provincia-Ops_X.Y.Z_x64-setup.exe`
+- [x] Ícono de app actualizado al escudo PO verde del sistema de diseño (`icon-source.svg` → `tauri icon` en CI)
+- [x] `dy` en `ProvinciaMark` ajustado de `0.06em` a `-0.02em` — texto "PO" centrado correctamente
+- [x] Rol `analista` habilitado en todos los endpoints de Eventos (antes solo admin/supervisor)
+
+---
+
 ### HU-53 `[usuario]` — Fix auto-updater + pipeline de releases automatizado
 Prioridad: 🔴 Crítica · Tamaño: M · Estado: ✅ v2.1.5
 

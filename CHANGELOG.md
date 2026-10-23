@@ -5,6 +5,25 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [2.1.6] — 2026-10-23 — Ícono PO verde + fix instalación duplicada + analistas en Eventos
+
+### Ícono de aplicación actualizado
+El ícono de ventana, barra de tareas y acceso directo del Start Menu ahora muestra el escudo PO verde del sistema de diseño actual. Se genera automáticamente en CI desde `icon-source.svg` con `tauri icon`.
+
+### Fix: instalación duplicada al actualizar
+Al cambiar `productName` en v2.1.5 (espacios → guiones), Windows lo registraba como app distinta y se instalaban dos versiones en paralelo. Corregido con un hook NSIS (`nsis-hooks.nsi`) que desinstala silenciosamente cualquier versión previa ("Provincia Ops" o "Provincia-Ops") antes de instalar la nueva. El usuario no ve nada — el instalador simplemente reemplaza.
+
+### productName restaurado a "Provincia Ops"
+El nombre visible del programa (Start Menu, barra de tareas, título de ventana) vuelve a mostrarse con espacio. El instalador mantiene guiones en el nombre de archivo (`Provincia-Ops_X.Y.Z_x64-setup.exe`) gracias a un paso de renombrado en el CI — las URLs siguen siendo limpias.
+
+### Rol analista: acceso completo a Eventos
+Los usuarios con rol `analista` ahora pueden crear, editar, activar/desactivar y eliminar eventos. Antes solo podían ver los eventos vigentes.
+
+### Logo: texto "PO" centrado verticalmente
+Ajuste sutil de `dy` en el componente `ProvinciaMark` (0.06em → -0.02em) para corregir el desplazamiento visual hacia abajo del texto en el escudo.
+
+---
+
 ## [2.1.5] — 2026-10-05 — Fix auto-updater + estados SAC completos + pipeline de releases
 
 ### Fix auto-updater (roto desde v2.0.0)
