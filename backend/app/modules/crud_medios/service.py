@@ -41,6 +41,27 @@ PAYMENT_SYSTEMS_MAP = {
     "electron":   {"id": 10, "name": "Visa Electron"},
 }
 
+# Samsung sellers usan la cuenta baproar pero con condition y affiliationId propios.
+# seller_id en la DB → config de cómo llamar a la API de VTEX.
+_SAMSUNG_CONFIG: dict[str, dict] = {
+    "baproar": {
+        "vtex_account": "baproar",
+        "condition_id": "2",
+        "aff_id": "e6ddbbea-dda9-4382-ba0e-b991ae315d80",
+        "antifraud_aff_id": "d31729c1-6cac-4dc2-aa45-f7f4cff36e92",
+        "antifraud_impl": "Vtex.PaymentGateway.Antifraud.Provider.AntifraudProviderConnector_Koin-Antifraud",
+        "conn_impl": "Vtex.PaymentGateway.Connectors.PaymentProvider.PaymentProviderConnector_paywaypartnerar-payway-v0",
+    },
+    "baproar_hogar": {
+        "vtex_account": "baproar",
+        "condition_id": "3",
+        "aff_id": "4e36541e-f893-430b-b067-81be2756769d",
+        "antifraud_aff_id": "d31729c1-6cac-4dc2-aa45-f7f4cff36e92",
+        "antifraud_impl": "Vtex.PaymentGateway.Antifraud.Provider.AntifraudProviderConnector_Koin-Antifraud",
+        "conn_impl": "Vtex.PaymentGateway.Connectors.PaymentProvider.PaymentProviderConnector_paywaypartnerar-payway-v0",
+    },
+}
+
 
 # ── Date/time normalization ────────────────────────────────────────────────────
 
@@ -610,7 +631,12 @@ async def fetch_seller_rules(
     seller: Seller, app_key: str, app_token: str
 ) -> dict:
     try:
-        rules = await vtex_client.get_rules(seller.seller_id, app_key, app_token)
+        samsung = _SAMSUNG_CONFIG.get(seller.seller_id)
+        account = samsung["vtex_account"] if samsung else seller.seller_id
+        rules = await vtex_client.get_rules(account, app_key, app_token)
+        if samsung:
+            cid = samsung["condition_id"]
+            rules = [r for r in rules if str((r.get("condition") or {}).get("id", "")) == cid]
         return {"seller": seller, "rules": rules, "error": None}
     except Exception as e:
         logger.error("fetch_seller_rules %s: %s", seller.seller_id, e)
@@ -749,8 +775,13 @@ async def execute_create(
 
     async def _one_seller(seller: Seller, app_key: str, app_token: str) -> list[CrudRowOut]:
         rows_local: list[CrudRowOut] = []
+        samsung = _SAMSUNG_CONFIG.get(seller.seller_id)
+        vtex_account = samsung["vtex_account"] if samsung else seller.seller_id
         conn_tuple = connector_map.get(seller.seller_id)
         conn_impl, aff_id, issuer = conn_tuple if conn_tuple else (None, None, None)
+        if samsung:
+            conn_impl = samsung["conn_impl"]
+            aff_id = samsung["aff_id"]
 
         async with sem:
             if not dry_run and not conn_impl:
@@ -780,13 +811,26 @@ async def execute_create(
                         ))
                         continue
 
+                    sales_channels = (
+                        [{"id": ":ALL:"}] if samsung
+                        else [{"Id": 1, "Name": "Main", "IsActive": True}]
+                    )
+                    antifraud = (
+                        {"implementation": samsung["antifraud_impl"], "affiliationId": samsung["antifraud_aff_id"]}
+                        if samsung else None
+                    )
+                    condition = (
+                        {"id": samsung["condition_id"], "pullRate": 0.0}
+                        if samsung else None
+                    )
                     body = {
                         "name": rule_name,
-                        "salesChannels": [{"Id": 1, "Name": "Main", "IsActive": True}],
+                        "salesChannels": sales_channels,
                         "paymentSystem": {"id": ps["id"], "name": ps["name"], "implementation": None},
                         "connector": {"implementation": conn_impl, "affiliationId": aff_id},
                         "issuer": {"name": issuer},
-                        "antifraud": None,
+                        "antifraud": antifraud,
+                        "condition": condition,
                         "installmentOptions": {
                             "dueDateType": 0,
                             "interestRateMethod": 0,
@@ -809,7 +853,7 @@ async def execute_create(
                     }
 
                     try:
-                        created = await vtex_client.create_rule(seller.seller_id, app_key, app_token, body)
+                        created = await vtex_client.create_rule(vtex_account, app_key, app_token, body)
                         rows_local.append(CrudRowOut(
                             seller_id=seller.seller_id,
                             id_ecommerce=getattr(seller, "id_ecommerce", None),
@@ -913,8 +957,10 @@ async def execute_update(
                     if "level" in patch:
                         updated_body["cardLevel"] = {"name": patch["level"]} if patch["level"] else None
 
+                    _sam = _SAMSUNG_CONFIG.get(seller.seller_id)
+                    _vtex_acct = _sam["vtex_account"] if _sam else seller.seller_id
                     await vtex_client.update_rule(
-                        seller.seller_id, app_key, app_token, rule_id, updated_body
+                        _vtex_acct, app_key, app_token, rule_id, updated_body
                     )
                     row = CrudRowOut(
                         seller_id=seller.seller_id,
@@ -983,8 +1029,13 @@ async def execute_delete(
             else:
                 try:
                     app_key, app_token = get_decrypted_credentials(seller)
+                    _sam = _SAMSUNG_CONFIG.get(seller.seller_id)
+                    _vtex_acct = _sam["vtex_account"] if _sam else seller.seller_id
+                    if _sam and rule.get("antifraud"):
+                        no_af = {**rule, "antifraud": None}
+                        await vtex_client.update_rule(_vtex_acct, app_key, app_token, rule_id, no_af)
                     await vtex_client.delete_rule(
-                        seller.seller_id, app_key, app_token, rule_id
+                        _vtex_acct, app_key, app_token, rule_id
                     )
                     row = CrudRowOut(
                         seller_id=seller.seller_id,
