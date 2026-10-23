@@ -44,7 +44,7 @@ PAYMENT_SYSTEMS_MAP = {
 # Samsung sellers usan la cuenta baproar pero con condition y affiliationId propios.
 # seller_id en la DB → config de cómo llamar a la API de VTEX.
 _SAMSUNG_CONFIG: dict[str, dict] = {
-    "baproar": {
+    "samsungar": {
         "vtex_account": "baproar",
         "condition_id": "2",
         "aff_id": "e6ddbbea-dda9-4382-ba0e-b991ae315d80",
@@ -52,7 +52,7 @@ _SAMSUNG_CONFIG: dict[str, dict] = {
         "antifraud_impl": "Vtex.PaymentGateway.Antifraud.Provider.AntifraudProviderConnector_Koin-Antifraud",
         "conn_impl": "Vtex.PaymentGateway.Connectors.PaymentProvider.PaymentProviderConnector_paywaypartnerar-payway-v0",
     },
-    "baproar_hogar": {
+    "samsungarvisuar": {
         "vtex_account": "baproar",
         "condition_id": "3",
         "aff_id": "4e36541e-f893-430b-b067-81be2756769d",
