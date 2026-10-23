@@ -443,8 +443,8 @@ En v1.7.11 se detectó que `update.downloadAndInstall()` puede quedarse colgado 
 ### HU-43 `[usuario]`
 **Como** admin, **quiero** que el `.exe` de la app se instale sin advertencias de Windows Smart App Control / SmartScreen, **para** no tener que enseñarle a cada usuario nuevo el workaround de desbloquear el archivo.
 
-- Prioridad: 🟡 Alta · Tamaño: M (setup) + costo mensual · Estado: 📋
-- Sprint: sin asignar (requiere decisión de compra)
+- Prioridad: 🟡 Alta · Tamaño: M (setup) + costo mensual · Estado: 🧊 (decisión: no se paga por ahora)
+- Sprint: sin asignar
 
 **Contexto**
 Todos los `.exe` releaseados hasta v1.7.10 están firmados con `rsign` (formato Tauri para verificar updates), pero NO con un certificado de code-signing de un CA reconocido. Windows 11 con SAC activo bloquea la instalación. Cada usuario nuevo tiene que:
@@ -561,6 +561,10 @@ Historias completadas antes del formalizar este backlog (v1.0.0 → v1.7.7). Se 
 - ✅ Contador sellers activos/inactivos/keys vencidas — v1.1.0
 - ✅ Total operaciones del día — v1.1.0
 - ✅ Total usuarios activos — v1.1.0
+
+### Sellers — fixes
+- ✅ Fix límite 200 en `GET /sellers` (subido a 10.000) — 2026-10-23
+- ✅ Fix scope CRUD excluía sellers con keys vencidas (`estado_keys` filter eliminado) — 2026-10-23
 
 ### Sellers v1
 - ✅ Buscador global + filtros por columna — v1.1.0
@@ -679,6 +683,28 @@ Reemplazar el sistema actual de rol único por un sistema de **roles múltiples 
 - Depende de que existan los nuevos módulos "Alta de Sellers" y "Automatización Payway" (aún no en backlog).
 
 **Próximo paso:** convertir en HU formal cuando se planifique el sprint que la incluya. Antes de eso, definir con el usuario las preguntas abiertas.
+
+---
+
+### HU-55 `[usuario]` — CRUD Medios de Pago: soporte Samsung Mirgor y Samsung Línea Hogar
+Prioridad: 🟡 Alta · Tamaño: M · Estado: ✅ 2026-10-23
+
+**Contexto**
+Samsung opera sus reglas VTEX dentro de la cuenta `baproar` pero diferenciadas por `condition.id`. Se necesitaba poder crear/leer/actualizar/eliminar esas reglas desde la plataforma usando los sellers `samsungar` y `samsungarvisuar` como scope independiente.
+
+**Resuelto**
+- [x] `_SAMSUNG_CONFIG` en `crud_medios/service.py`: mapea los dos sellers a cuenta `baproar`, condition_id, y IDs de afiliación (conector + antifraud)
+- [x] `fetch_seller_rules` filtra reglas por `condition.id` cuando el seller es Samsung
+- [x] `execute_create` usa conector Payway Samsung / Payway Samsung Visuar, antifraud Koin (`d31729c1-…`), `salesChannels: [{id: ":ALL:"}]` y la condición comercial correspondiente
+- [x] `execute_update` y `execute_delete` ruteados a cuenta `baproar`
+- [x] DELETE en dos pasos para reglas con antifraud (PUT antifraud→null, luego DELETE)
+- [x] Sellers creados en BD: `samsungar` (Samsung) y `samsungarvisuar` (Samsung Línea Hogar), credenciales = vtexappkey-baproar-NEZIFK
+- [x] Sin migración de BD ni cambios en frontend
+
+**Notas técnicas**
+- `condition.id = "2"` → Samsung Mirgor ("Samsung > 0%"), `condition.id = "3"` → Samsung Visuar ("Samsung Visuar > 0%")
+- Ambos usan `salesChannels: [{id: ":ALL:"}]` en lugar del canal 1 estándar
+- El DELETE con antifraud falla con 400 en VTEX si se intenta directo — el paso de neutralizar antifraud es obligatorio
 
 ---
 

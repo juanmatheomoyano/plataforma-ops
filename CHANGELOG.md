@@ -5,6 +5,26 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [2026-10-23] — Samsung en CRUD Medios de Pago + fix listado de sellers
+
+Cambios backend-only, sin nueva versión del .exe.
+
+### CRUD Medios de Pago — Samsung Mirgor y Samsung Línea Hogar (HU-55)
+Dos nuevos sellers (`samsungar` / `samsungarvisuar`) con lógica especial: sus reglas VTEX viven dentro de la cuenta `baproar` pero se distinguen por `condition.id` (2 = Samsung Mirgor, 3 = Samsung Visuar). El CRUD los trata como sellers independientes en el scope selector.
+
+- Nueva constante `_SAMSUNG_CONFIG` en `crud_medios/service.py` que mapea seller ID → cuenta VTEX, `condition_id`, y IDs de afiliación para conector y antifraud
+- `fetch_seller_rules`: usa cuenta `baproar` y filtra reglas por `condition.id`
+- `execute_create`: sobreescribe conector (Payway Samsung / Payway Samsung Visuar), usa `salesChannels: [{id: ":ALL:"}]`, agrega antifraud Koin (`d31729c1-…`) y la condición comercial correspondiente
+- `execute_update` y `execute_delete` ruteados a cuenta `baproar`
+- `execute_delete`: borrado en dos pasos para reglas con antifraud (PUT antifraud→null, luego DELETE) — VTEX rechaza DELETE directo con antifraud activo
+- Sin migración de BD ni cambios en frontend
+
+### Fix: listado de sellers incompleto
+- `GET /sellers` tenía `limit=200` por defecto → subido a `10000`
+- `get_active_sellers` (scope selector del CRUD) filtraba por `estado_keys == activo`, excluyendo sellers con keys vencidas → filtro eliminado, ahora retorna todos los `is_active=True`
+
+---
+
 ## [2.1.6] — 2026-10-23 — Ícono PO verde + fix instalación duplicada + analistas en Eventos
 
 ### Ícono de aplicación actualizado
