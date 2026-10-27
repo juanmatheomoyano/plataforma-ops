@@ -224,6 +224,9 @@ def parse_rule_enriched(seller_id: str, seller_name: str, rule: dict) -> dict:
     impl = (rule.get("connector") or {}).get("implementation") or ""
     begin_date = rule.get("beginDate") or ""
     end_date = rule.get("endDate") or ""
+    af_impl = (rule.get("antifraud") or {}).get("implementation") or ""
+    # Extraer nombre corto del antifraud, e.g. "Koin-Antifraud" de "...Connector_Koin-Antifraud"
+    antifraud_nombre = af_impl.split("_")[-1] if af_impl else "No"
 
     return {
         "vendedor":               seller_name,
@@ -254,6 +257,7 @@ def parse_rule_enriched(seller_id: str, seller_name: str, rule: dict) -> dict:
         "valor_minimo":           str(rule.get("minimumValue", "") or ""),
         "canales_venta":          sc_ids,
         "pais":                   (rule.get("country") or {}).get("isoCode", "") or "",
+        "antifraude":             antifraud_nombre,
     }
 
 

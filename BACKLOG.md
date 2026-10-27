@@ -708,6 +708,27 @@ Samsung opera sus reglas VTEX dentro de la cuenta `baproar` pero diferenciadas p
 
 ---
 
+### HU-56 `[usuario]` — CRUD Medios de Pago: opción antifraude en sellers al generar tarjetas
+Prioridad: 🟢 Media · Tamaño: M · Estado: 📋 Backlog
+
+**Contexto**
+Hoy el antifraude (Koin) está hardcodeado en `_SAMSUNG_CONFIG` para los sellers Samsung. Cuando se crea una regla para un seller con antifraude, el proveedor se inyecta automáticamente sin posibilidad de configurarlo por seller desde la plataforma. Se quiere poder asociar un proveedor de antifraude a cualquier seller y que la plataforma lo use al crear/actualizar reglas para ese seller.
+
+**Criterios de aceptación**
+- [ ] En la configuración de un seller (BD) se puede indicar qué proveedor de antifraude usar (nombre + ID de afiliación)
+- [ ] Al crear una regla para un seller con antifraude configurado, se incluye el bloque `antifraud` en el payload a VTEX
+- [ ] Al actualizar, si la regla ya tiene antifraude, se mantiene o actualiza según la config del seller
+- [ ] Al eliminar, si la regla tiene antifraude, el flujo de dos pasos (PUT null → DELETE) se aplica automáticamente (ya implementado en v2.1.7)
+- [ ] El Excel muestra el proveedor de antifraude en la columna Antifraude (ya implementado en v2.1.7)
+- [ ] No rompe sellers sin antifraude
+
+**Notas técnicas**
+- DELETE con antifraude ya generalizado desde v2.1.7 (`execute_delete` en `service.py`)
+- Columna `antifraude` en Excel ya disponible desde v2.1.7
+- Pendiente: migración de BD para columna `antifraud_provider` + `antifraud_affiliation_id` en tabla sellers, y lógica en `execute_create`/`execute_update` para inyectarla
+
+---
+
 ### HU-54 `[usuario]` — Fix instalación duplicada + ícono PO + mejoras UX desktop
 Prioridad: 🟡 Alta · Tamaño: S · Estado: ✅ v2.1.6
 

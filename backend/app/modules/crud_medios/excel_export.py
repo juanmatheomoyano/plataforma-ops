@@ -73,7 +73,7 @@ COL_WIDTHS = {
     "tiene_interes": 14, "valor_minimo_cuota": 20, "fecha_inicio": 22,
     "fecha_fin": 22, "es_self_autorizado": 20, "requiere_autenticacion": 22,
     "servicio_cuotas": 18, "interes_externo": 16, "valor_minimo": 16,
-    "canales_venta": 16, "pais": 8,
+    "canales_venta": 16, "pais": 8, "antifraude": 22,
     "Seller": 26, "Seller ID": 26,
     "Tarjetas totales": 18, "Tarjetas activas": 18, "Tarjetas inactivas": 18,
     "Vigentes hoy": 16, "Firmas": 32, "Max cuotas activas": 20,
@@ -95,7 +95,7 @@ PAGOS_COLS = [
     "tiene_interes", "valor_minimo_cuota", "fecha_inicio",
     "fecha_fin", "es_self_autorizado", "requiere_autenticacion",
     "servicio_cuotas", "interes_externo", "valor_minimo",
-    "canales_venta", "pais",
+    "canales_venta", "pais", "antifraude",
 ]
 
 DASHBOARD_COLS = (

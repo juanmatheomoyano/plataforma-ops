@@ -5,6 +5,26 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [2.1.7] — 2026-10-27 — Excel export mejorado + delete con antifraud + columna antifraude
+
+### CRUD Medios de Pago — Export Excel unificado
+- Dos botones de descarga en todos los resultados (R, C, U, D):
+  - **"Exportar Excel completo"**: descarga el Excel rico (RESUMEN + DASHBOARD_VENDEDORES + PAGOS_CONSOLIDADO + ERRORES) sin filtros — panorama total del scope
+  - **"Exportar Excel con filtros"**: mismo formato pero aplicando los filtros configurados (brands, levels, estado, etc.)
+- Para **Read**: ambos botones en el header, ninguno dentro del tab Detalle (sin duplicados)
+- Para **C/U/D**: ambos botones en la barra de resultados
+- Eliminado el export frontend básico (hoja única, sin formato) — reemplazado por el backend
+
+### CRUD Medios de Pago — Columna Antifraude en Excel
+- `PAGOS_CONSOLIDADO` ahora incluye columna **Antifraude** con el nombre del proveedor (ej. `Koin-Antifraud`) o `No` si la regla no tiene antifraud configurado
+- Extraído desde el campo `antifraud.implementation` de la regla VTEX — nombre corto (última parte del string de implementación)
+
+### Fix: eliminar reglas con antifraud en cualquier seller
+- El borrado en dos pasos (PUT antifraud→null → DELETE) se aplicaba solo a sellers Samsung
+- Ahora aplica a **cualquier seller** cuya regla tenga antifraud activo — VTEX rechaza el DELETE directo cuando hay antifraud
+
+---
+
 ## [2026-10-23] — Samsung en CRUD Medios de Pago + fix listado de sellers
 
 Cambios backend-only, sin nueva versión del .exe.
