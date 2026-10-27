@@ -1,6 +1,6 @@
 {
-  "version": "2.1.6",
-  "pub_date": "2026-10-23T13:13:17Z",
+  "version": "2.1.7",
+  "pub_date": "2026-10-27T12:40:17Z",
   "notes": "Icono PO verde en ventana y barra de tareas. Fix instalacion duplicada: el installer desinstala versiones previas automaticamente. Acceso a Eventos para rol analista.",
-  "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSYkpSZ0VHTGdRK25CVEN5R1hnLzhhaTcxYS9kaklxb05Gc2FYaGpjN3c5WTJ2djRsSzNkM1YvMklocmEvRkhxM0dsUUdvL1doa1ZZS2hpcithamVOSm9KNTFhVHpOZkE0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyNzYxMTkxCWZpbGU6UHJvdmluY2lhIE9wc18yLjEuNl94NjQtc2V0dXAuZXhlCmF3RHgrU2FTbXNQZytuUUk1YnJpUVpnZEFva3Bqa2Y3SVN2ODBES3h6dzdNaVR0N1JyMiswSmVVNzQvOTRWN1Q0eU16YU43a0V2emNhUzYzS2RWQkRBPT0K"
+  "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSYkpSZ0VHTGdRK3FuMDZOZ3JLdmpkZUpXWHp4ZEdsMzlwK0N3MU90YjJ0eGc2QjJyQmJ4eDR4eFZVZWxtV2QxaXhSQzZ1MFEyRkJEaHR6UGRsSHVHQ2xZaDJKVHIrRGdJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMTA0ODExCWZpbGU6UHJvdmluY2lhIE9wc18yLjEuN194NjQtc2V0dXAuZXhlClppdEljVTYwK2ltbDFUSmtLSUV5cWE5SndQSGhiQUw5ZEZvQ2RhUzA1anQxNHFFUkVFMnJnZjdKaHNpUmZUSWp6SG5VajkraEYzWFBDMTJ2akRPakJ3PT0K"
 }
