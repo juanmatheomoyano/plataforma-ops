@@ -164,6 +164,7 @@ class ExportRequest(BaseModel):
     scope: ScopeRequest = Field(default_factory=ScopeRequest)
     grupos_seleccionados: list[str] | None = None   # None = todos los grupos
     evento_resultados: list[EventoResultadoExport] = Field(default_factory=list)
+    filtros: FiltrosRequest = Field(default_factory=FiltrosRequest)
 
 
 class GrupoEventoResult(BaseModel):

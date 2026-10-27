@@ -433,6 +433,7 @@ export default function CrudMediosPage() {
                 dashboard={result.dashboard}
                 operacion={opConfig.operacion}
                 scope={{ seller_ids: sellerIds }}
+                filtros={buildFiltrosPayload(filtros)}
                 selectedGrupos={selectedGrupos}
                 eventoColumns={eventoColumns}
                 loadingEventos={loadingEventos}

@@ -260,7 +260,7 @@ async def export_excel(
     t0 = _time.monotonic()
 
     scope_ids = body.scope.seller_ids or None
-    all_enriched, dashboards, error_rows = await fetch_enriched_for_export(db, scope_ids)
+    all_enriched, dashboards, error_rows = await fetch_enriched_for_export(db, scope_ids, body.filtros)
 
     elapsed = _time.monotonic() - t0
     evento_resultados = [

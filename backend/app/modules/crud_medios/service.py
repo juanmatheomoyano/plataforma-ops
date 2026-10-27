@@ -1409,10 +1409,11 @@ async def _run_crud_background(
 async def fetch_enriched_for_export(
     db: AsyncSession,
     scope_ids: list[str] | None,
+    filtros: FiltrosRequest | None = None,
 ) -> tuple[list[dict], list[SellerDashboard], list[dict]]:
     """
     Devuelve (all_enriched_rows, dashboards, error_rows) para generación de Excel.
-    Todas las reglas sin filtrar — export siempre es panorama completo.
+    Si filtros tiene valores activos, solo se incluyen las reglas que los cumplen.
     """
     sellers = await get_active_sellers(db, scope_ids if scope_ids else None)
 
@@ -1438,9 +1439,12 @@ async def fetch_enriched_for_export(
                 "fecha":    datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
             })
             continue
+        rules = sd.get("rules", [])
+        if filtros:
+            rules = [r for r in rules if matches_filters(r, filtros)]
         enriched = [
             parse_rule_enriched(seller.seller_id, seller.seller_name, r)
-            for r in sd.get("rules", [])
+            for r in rules
         ]
         all_enriched.extend(enriched)
         if enriched:

@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
-import * as XLSX from "xlsx"
 import { save } from "@tauri-apps/plugin-dialog"
 import { writeFile } from "@tauri-apps/plugin-fs"
 import client from "@/core/api/client"
@@ -38,25 +37,6 @@ function getDetalleBadge(detalle) {
   return DETALLE_BADGE.dry_run
 }
 
-async function exportXLSX(rows) {
-  const headers = ["seller_id", "id_ecommerce", "rule_id", "rule_name", "brand", "level", "estado", "detalle"]
-  const data = [
-    headers,
-    ...rows.map((r) => headers.map((h) => r[h] ?? "")),
-  ]
-  const ws = XLSX.utils.aoa_to_sheet(data)
-  const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, "Resultados")
-  const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" })
-
-  const filePath = await save({
-    filters: [{ name: "Excel", extensions: ["xlsx"] }],
-    defaultPath: `crud_medios_${new Date().toISOString().slice(0, 10)}.xlsx`,
-  })
-  if (filePath) {
-    await writeFile(filePath, new Uint8Array(buf))
-  }
-}
 
 const BRANDS = ["Visa", "Mastercard", "American Express", "Electron", "Maestro", "Naranja", "Cabal", "Diners", "Amex"]
 const ESTADOS = ["activo", "inactivo"]
@@ -70,7 +50,7 @@ const RESULTADOS = [
   { value: "error", label: "ERROR" },
 ]
 
-async function downloadBackendExcel(scope, grupos, eventoColumns) {
+async function downloadBackendExcel(scope, grupos, eventoColumns, filtros) {
   const body = {
     scope: scope || { seller_ids: [] },
     grupos_seleccionados: grupos ?? [],
@@ -78,6 +58,7 @@ async function downloadBackendExcel(scope, grupos, eventoColumns) {
       nombre: evento.nombre,
       result_map: resultMap,
     })),
+    filtros: filtros ?? {},
   }
   const { data } = await client.post("/crud-medios/export", body, { responseType: "arraybuffer" })
   const filePath = await save({
@@ -87,16 +68,16 @@ async function downloadBackendExcel(scope, grupos, eventoColumns) {
   if (filePath) await writeFile(filePath, new Uint8Array(data))
 }
 
-export function ResultsTable({ rows, dashboard, operacion, scope, onFilterErrors, eventoColumns = [], loadingEventos = false, selectedGrupos }) {
+export function ResultsTable({ rows, dashboard, operacion, scope, filtros, onFilterErrors, eventoColumns = [], loadingEventos = false, selectedGrupos }) {
   const [globalFilter, setGlobalFilter] = useState("")
   const [showOnlyErrors, setShowOnlyErrors] = useState(false)
   const [colFilters, setColFilters] = useState({ seller: "", brand: "", level: "", estado: "", resultado: "" })
   const [exporting, setExporting] = useState(false)
 
-  async function handleExportDashboard() {
+  async function handleExportBackend() {
     setExporting(true)
     try {
-      await downloadBackendExcel(scope, selectedGrupos, eventoColumns)
+      await downloadBackendExcel(scope, selectedGrupos, eventoColumns, filtros)
     } catch (err) {
       console.error("Export error:", err)
       toast.error(`Error al exportar: ${err?.message ?? String(err)}`)
@@ -258,11 +239,15 @@ export function ResultsTable({ rows, dashboard, operacion, scope, onFilterErrors
           <Button
             size="sm"
             variant="outline"
-            onClick={() => exportXLSX(rows)}
+            onClick={handleExportBackend}
+            disabled={exporting}
             className="h-8 border-border bg-transparent text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
           >
-            <Download className="mr-1.5 h-3.5 w-3.5" />
-            Excel
+            {exporting
+              ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              : <Download className="mr-1.5 h-3.5 w-3.5" />
+            }
+            Exportar Excel completo
           </Button>
         </div>
       </div>
@@ -389,7 +374,7 @@ export function ResultsTable({ rows, dashboard, operacion, scope, onFilterErrors
           <Button
             size="sm"
             variant="outline"
-            onClick={handleExportDashboard}
+            onClick={handleExportBackend}
             disabled={exporting || loadingEventos}
             className="h-8 border-border bg-transparent text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
           >
