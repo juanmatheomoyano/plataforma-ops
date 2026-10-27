@@ -608,6 +608,9 @@ def matches_filters(rule: dict, filtros: FiltrosRequest) -> bool:  # noqa: C901
         if filtros.fecha_mode == "entre":
             ini = _parse_date(filtros.fecha_ini_date) or _normalize_to_ar(filtros.fecha_ini)
             fin = _parse_date(filtros.fecha_fin_date) or _normalize_to_ar(filtros.fecha_fin)
+            # fecha_fin como fecha sola llega como medianoche; extender al final del día
+            if fin and filtros.fecha_fin_date:
+                fin = fin.replace(hour=23, minute=59, second=59)
             # fecha_ini filtra por beginDate >= ini; fecha_fin filtra por endDate <= fin
             if ini and (not rule_begin or rule_begin < ini):
                 return False
