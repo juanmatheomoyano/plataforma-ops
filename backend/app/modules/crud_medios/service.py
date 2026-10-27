@@ -1031,7 +1031,7 @@ async def execute_delete(
                     app_key, app_token = get_decrypted_credentials(seller)
                     _sam = _SAMSUNG_CONFIG.get(seller.seller_id)
                     _vtex_acct = _sam["vtex_account"] if _sam else seller.seller_id
-                    if _sam and rule.get("antifraud"):
+                    if rule.get("antifraud"):
                         no_af = {**rule, "antifraud": None}
                         await vtex_client.update_rule(_vtex_acct, app_key, app_token, rule_id, no_af)
                     await vtex_client.delete_rule(
