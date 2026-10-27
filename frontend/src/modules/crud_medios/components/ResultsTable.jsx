@@ -72,17 +72,27 @@ export function ResultsTable({ rows, dashboard, operacion, scope, filtros, onFil
   const [globalFilter, setGlobalFilter] = useState("")
   const [showOnlyErrors, setShowOnlyErrors] = useState(false)
   const [colFilters, setColFilters] = useState({ seller: "", brand: "", level: "", estado: "", resultado: "" })
-  const [exporting, setExporting] = useState(false)
+  const [exporting, setExporting] = useState(null) // null | 'full' | 'filtered'
 
-  async function handleExportBackend() {
-    setExporting(true)
+  async function handleExportFull() {
+    setExporting("full")
+    try {
+      await downloadBackendExcel(scope, selectedGrupos, eventoColumns, null)
+    } catch (err) {
+      toast.error(`Error al exportar: ${err?.message ?? String(err)}`)
+    } finally {
+      setExporting(null)
+    }
+  }
+
+  async function handleExportFiltered() {
+    setExporting("filtered")
     try {
       await downloadBackendExcel(scope, selectedGrupos, eventoColumns, filtros)
     } catch (err) {
-      console.error("Export error:", err)
       toast.error(`Error al exportar: ${err?.message ?? String(err)}`)
     } finally {
-      setExporting(false)
+      setExporting(null)
     }
   }
 
@@ -236,19 +246,36 @@ export function ResultsTable({ rows, dashboard, operacion, scope, filtros, onFil
               Limpiar filtros
             </button>
           )}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleExportBackend}
-            disabled={exporting}
-            className="h-8 border-border bg-transparent text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
-          >
-            {exporting
-              ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              : <Download className="mr-1.5 h-3.5 w-3.5" />
-            }
-            Exportar Excel completo
-          </Button>
+          {operacion !== "R" && (
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleExportFull}
+                disabled={!!exporting}
+                className="h-8 border-border bg-transparent text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+              >
+                {exporting === "full"
+                  ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  : <Download className="mr-1.5 h-3.5 w-3.5" />
+                }
+                Exportar Excel completo
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleExportFiltered}
+                disabled={!!exporting}
+                className="h-8 border-border bg-transparent text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+              >
+                {exporting === "filtered"
+                  ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  : <Download className="mr-1.5 h-3.5 w-3.5" />
+                }
+                Exportar Excel con filtros
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -366,24 +393,39 @@ export function ResultsTable({ rows, dashboard, operacion, scope, filtros, onFil
   if (operacion === "R") {
     return (
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">
             {rows.length} regla{rows.length !== 1 ? "s" : ""} ·{" "}
             {dashboard?.length ?? 0} seller{(dashboard?.length ?? 0) !== 1 ? "s" : ""}
           </p>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleExportBackend}
-            disabled={exporting || loadingEventos}
-            className="h-8 border-border bg-transparent text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
-          >
-            {exporting
-              ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              : <Download className="mr-1.5 h-3.5 w-3.5" />
-            }
-            Exportar Excel completo
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleExportFull}
+              disabled={!!exporting || loadingEventos}
+              className="h-8 border-border bg-transparent text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+            >
+              {exporting === "full"
+                ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                : <Download className="mr-1.5 h-3.5 w-3.5" />
+              }
+              Exportar Excel completo
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleExportFiltered}
+              disabled={!!exporting || loadingEventos}
+              className="h-8 border-border bg-transparent text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+            >
+              {exporting === "filtered"
+                ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                : <Download className="mr-1.5 h-3.5 w-3.5" />
+              }
+              Exportar Excel con filtros
+            </Button>
+          </div>
         </div>
         <Tabs defaultValue="dashboard">
           <TabsList className="bg-muted border border-border">
