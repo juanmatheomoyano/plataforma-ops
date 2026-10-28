@@ -708,6 +708,26 @@ Samsung opera sus reglas VTEX dentro de la cuenta `baproar` pero diferenciadas p
 
 ---
 
+### HU-57 `[usuario]` — CRUD Medios de Pago: creación correcta de Visa Electron
+Prioridad: 🟡 Alta · Tamaño: S · Estado: 📋 Backlog
+
+**Contexto**
+Al crear una regla de Visa Electron desde la plataforma, el formulario solicita una cuota mínima de 1 (`installment = 1`), pero ese installment no está permitido para Visa Electron en VTEX. Además, Visa Electron tiene restricciones fijas de configuración que no aplican a otras tarjetas.
+
+**Criterios de aceptación**
+- [ ] Al seleccionar Visa Electron como tarjeta, el formulario NO pide ni acepta cuota 1
+- [ ] La regla se crea únicamente con: política comercial **Main** (`salesChannel = 1`), país **Argentina**, emisor **Banco de la Provincia de Buenos Aires**
+- [ ] Si se intenta crear Visa Electron con otra configuración, la plataforma muestra un error claro antes de llamar a VTEX
+- [ ] El resto de tarjetas (Visa, Mastercard) no se ven afectadas
+
+**Notas técnicas**
+- `paymentSystemId = 10` (Visa Electron en VTEX)
+- `salesChannels: [{id: "1"}]` fijo — no configurable por el usuario
+- `issuer`: hardcodear Banco de la Provincia de Buenos Aires
+- Validar en frontend antes de enviar y también en `execute_create` del backend
+
+---
+
 ### HU-56 `[usuario]` — CRUD Medios de Pago: opción antifraude en sellers al generar tarjetas
 Prioridad: 🟢 Media · Tamaño: M · Estado: 📋 Backlog
 
