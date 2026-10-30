@@ -23,6 +23,10 @@ class FiltrosRequest(BaseModel):
     horario_ini_mode: Literal["include", "exclude"] = "include"
     horario_fin: str | None = None      # HH:MM[:SS]
     horario_fin_mode: Literal["include", "exclude"] = "include"
+    tiene_interes: Literal["todos", "sin", "con"] = "todos"
+    interes_externo: Literal["todos", "false", "true"] = "todos"
+    es_default: Literal["todos", "no", "si"] = "todos"
+    emisor: Literal["todos", "provincia", "otro"] = "todos"
 
 
 class AcreateRequest(BaseModel):
@@ -41,6 +45,9 @@ class UpdateRequest(BaseModel):
     cuotas: list[int] | None = None
     enabled: bool | None = None
     level: str | None = None
+    zero_interes: bool | None = None
+    fix_interes_externo: bool | None = None
+    fix_emisor: bool | None = None
 
 
 class ScopeRequest(BaseModel):

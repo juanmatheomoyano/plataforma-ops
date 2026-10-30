@@ -399,6 +399,38 @@ export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdat
               </select>
             </FieldRow>
           </div>
+
+          <FieldRow label="Correcciones">
+            <div className="flex flex-col gap-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={!!accionUpdate?.zero_interes}
+                  onChange={(e) => setUpdate("zero_interes", e.target.checked || undefined)}
+                  className="h-3.5 w-3.5 rounded border-border accent-primary"
+                />
+                <span className="text-xs text-foreground/80">Poner interés a 0 (interestRate + interestTax)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={!!accionUpdate?.fix_interes_externo}
+                  onChange={(e) => setUpdate("fix_interes_externo", e.target.checked || undefined)}
+                  className="h-3.5 w-3.5 rounded border-border accent-primary"
+                />
+                <span className="text-xs text-foreground/80">Interés externo → false</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={!!accionUpdate?.fix_emisor}
+                  onChange={(e) => setUpdate("fix_emisor", e.target.checked || undefined)}
+                  className="h-3.5 w-3.5 rounded border-border accent-primary"
+                />
+                <span className="text-xs text-foreground/80">Corregir emisor → Banco de la Provincia de Buenos Aires</span>
+              </label>
+            </div>
+          </FieldRow>
         </div>
       )}
     </div>

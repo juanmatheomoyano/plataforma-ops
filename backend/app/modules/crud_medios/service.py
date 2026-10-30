@@ -640,6 +640,44 @@ def matches_filters(rule: dict, filtros: FiltrosRequest) -> bool:  # noqa: C901
         if not _compare_time(t_rule, t_filter, filtros.horario_fin_mode):
             return False
 
+    # ── interés ────────────────────────────────────────────────────────────
+    if filtros.tiene_interes != "todos":
+        inst_opts = rule.get("installmentOptions") or {}
+        insts = inst_opts.get("installments") or []
+        has_int = any(
+            (i.get("interestRate") or 0) > 0 or (i.get("interestTax") or 0) > 0
+            for i in insts
+        )
+        if filtros.tiene_interes == "sin" and has_int:
+            return False
+        if filtros.tiene_interes == "con" and not has_int:
+            return False
+
+    # ── interés externo ────────────────────────────────────────────────────
+    if filtros.interes_externo != "todos":
+        is_ext = _is_interes_externo_val(rule.get("externalInterest"))
+        if filtros.interes_externo == "false" and is_ext:
+            return False
+        if filtros.interes_externo == "true" and not is_ext:
+            return False
+
+    # ── default ────────────────────────────────────────────────────────────
+    if filtros.es_default != "todos":
+        is_def = bool(rule.get("isDefault"))
+        if filtros.es_default == "no" and is_def:
+            return False
+        if filtros.es_default == "si" and not is_def:
+            return False
+
+    # ── emisor ─────────────────────────────────────────────────────────────
+    if filtros.emisor != "todos":
+        em = (rule.get("issuer") or {}).get("name", "").lower().strip()
+        is_prov = "provincia" in em
+        if filtros.emisor == "provincia" and not is_prov:
+            return False
+        if filtros.emisor == "otro" and is_prov:
+            return False
+
     return True
 
 
@@ -926,6 +964,9 @@ async def execute_update(
     if cambios.level is not None:
         patch["level"] = "" if cambios.level == "__no_level__" else cambios.level
     if cambios.enabled is not None: patch["enabled"] = cambios.enabled
+    if cambios.zero_interes: patch["zero_interes"] = True
+    if cambios.fix_interes_externo: patch["fix_interes_externo"] = True
+    if cambios.fix_emisor: patch["fix_emisor"] = True
 
     sem = asyncio.Semaphore(concurrency)
     progress_lock = asyncio.Lock()
@@ -973,6 +1014,15 @@ async def execute_update(
                             }
                     if "level" in patch:
                         updated_body["cardLevel"] = {"name": patch["level"]} if patch["level"] else None
+                    if "zero_interes" in patch:
+                        inst_opts = updated_body.get("installmentOptions") or {}
+                        for inst in inst_opts.get("installments") or []:
+                            inst["interestRate"] = 0.0
+                            inst["interestTax"] = 0.0
+                    if "fix_interes_externo" in patch:
+                        updated_body["externalInterest"] = False
+                    if "fix_emisor" in patch:
+                        updated_body["issuer"] = {"name": "banco de la provincia de buenos aires"}
 
                     _sam = _SAMSUNG_CONFIG.get(seller.seller_id)
                     _vtex_acct = _sam["vtex_account"] if _sam else seller.seller_id

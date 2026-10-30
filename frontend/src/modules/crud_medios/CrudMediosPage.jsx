@@ -43,6 +43,9 @@ const EMPTY_UPDATE = {
   cuotas: "",
   enabled: undefined,
   level: "",
+  zero_interes: undefined,
+  fix_interes_externo: undefined,
+  fix_emisor: undefined,
 }
 
 // Argentina = UTC-3; converts a local AR date+time string to ISO UTC
@@ -86,6 +89,10 @@ function buildFiltrosPayload(filtros) {
     f.horario_fin = filtros.horario_fin
     f.horario_fin_mode = filtros.horario_fin_mode
   }
+  if (filtros.tiene_interes !== "todos") f.tiene_interes = filtros.tiene_interes
+  if (filtros.interes_externo !== "todos") f.interes_externo = filtros.interes_externo
+  if (filtros.es_default !== "todos") f.es_default = filtros.es_default
+  if (filtros.emisor !== "todos") f.emisor = filtros.emisor
 
   return f
 }
@@ -187,6 +194,9 @@ export default function CrudMediosPage() {
       }
       if (au.level) patch.level = au.level
       if (au.enabled !== undefined) patch.enabled = au.enabled
+      if (au.zero_interes) patch.zero_interes = true
+      if (au.fix_interes_externo) patch.fix_interes_externo = true
+      if (au.fix_emisor) patch.fix_emisor = true
       if (Object.keys(patch).length > 0) body.accion_update = patch
     }
 

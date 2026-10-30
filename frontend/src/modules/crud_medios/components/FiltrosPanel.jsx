@@ -46,6 +46,10 @@ export const EMPTY_FILTROS = {
   horario_ini_mode: "include",
   horario_fin: "",
   horario_fin_mode: "include",
+  tiene_interes: "todos",
+  interes_externo: "todos",
+  es_default: "todos",
+  emisor: "todos",
 }
 
 function ToggleGroup({ value, onChange, options }) {
@@ -127,7 +131,11 @@ export function FiltrosPanel({ filtros, onChange }) {
     filtros.cuotas ||
     filtros.fecha_mode !== "todos" ||
     filtros.horario_ini ||
-    filtros.horario_fin
+    filtros.horario_fin ||
+    filtros.tiene_interes !== "todos" ||
+    filtros.interes_externo !== "todos" ||
+    filtros.es_default !== "todos" ||
+    filtros.emisor !== "todos"
 
   return (
     <div className="rounded-lg border border-border bg-muted/50">
@@ -329,6 +337,62 @@ export function FiltrosPanel({ filtros, onChange }) {
                   { value: "exclude", label: "Excluye" },
                 ]}
               />
+            </FieldRow>
+          </div>
+
+          {/* Row 5: Interés + Interés externo + Default + Emisor */}
+          <div className="grid grid-cols-2 gap-5 md:grid-cols-4">
+
+            <FieldRow label="Interés">
+              <Select value={filtros.tiene_interes} onValueChange={(v) => set("tiene_interes", v)}>
+                <SelectTrigger className="border-border bg-background text-foreground h-9 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="border-border bg-card text-foreground">
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="sin">Sin interés ✓</SelectItem>
+                  <SelectItem value="con">Con interés ✗</SelectItem>
+                </SelectContent>
+              </Select>
+            </FieldRow>
+
+            <FieldRow label="Interés externo">
+              <Select value={filtros.interes_externo} onValueChange={(v) => set("interes_externo", v)}>
+                <SelectTrigger className="border-border bg-background text-foreground h-9 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="border-border bg-card text-foreground">
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="false">False ✓</SelectItem>
+                  <SelectItem value="true">True ✗</SelectItem>
+                </SelectContent>
+              </Select>
+            </FieldRow>
+
+            <FieldRow label="Default">
+              <Select value={filtros.es_default} onValueChange={(v) => set("es_default", v)}>
+                <SelectTrigger className="border-border bg-background text-foreground h-9 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="border-border bg-card text-foreground">
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="no">No ✓</SelectItem>
+                  <SelectItem value="si">Sí ✗</SelectItem>
+                </SelectContent>
+              </Select>
+            </FieldRow>
+
+            <FieldRow label="Emisor">
+              <Select value={filtros.emisor} onValueChange={(v) => set("emisor", v)}>
+                <SelectTrigger className="border-border bg-background text-foreground h-9 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="border-border bg-card text-foreground">
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="provincia">Banco Provincia ✓</SelectItem>
+                  <SelectItem value="otro">Otro emisor ✗</SelectItem>
+                </SelectContent>
+              </Select>
             </FieldRow>
           </div>
 

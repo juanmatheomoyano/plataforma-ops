@@ -5,6 +5,23 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [2.2.0] — 2026-10-30 — Filtros por interés, interés externo, default y emisor + correcciones masivas (HU-60)
+
+### CRUD Medios de Pago — Nuevos filtros
+- **Interés**: filtra reglas "Sin interés ✓" (ninguna cuota con `interestRate > 0` ni `interestTax > 0`) o "Con interés ✗" (al menos una cuota con interés)
+- **Interés externo**: filtra reglas con `externalInterest = false ✓` o `externalInterest = true ✗`
+- **Default**: filtra reglas con `isDefault = false ✓` o `isDefault = true ✗`
+- **Emisor**: filtra reglas con `issuer.name` conteniendo "provincia" ✓ o cualquier otro emisor ✗
+- El badge "activos" en el colapsable de filtros refleja los 4 nuevos filtros
+
+### CRUD Medios de Pago — Nuevas acciones de Actualizar
+- **Poner interés a 0**: pone `interestRate = 0.0` e `interestTax = 0.0` en todas las cuotas de `installmentOptions.installments`
+- **Interés externo → false**: fuerza `externalInterest = false` en la regla
+- **Corregir emisor → Banco Provincia**: sobrescribe `issuer = {"name": "banco de la provincia de buenos aires"}`
+- Compatible con dry run (muestra las keys que se van a cambiar) y operación async
+
+---
+
 ## [2.1.9] — 2026-10-30 — Visa Electron sin levels/cuotas + motivos de eventos en Excel
 
 ### CRUD Medios de Pago — Visa Electron (HU-57, parcial)

@@ -903,3 +903,22 @@ Prioridad: ✅ Hecho · Tamaño: S · Estado: ✅ 2026-09-24
 **Notas**
 - `crud_operation_rows` crece ~5K filas/día con uso normal (464 sellers). Con 3 días de retención: ~15K filas / ~1 MB. Margen amplio.
 - Con el plan $5 de Railway (500 MB) estamos ahora al ~2% de uso.
+
+---
+
+### HU-60 `[usuario]` — CRUD Medios de Pago: filtros por interés, interés externo, default y emisor + correcciones masivas
+Prioridad: 🟡 Alta · Tamaño: M · Estado: ✅ v2.2.0
+
+**Contexto**
+Los analistas necesitan poder identificar y corregir reglas con configuración incorrecta: interés habilitado, interés externo activo, `isDefault=true`, o emisor distinto de Banco de la Provincia de Buenos Aires. Para resolverlo en masa, necesitan filtrar esas reglas y aplicar correcciones directamente desde el Update.
+
+**Criterios de aceptación**
+- [x] Filtro "Interés": Todos / Sin interés ✓ / Con interés ✗ — evalúa `interestRate > 0` o `interestTax > 0` en cada cuota
+- [x] Filtro "Interés externo": Todos / False ✓ / True ✗ — evalúa `externalInterest` con la lógica `_is_interes_externo_val`
+- [x] Filtro "Default": Todos / No ✓ / Sí ✗ — evalúa `isDefault`
+- [x] Filtro "Emisor": Todos / Banco Provincia ✓ / Otro emisor ✗ — evalúa si "provincia" está en `issuer.name`
+- [x] En Actualizar: checkbox "Poner interés a 0" → zeroes `interestRate` + `interestTax` en todas las cuotas
+- [x] En Actualizar: checkbox "Interés externo → false" → `externalInterest = false`
+- [x] En Actualizar: checkbox "Corregir emisor → Banco Provincia" → `issuer = {"name": "banco de la provincia de buenos aires"}`
+- [x] Compatible con dry run y async (sin cambios en flujo de ejecución)
+- [x] Badge "activos" en el colapsable de filtros refleja los nuevos filtros
