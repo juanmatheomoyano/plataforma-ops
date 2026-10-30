@@ -1623,6 +1623,29 @@ async def _run_evento_core(
             bad_names = sorted({r.get("conector", "") or "(vacío)" for r in bad_conn})
             motivos.append(f"Conector inválido en tarjetas del evento: {bad_names}")
 
+        # ── Fecha y horario exacto de las reglas ──────────────────────────────
+        if event_ini or event_fin:
+            wrong_ini: list[str] = []
+            wrong_fin: list[str] = []
+            for r in lc_active:
+                r_begin = _normalize_to_ar(r.get("fecha_inicio")) if r.get("fecha_inicio") else None
+                r_end   = _normalize_to_ar(r.get("fecha_fin"))   if r.get("fecha_fin")   else None
+                nombre  = r.get("nombre_regla") or r.get("id_regla") or "?"
+                if event_ini and r_begin and r_begin > event_ini:
+                    wrong_ini.append(f"{nombre} (inicia {r_begin.strftime('%d/%m %H:%M')})")
+                if event_fin and r_end and r_end < event_fin:
+                    wrong_fin.append(f"{nombre} (vence {r_end.strftime('%d/%m %H:%M')})")
+            if wrong_ini:
+                motivos.append(
+                    f"Fecha/horario de inicio incorrecto — el evento abre "
+                    f"{event_ini.strftime('%d/%m/%Y %H:%M')}: {', '.join(wrong_ini)}"
+                )
+            if wrong_fin:
+                motivos.append(
+                    f"Fecha/horario de cierre incorrecto — el evento cierra "
+                    f"{event_fin.strftime('%d/%m/%Y %H:%M')}: {', '.join(wrong_fin)}"
+                )
+
         levels_activos = {r.get("nivel_tarjeta", "").lower().strip() for r in lc_active}
         for firma_id, firma_name in REQUIRED_FIRMAS.items():
             firma_rules = [
