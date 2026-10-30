@@ -708,6 +708,29 @@ Samsung opera sus reglas VTEX dentro de la cuenta `baproar` pero diferenciadas p
 
 ---
 
+### HU-58 `[usuario]` — CRUD Medios de Pago: correcciones de bugs y dashboard incompleto
+Prioridad: 🔴 Crítica · Tamaño: M · Estado: 📋 Backlog
+
+**Bugs confirmados**
+
+**1. CRÍTICO — Samsung pierde condition_id al crear reglas** (`service.py:841,850`)
+Clave `"condition"` duplicada en el dict `body` de `execute_create`. Python toma el último valor (`None`), descartando el `condition_id` de Samsung. Las reglas Samsung se crean sin condición comercial.
+- [ ] Eliminar la línea duplicada `"condition": None` (línea 850)
+
+**2. Dashboard frontend — 5 columnas calculadas pero no renderizadas** (`DashboardTable.jsx`)
+El backend envía y el Excel incluye: `inactivas`, `vigentes_hoy`, `firmas`, `conectores`, `emisores`. El frontend solo muestra Total, Activas, Max cuotas.
+- [ ] Agregar columnas Inactivas, Vigentes hoy, Firmas, Conectores, Emisores al dashboard UI
+
+**3. Excel RESUMEN — "Sellers sin reglas configuradas" siempre 0** (`router.py:270`)
+`build_excel()` nunca recibe `zero_rules`. El KPI está roto en el Excel.
+- [ ] Calcular y pasar `zero_rules` al llamar a `build_excel()`
+
+**4. `vigente_hoy` ignora si la regla está habilitada** (`service.py:190,472`)
+`_is_vigente()` solo mira fechas. Una regla deshabilitada (enabled=false) dentro del rango de fecha se cuenta como vigente hoy en el dashboard.
+- [ ] Incorporar `enabled` en el criterio: `vigente_hoy = "Sí"` solo si en fecha Y habilitada
+
+---
+
 ### HU-57 `[usuario]` — CRUD Medios de Pago: creación correcta de Visa Electron
 Prioridad: 🟡 Alta · Tamaño: S · Estado: 📋 Backlog
 
