@@ -735,19 +735,25 @@ El backend envía y el Excel incluye: `inactivas`, `vigentes_hoy`, `firmas`, `co
 Prioridad: 🟡 Alta · Tamaño: S · Estado: 📋 Backlog
 
 **Contexto**
-Al crear una regla de Visa Electron desde la plataforma, el formulario solicita una cuota mínima de 1 (`installment = 1`), pero ese installment no está permitido para Visa Electron en VTEX. Además, Visa Electron tiene restricciones fijas de configuración que no aplican a otras tarjetas.
+Visa Electron es una tarjeta especial en VTEX que no admite cuotas ni niveles. Su formulario de creación debe ser diferente al de Visa/Mastercard: solo pide los campos obligatorios fijos y nada más. Es análoga a la regla de 1 cuota de Visa/Mastercard pero sin el campo de cuota.
+
+**Comportamiento esperado del formulario al seleccionar Electron**
+- Solo se muestran: país (fijo: Argentina), emisor (fijo: Banco de la Provincia de Buenos Aires), política comercial (fija: Main / salesChannel 1)
+- NO se muestra ni se pide: cuotas, nivel de tarjeta, mínimo de cuota, ningún otro campo
+- El botón Crear genera la regla directamente con esos valores fijos
 
 **Criterios de aceptación**
-- [ ] Al seleccionar Visa Electron como tarjeta, el formulario NO pide ni acepta cuota 1
-- [ ] La regla se crea únicamente con: política comercial **Main** (`salesChannel = 1`), país **Argentina**, emisor **Banco de la Provincia de Buenos Aires**
-- [ ] Si se intenta crear Visa Electron con otra configuración, la plataforma muestra un error claro antes de llamar a VTEX
+- [ ] Formulario simplificado para Electron: solo país, emisor y política comercial Main, sin cuotas ni niveles
+- [ ] No se envía ningún `installmentOptions` a VTEX (ni cuota 1 ni ninguna)
+- [ ] `salesChannels: [{id: "1"}]` fijo, `issuer`: Banco de la Provincia de Buenos Aires, `country`: Argentina
+- [ ] Validación en backend (`execute_create`): si `paymentSystemId = 10` y llegan cuotas o nivel → error claro
 - [ ] El resto de tarjetas (Visa, Mastercard) no se ven afectadas
 
 **Notas técnicas**
 - `paymentSystemId = 10` (Visa Electron en VTEX)
-- `salesChannels: [{id: "1"}]` fijo — no configurable por el usuario
-- `issuer`: hardcodear Banco de la Provincia de Buenos Aires
-- Validar en frontend antes de enviar y también en `execute_create` del backend
+- `salesChannels: [{id: "1"}]` fijo — no configurable
+- `installmentOptions`: no enviar (ni `null` ni vacío, directamente omitir)
+- Diferencia con 1-pago de Visa/Master: esos SÍ tienen `installmentOptions` con cuota 1; Electron no tiene nada
 
 ---
 
