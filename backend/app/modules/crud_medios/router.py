@@ -264,7 +264,7 @@ async def export_excel(
 
     elapsed = _time.monotonic() - t0
     evento_resultados = [
-        {"nombre": e.nombre, "result_map": e.result_map}
+        {"nombre": e.nombre, "result_map": e.result_map, "motivos_map": e.motivos_map}
         for e in body.evento_resultados
     ]
     xlsx_bytes = build_excel(
