@@ -68,6 +68,13 @@ function FieldRow({ label, children, hint }) {
 }
 
 function buildNamePreview(prefix, psBrands, levels, cuotasStr) {
+  const isElectronOnly = psBrands.length === 1 && psBrands[0] === "electron"
+  if (isElectronOnly) {
+    const parts = []
+    if (prefix) parts.push(prefix)
+    parts.push("ELECTRON")
+    return parts.join("_")
+  }
   if (!psBrands.length || !levels.length) return null
   const cuotas = cuotasStr
     ? cuotasStr.split(",").map((s) => parseInt(s.trim())).filter((n) => !isNaN(n))
@@ -134,6 +141,8 @@ export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdat
     .map((s) => parseInt(s.trim()))
     .filter((n) => !isNaN(n))
   const isCreateOnePago = createCuotasParsed.length === 1 && createCuotasParsed[0] === 1
+  const isElectronOnly = (accionCreate?.ps_names ?? []).length === 1 &&
+                         (accionCreate?.ps_names ?? []).includes("electron")
 
   return (
     <div className="space-y-4">
@@ -223,48 +232,59 @@ export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdat
             </div>
           </FieldRow>
 
-          {/* Levels */}
-          <FieldRow
-            label="Levels *"
-            hint='"Sin level" solo disponible cuando cuotas = 1 (aplica a todos los niveles)'
-          >
-            <div className="flex flex-wrap gap-1.5">
-              {LEVEL_CHIPS_CREATE.map(({ label, value }) => {
-                const selected = (accionCreate?.levels ?? []).includes(value)
-                const isNoLevel = value === NO_LEVEL
-                const disabled = isNoLevel && !isCreateOnePago
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    disabled={disabled}
-                    title={disabled ? "Solo disponible con cuota 1" : undefined}
-                    onClick={() => !disabled && toggleCreateLevel(value)}
-                    className={[
-                      "rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors",
-                      disabled ? "opacity-30 cursor-not-allowed" : "",
-                      selected
-                        ? "border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-300"
-                        : "border-border bg-muted text-muted-foreground hover:text-foreground",
-                    ].join(" ")}
-                  >
-                    {label}
-                  </button>
-                )
-              })}
+          {/* Levels — oculto para Electron (débito, sin levels) */}
+          {isElectronOnly ? (
+            <div className="rounded-md border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 px-3 py-2.5 space-y-1">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">Configuración fija — Visa Electron</p>
+              <p className="text-xs text-blue-700 dark:text-blue-300">Política Main · País Argentina · Emisor Banco de la Provincia de Buenos Aires</p>
+              <p className="text-[11px] text-blue-600/70 dark:text-blue-400/70">Sin levels ni cuotas (tarjeta de débito)</p>
             </div>
-          </FieldRow>
+          ) : (
+            <FieldRow
+              label="Levels *"
+              hint='"Sin level" solo disponible cuando cuotas = 1 (aplica a todos los niveles)'
+            >
+              <div className="flex flex-wrap gap-1.5">
+                {LEVEL_CHIPS_CREATE.map(({ label, value }) => {
+                  const selected = (accionCreate?.levels ?? []).includes(value)
+                  const isNoLevel = value === NO_LEVEL
+                  const disabled = isNoLevel && !isCreateOnePago
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      disabled={disabled}
+                      title={disabled ? "Solo disponible con cuota 1" : undefined}
+                      onClick={() => !disabled && toggleCreateLevel(value)}
+                      className={[
+                        "rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors",
+                        disabled ? "opacity-30 cursor-not-allowed" : "",
+                        selected
+                          ? "border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-300"
+                          : "border-border bg-muted text-muted-foreground hover:text-foreground",
+                      ].join(" ")}
+                    >
+                      {label}
+                    </button>
+                  )
+                })}
+              </div>
+            </FieldRow>
+          )}
 
           {/* Cuotas + fechas */}
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-            <FieldRow label="Cuotas" hint="ej: 1,3,6,9 — vacío = sin cuotas">
-              <Input
-                value={accionCreate?.cuotas ?? ""}
-                onChange={(e) => setCreate("cuotas", e.target.value)}
-                placeholder="1,3,6,9,12"
-                className="border-border bg-background text-foreground h-8 text-xs"
-              />
-            </FieldRow>
+            {/* Cuotas ocultas para Electron */}
+            {!isElectronOnly && (
+              <FieldRow label="Cuotas" hint="ej: 1,3,6,9 — vacío = sin cuotas">
+                <Input
+                  value={accionCreate?.cuotas ?? ""}
+                  onChange={(e) => setCreate("cuotas", e.target.value)}
+                  placeholder="1,3,6,9,12"
+                  className="border-border bg-background text-foreground h-8 text-xs"
+                />
+              </FieldRow>
+            )}
             <FieldRow label="Fecha inicio">
               <div className="flex gap-1">
                 <Input

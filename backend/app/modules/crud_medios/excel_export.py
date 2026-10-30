@@ -180,6 +180,7 @@ def _write_dashboard_sheet(wb, dashboards: list[SellerDashboard],
     grupos_cols = grupos_seleccionados if grupos_seleccionados is not None else [cfg[0] for cfg in CUOTA_CONFIGS]
     evento_names = [e["nombre"] for e in (evento_resultados or [])]
     evento_maps  = {e["nombre"]: e.get("result_map", {}) for e in (evento_resultados or [])}
+    evento_motivos_maps = {e["nombre"]: e.get("motivos_map", {}) for e in (evento_resultados or [])}
 
     dynamic_cols = (
         ["Seller", "Seller ID",
@@ -211,8 +212,13 @@ def _write_dashboard_sheet(wb, dashboards: list[SellerDashboard],
         for col_name in grupos_cols:
             grupo = d.grupos.get(col_name)
             row[col_name] = grupo.estado if grupo else "No configurado"
+        evento_motivos_parts: list[str] = []
         for nombre in evento_names:
             row[nombre] = evento_maps[nombre].get(d.seller_id, "No configurado")
+            for m in evento_motivos_maps[nombre].get(d.seller_id, []):
+                evento_motivos_parts.append(f"[{nombre}] {m}")
+        if evento_motivos_parts:
+            row["Motivo"] = " | ".join(filter(None, [d.motivos_all] + evento_motivos_parts))
         rows.append(row)
 
     _write_data_rows(ws, dynamic_cols, rows,

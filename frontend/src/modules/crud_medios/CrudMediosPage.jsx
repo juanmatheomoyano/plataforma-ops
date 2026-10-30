@@ -149,17 +149,18 @@ export default function CrudMediosPage() {
         ? ac.cuotas.split(",").map((s) => parseInt(s.trim())).filter((n) => !isNaN(n))
         : []
       const isOnePago = cuotasList.length === 1 && cuotasList[0] === 1
+      const isElectronOnly = ac.ps_names.length === 1 && ac.ps_names[0] === "electron"
       if (!ac.ps_names.length) {
         setExecError("Seleccioná al menos una firma para crear reglas.")
         setLoading(false)
         return
       }
-      if (!ac.levels.length) {
+      if (!isElectronOnly && !ac.levels.length) {
         setExecError("Seleccioná al menos un level.")
         setLoading(false)
         return
       }
-      if (ac.levels.includes("__no_level__") && !isOnePago) {
+      if (!isElectronOnly && ac.levels.includes("__no_level__") && !isOnePago) {
         setExecError("El level 'Sin level' solo se puede usar cuando cuotas = 1.")
         setLoading(false)
         return

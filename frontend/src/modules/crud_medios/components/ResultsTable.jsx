@@ -54,9 +54,10 @@ async function downloadBackendExcel(scope, grupos, eventoColumns, filtros) {
   const body = {
     scope: scope || { seller_ids: [] },
     grupos_seleccionados: grupos ?? [],
-    evento_resultados: (eventoColumns ?? []).map(({ evento, resultMap }) => ({
+    evento_resultados: (eventoColumns ?? []).map(({ evento, resultMap, motivosMap }) => ({
       nombre: evento.nombre,
       result_map: resultMap,
+      motivos_map: motivosMap ?? {},
     })),
     filtros: filtros ?? {},
   }

@@ -157,7 +157,8 @@ class EventoValidateRequest(BaseModel):
 
 class EventoResultadoExport(BaseModel):
     nombre: str
-    result_map: dict[str, str] = Field(default_factory=dict)  # seller_id -> estado
+    result_map: dict[str, str] = Field(default_factory=dict)   # seller_id -> estado
+    motivos_map: dict[str, list[str]] = Field(default_factory=dict)  # seller_id -> motivos
 
 
 class ExportRequest(BaseModel):
