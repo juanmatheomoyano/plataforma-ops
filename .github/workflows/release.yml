@@ -33,6 +33,15 @@ jobs:
         with:
           workspaces: frontend/src-tauri -> target
 
+      - name: Bump version in tauri.conf.json
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          $conf = Get-Content "frontend\src-tauri\tauri.conf.json" -Raw | ConvertFrom-Json
+          $conf.version = $version
+          $conf | ConvertTo-Json -Depth 10 | Set-Content "frontend\src-tauri\tauri.conf.json" -Encoding UTF8
+          Write-Host "tauri.conf.json version → $version"
+
       - name: Install frontend deps
         working-directory: frontend
         run: npm ci
