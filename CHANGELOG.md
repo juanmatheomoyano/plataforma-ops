@@ -5,6 +5,47 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [2.1.9] — 2026-10-30 — Visa Electron sin levels/cuotas + motivos de eventos en Excel
+
+### CRUD Medios de Pago — Visa Electron (HU-57, parcial)
+- Al seleccionar solo "Electron" en el formulario de creación, se muestra un info box bloqueado con la configuración fija (Política Main · Argentina · Banco de la Provincia de Buenos Aires) en lugar del selector de levels
+- El campo de cuotas se oculta automáticamente para Electron
+- El nombre de regla se genera como `ELECTRON` o `PREFIX_ELECTRON` automáticamente
+- La validación de "al menos un level" y la validación de level `__no_level__` se saltean cuando el único brand es Electron
+- El backend ya manejaba correctamente `levels=[]` (→ `[None]` → regla sin cardLevel) y `cuotas=[]` (→ `installmentOptions=null`); el único cambio requerido fue en el frontend
+
+### CRUD Medios de Pago — Fix: motivos de eventos en Excel export
+- Al exportar el Excel desde CRUD Read con columnas de eventos, la columna "Motivo" en `DASHBOARD_VENDEDORES` ahora incluye los motivos de los sellers "A corregir" en cada evento (ej: `[CyberWeek] Cuotas faltantes: [12, 18]`)
+- Los motivos de eventos se agregan al final del campo Motivo junto a los motivos de grupos de cuotas, separados por ` | `
+- Fix en tres capas: `ResultsTable.jsx` (envía `motivos_map`), `schemas.py` (acepta `motivos_map`), `excel_export.py` (usa `motivos_map`)
+- **Nota**: en la primera versión del fix faltó incluir `motivos_map` al convertir el schema a dict en `router.py`; corregido en el mismo release
+
+---
+
+## [2.1.8] — 2026-10-30 — 7 bug fixes de validación + dashboard + Samsung + CI auto-bump
+
+### CRUD Medios de Pago — Bugs críticos (HU-58)
+- **Samsung condition_id perdido** (`service.py`): clave `"condition"` duplicada en el dict de `execute_create` hacía que Python tomara el último valor (`None`), descartando el `condition_id` correcto. Reglas Samsung se creaban sin condición comercial → huérfanas en VTEX. Corregido eliminando la línea duplicada
+- **`vigente_hoy` contaba reglas deshabilitadas** (`service.py`): `_is_vigente()` solo miraba fechas; una regla `enabled=false` dentro del rango se contaba como vigente. Ahora `parse_rule_enriched` asigna `"No (deshabilitada)"` a reglas deshabilitadas que estén en fecha, y `build_seller_dashboard` filtra por `habilitada == "Sí"` al contar `vigentes_hoy`
+- **"Ok (vigente)" falso positivo** (`service.py`): `check_cuota_group` usaba reglas deshabilitadas como base de vigencia cuando no había reglas habilitadas con las cuotas correctas. Si esas reglas deshabilitadas tenían fechas en rango, el grupo aparecía "Ok (vigente)". Corregido retornando "Ok (inactiva)" directamente cuando `matching` está vacío
+- **Dashboard del Excel con filtros activos** (`service.py`): `fetch_enriched_for_export` armaba el dashboard solo con las reglas que pasaban los filtros. Ahora el dashboard siempre se construye sobre todas las reglas del seller; los filtros aplican solo a `PAGOS_CONSOLIDADO`
+- **Sellers con error de red contados como "A corregir"** (`service.py`/`schemas.py`): `sellers_a_corregir` se incrementaba para errores de red/credenciales. Agregado contador `sellers_error` separado en `EventoValidateResponse`
+
+### CRUD Medios de Pago — Validación fecha/horario exacto de evento (HU-59)
+- Nuevo bloque en `_run_evento_core`: compara `r_begin > event_ini` (regla empieza después que el evento abre) y `r_end < event_fin` (regla vence antes que el evento cierra)
+- Genera motivos descriptivos con nombre de regla y hora real: `"Fecha/horario de inicio incorrecto — el evento abre DD/MM/YYYY HH:MM: <regla> (inicia DD/MM HH:MM)"`
+- Solo aplica cuando el evento tiene fechas configuradas; comparación siempre en ART (UTC-3)
+
+### CRUD Medios de Pago — Motivos de evento visibles en dashboard (HU-59)
+- `_loadEventoColumns` (antes) solo guardaba `resultMap` (seller_id → estado) y descartaba los motivos. Un seller "A corregir" no mostraba por qué
+- Ahora también construye `motivosMap` (seller_id → string[]) y lo guarda en `eventoColumns`
+- `DashboardTable.allMotivos()` combina motivos de grupos + motivos de eventos; estos últimos prefijados con el nombre del evento para distinguirlos cuando hay varios eventos cargados en simultáneo
+
+### CI — Auto-bump de versión antes del build
+- El workflow `release.yml` ahora actualiza `tauri.conf.json` con la versión del tag antes de compilar. Antes había que actualizar el archivo manualmente o el `.exe` se generaba con la versión anterior, rompiendo el auto-updater (el instalador se llamaba `Provincia-Ops_2.1.7_x64-setup.exe` aunque el release fuera v2.1.8)
+
+---
+
 ## [2.1.7] — 2026-10-27 — Excel export mejorado + delete con antifraud + columna antifraude
 
 ### CRUD Medios de Pago — Export Excel unificado

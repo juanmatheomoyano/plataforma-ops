@@ -732,10 +732,17 @@ Dos problemas independientes pero relacionados con la validación de eventos:
 - [x] El botón de expand (chevron) aparece cuando hay motivos de grupos O de eventos
 - [x] Sellers con "A corregir" en evento ahora muestran la razón exacta al expandir
 
+**Frontend — motivos de evento en Excel export** (`ResultsTable.jsx` + `router.py` + `excel_export.py`) — v2.1.9
+- [x] `downloadBackendExcel` ahora envía `motivos_map` (seller_id → string[]) por cada evento en `evento_resultados`
+- [x] `EventoResultadoExport` schema extendido con `motivos_map: dict[str, list[str]]`
+- [x] `_write_dashboard_sheet` usa `evento_motivos_maps` para enriquecer la columna "Motivo" con motivos de eventos
+- [x] `router.py` incluye `motivos_map` al convertir el schema a dict (bug inicial: se omitía en esta conversión)
+
 **Notas técnicas**
 - Los motivos de evento se muestran junto a los motivos de grupos (un solo expand por seller)
 - El prefijo `"<NombreEvento>: "` evita ambigüedad cuando hay varios eventos validados en simultáneo
 - `fecha_ini_art` / `fecha_fin_art` se convierten en el frontend con `_utcToArtStr()` antes de enviarse al backend
+- En el Excel, motivos de eventos se concatenan al campo "Motivo" con formato `[NombreEvento] motivo`, separados por ` | `
 
 ---
 
@@ -776,7 +783,7 @@ El backend envía y el Excel incluye: `inactivas`, `vigentes_hoy`, `firmas`, `co
 ---
 
 ### HU-57 `[usuario]` — CRUD Medios de Pago: creación correcta de Visa Electron
-Prioridad: 🟡 Alta · Tamaño: S · Estado: 📋 Backlog
+Prioridad: 🟡 Alta · Tamaño: S · Estado: 🚧 Parcial (v2.1.9)
 
 **Contexto**
 Visa Electron es una tarjeta especial en VTEX que no admite cuotas ni niveles. Su formulario de creación debe ser diferente al de Visa/Mastercard: solo pide los campos obligatorios fijos y nada más. Es análoga a la regla de 1 cuota de Visa/Mastercard pero sin el campo de cuota.
@@ -787,11 +794,12 @@ Visa Electron es una tarjeta especial en VTEX que no admite cuotas ni niveles. S
 - El botón Crear genera la regla directamente con esos valores fijos
 
 **Criterios de aceptación**
-- [ ] Formulario simplificado para Electron: solo país, emisor y política comercial Main, sin cuotas ni niveles
-- [ ] No se envía ningún `installmentOptions` a VTEX (ni cuota 1 ni ninguna)
-- [ ] `salesChannels: [{id: "1"}]` fijo, `issuer`: Banco de la Provincia de Buenos Aires, `country`: Argentina
+- [x] Formulario simplificado para Electron: info box bloqueado con config fija, sin cuotas ni niveles — v2.1.9
+- [x] No se envía ningún `installmentOptions` a VTEX: `cuotas=[]` → `installments=[]` → campo omitido — v2.1.9
+- [x] Nombre de regla generado automáticamente como `ELECTRON` o `PREFIX_ELECTRON` — v2.1.9
+- [x] Validación de frontend salteada (`levels` y `__no_level__`) cuando `isElectronOnly` — v2.1.9
 - [ ] Validación en backend (`execute_create`): si `paymentSystemId = 10` y llegan cuotas o nivel → error claro
-- [ ] El resto de tarjetas (Visa, Mastercard) no se ven afectadas
+- [ ] El resto de tarjetas (Visa, Mastercard) no se ven afectadas — pendiente verificar en prod
 
 **Notas técnicas**
 - `paymentSystemId = 10` (Visa Electron en VTEX)
