@@ -228,6 +228,13 @@ def parse_rule_enriched(seller_id: str, seller_name: str, rule: dict) -> dict:
     # Extraer nombre corto del antifraud, e.g. "Koin-Antifraud" de "...Connector_Koin-Antifraud"
     antifraud_nombre = af_impl.split("_")[-1] if af_impl else "No"
 
+    _habilitada = bool(rule.get("enabled"))
+    _vigente_raw = _is_vigente(begin_date or None, end_date or None)
+    # Una regla deshabilitada nunca cuenta como vigente aunque esté en rango de fechas
+    _vigente_hoy = _vigente_raw if _habilitada else (
+        "No (deshabilitada)" if _vigente_raw == "Sí" else _vigente_raw
+    )
+
     return {
         "vendedor":               seller_name,
         "cuenta":                 seller_id,
@@ -241,9 +248,9 @@ def parse_rule_enriched(seller_id: str, seller_name: str, rule: dict) -> dict:
         "conector":               _normalize_connector(_parse_connector_short(impl)),
         "conector_completo":      impl,
         "id_afiliacion":          (rule.get("connector") or {}).get("affiliationId", "") or "",
-        "habilitada":             "Sí" if rule.get("enabled") else "No",
+        "habilitada":             "Sí" if _habilitada else "No",
         "es_default":             str(rule.get("isDefault", "")),
-        "vigente_hoy":            _is_vigente(begin_date or None, end_date or None),
+        "vigente_hoy":            _vigente_hoy,
         "max_cuotas":             max_cuotas,
         "cuotas_disponibles":     cuotas_lista,
         "tiene_interes":          "Sí" if tiene_interes else "No",
@@ -450,8 +457,11 @@ def check_cuota_group(
     if motivos:
         return "A corregir", [f"[{col_name}] {m}" for m in motivos]
 
-    vigencia_base = matching if matching else check_base
-    vigencias = {r.get("vigente_hoy") for r in vigencia_base}
+    # Si no hay reglas habilitadas con las cuotas correctas, el grupo está inactivo
+    if not matching:
+        return "Ok (inactiva)", []
+
+    vigencias = {r.get("vigente_hoy") for r in matching}
     if "Sí" in vigencias:
         return "Ok (vigente)", []
     if "No (no comenzó)" in vigencias:
@@ -469,7 +479,7 @@ def build_seller_dashboard(
     active = [r for r in rules_enriched if r.get("habilitada") == "Sí"]
     activas = len(active)
     inactivas = len(rules_enriched) - activas
-    vigentes = sum(1 for r in rules_enriched if r.get("vigente_hoy") == "Sí")
+    vigentes = sum(1 for r in rules_enriched if r.get("vigente_hoy") == "Sí" and r.get("habilitada") == "Sí")
 
     sistemas = sorted({r["sistema_pago"] for r in rules_enriched if r.get("sistema_pago")})
     conectores = sorted({r["conector"] for r in rules_enriched if r.get("conector")})
@@ -847,7 +857,6 @@ async def execute_create(
                         } if installments else None,
                         "enabled": accion.enabled,
                         "installmentsService": False,
-                        "condition": None,
                         "multiMerchantList": None,
                         "country": {"isoCode": "ar", "name": None},
                         "beginDate": accion.begin_date or None,
@@ -1450,18 +1459,23 @@ async def fetch_enriched_for_export(
                 "fecha":    datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
             })
             continue
-        rules = sd.get("rules", [])
-        if filtros:
-            rules = [r for r in rules if matches_filters(r, filtros)]
+        all_rules = sd.get("rules", [])
+        # Dashboard siempre sobre todas las reglas del seller (igual que la operación R)
+        all_enriched_seller = [
+            parse_rule_enriched(seller.seller_id, seller.seller_name, r)
+            for r in all_rules
+        ]
+        if all_enriched_seller:
+            dashboards.append(
+                build_seller_dashboard(seller.seller_id, seller.seller_name, all_enriched_seller)
+            )
+        # El contenido del Excel solo incluye las reglas que pasan los filtros
+        filtered_rules = [r for r in all_rules if matches_filters(r, filtros)] if filtros else all_rules
         enriched = [
             parse_rule_enriched(seller.seller_id, seller.seller_name, r)
-            for r in rules
+            for r in filtered_rules
         ]
         all_enriched.extend(enriched)
-        if enriched:
-            dashboards.append(
-                build_seller_dashboard(seller.seller_id, seller.seller_name, enriched)
-            )
 
     return all_enriched, dashboards, error_rows
 
@@ -1546,6 +1560,7 @@ async def _run_evento_core(
     sellers_ok = 0
     sellers_a_corregir = 0
     sellers_no_config = 0
+    sellers_error = 0
 
     for sd in raw_data:
         seller = sd["seller"]
@@ -1562,7 +1577,7 @@ async def _run_evento_core(
                 "error": sd["error"],
                 "fecha": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
             })
-            sellers_a_corregir += 1
+            sellers_error += 1
             continue
 
         enriched = [
@@ -1685,6 +1700,7 @@ async def _run_evento_core(
         sellers_ok=sellers_ok,
         sellers_a_corregir=sellers_a_corregir,
         sellers_no_configurado=sellers_no_config,
+        sellers_error=sellers_error,
         duration_secs=round(duration, 3),
         results=results,
     )

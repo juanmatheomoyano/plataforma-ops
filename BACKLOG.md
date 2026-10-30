@@ -708,14 +708,45 @@ Samsung opera sus reglas VTEX dentro de la cuenta `baproar` pero diferenciadas p
 
 ---
 
+### HU-59 `[usuario]` — CRUD Medios de Pago: validación de fechas/horario de evento + motivos visibles
+Prioridad: 🔴 Crítica · Tamaño: S · Estado: ✅ post-v2.1.7
+
+**Contexto**
+Dos problemas independientes pero relacionados con la validación de eventos:
+1. El backend no chequeaba si las reglas de un seller cubren **exactamente** el rango de fechas y horarios del evento (podían vencer antes que el evento o empezar después).
+2. El frontend descartaba los motivos del `validate-evento`: se guardaba solo `estado_general` en `resultMap` y nunca los `motivos`, por lo que los sellers marcados "A corregir" no mostraban el por qué (ej. sommiercenter CyberWeek aparecía como "A corregir" sin explicación).
+
+**Resuelto**
+
+**Backend — validación de rango de fecha/horario exacto** (`service.py:_run_evento_core`)
+- [x] Nuevo bloque post-conector en `_run_evento_core`: itera las reglas activas del evento (`lc_active`) y compara `r_begin > event_ini` (inicio tardío) y `r_end < event_fin` (cierre anticipado)
+- [x] Si hay reglas con inicio incorrecto: motivo `"Fecha/horario de inicio incorrecto — el evento abre DD/MM/YYYY HH:MM: <nombre regla> (inicia DD/MM HH:MM), ..."`
+- [x] Si hay reglas con cierre incorrecto: motivo `"Fecha/horario de cierre incorrecto — el evento cierra DD/MM/YYYY HH:MM: <nombre regla> (vence DD/MM HH:MM), ..."`
+- [x] Fechas comparadas siempre en hora Argentina (UTC-3) via `_normalize_to_ar()`
+- [x] Solo aplica cuando el evento tiene `fecha_ini_art` / `fecha_fin_art` configurados
+
+**Frontend — motivos de evento visibles en dashboard** (`CrudMediosPage.jsx` + `DashboardTable.jsx`)
+- [x] `_loadEventoColumns`: además de `resultMap` (seller_id → estado), ahora construye `motivosMap` (seller_id → string[]) con los motivos de cada resultado
+- [x] `motivosMap` se guarda en `eventoColumns` junto al `resultMap`
+- [x] `DashboardTable.allMotivos()`: incluye motivos de eventos prefijados con el nombre del evento (`"CyberWeek: Cuotas faltantes: [12, 18]"`)
+- [x] El botón de expand (chevron) aparece cuando hay motivos de grupos O de eventos
+- [x] Sellers con "A corregir" en evento ahora muestran la razón exacta al expandir
+
+**Notas técnicas**
+- Los motivos de evento se muestran junto a los motivos de grupos (un solo expand por seller)
+- El prefijo `"<NombreEvento>: "` evita ambigüedad cuando hay varios eventos validados en simultáneo
+- `fecha_ini_art` / `fecha_fin_art` se convierten en el frontend con `_utcToArtStr()` antes de enviarse al backend
+
+---
+
 ### HU-58 `[usuario]` — CRUD Medios de Pago: correcciones de bugs y dashboard incompleto
-Prioridad: 🔴 Crítica · Tamaño: M · Estado: 📋 Backlog
+Prioridad: 🔴 Crítica · Tamaño: M · Estado: 🚧 Parcial (v2.1.8)
 
 **Bugs confirmados**
 
 **1. CRÍTICO — Samsung pierde condition_id al crear reglas** (`service.py:841,850`)
-Clave `"condition"` duplicada en el dict `body` de `execute_create`. Python toma el último valor (`None`), descartando el `condition_id` de Samsung. Las reglas Samsung se crean sin condición comercial.
-- [ ] Eliminar la línea duplicada `"condition": None` (línea 850)
+Clave `"condition"` duplicada en el dict `body` de `execute_create`. Python toma el último valor (`None`), descartando el `condition_id` de Samsung. Las reglas Samsung se crean sin condición comercial. Afecta a `samsungar` (condition_id=2) y `samsungarvisuar` (condition_id=3). Las reglas creadas sin condition_id son huérfanas: existen en `baproar` pero el READ no las ve (filtro por condition_id no las encuentra).
+- [x] Eliminada la línea duplicada `"condition": None` — v2.1.8
 
 **2. Dashboard frontend — 5 columnas calculadas pero no renderizadas** (`DashboardTable.jsx`)
 El backend envía y el Excel incluye: `inactivas`, `vigentes_hoy`, `firmas`, `conectores`, `emisores`. El frontend solo muestra Total, Activas, Max cuotas.
@@ -726,8 +757,21 @@ El backend envía y el Excel incluye: `inactivas`, `vigentes_hoy`, `firmas`, `co
 - [ ] Calcular y pasar `zero_rules` al llamar a `build_excel()`
 
 **4. `vigente_hoy` ignora si la regla está habilitada** (`service.py:190,472`)
-`_is_vigente()` solo mira fechas. Una regla deshabilitada (enabled=false) dentro del rango de fecha se cuenta como vigente hoy en el dashboard.
-- [ ] Incorporar `enabled` en el criterio: `vigente_hoy = "Sí"` solo si en fecha Y habilitada
+`_is_vigente()` solo mira fechas. Una regla deshabilitada (enabled=false) dentro del rango de fecha se cuenta como vigente hoy en el dashboard y en el Excel.
+- [x] `parse_rule_enriched`: reglas deshabilitadas en rango de fecha retornan `"No (deshabilitada)"` en lugar de `"Sí"` — v2.1.8
+- [x] `build_seller_dashboard`: contador `vigentes_hoy` filtra por `habilitada == "Sí"` — v2.1.8
+
+**5. NUEVO — "Ok (vigente)" para sellers con reglas correctas pero todas deshabilitadas**
+`check_cuota_group` usaba las reglas deshabilitadas como base de vigencia cuando `matching` (reglas habilitadas con cuotas correctas) estaba vacío. Si esas reglas deshabilitadas tenían fechas en rango, el grupo aparecía como "Ok (vigente)" en lugar de "Ok (inactiva)".
+- [x] Cuando `matching` es vacío se retorna `"Ok (inactiva)"` directamente, sin leer vigencia de reglas deshabilitadas — v2.1.8
+
+**6. NUEVO — Dashboard del Excel construido sobre reglas filtradas**
+`fetch_enriched_for_export` armaba el dashboard solo con las reglas que pasaban los filtros. Con filtros activos, los grupos de cuotas en el Excel podían mostrar "No configurado" para grupos que el seller sí tenía (solo que no entraron en el filtro).
+- [x] Dashboard siempre sobre todas las reglas del seller; solo el contenido (PAGOS_CONSOLIDADO) usa los filtros — v2.1.8
+
+**7. NUEVO — Sellers con error de fetch contados como "A corregir" en validación de evento**
+`sellers_a_corregir` se incrementaba para errores de red/credenciales. Los totales del resumen de evento eran incorrectos (un error de red aparecía como "A corregir").
+- [x] Contador `sellers_error` separado en `EventoValidateResponse` — v2.1.8
 
 ---
 

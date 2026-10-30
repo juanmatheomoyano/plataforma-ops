@@ -186,5 +186,6 @@ class EventoValidateResponse(BaseModel):
     sellers_ok: int
     sellers_a_corregir: int
     sellers_no_configurado: int
+    sellers_error: int = 0
     duration_secs: float
     results: list[SellerEventoResult]
