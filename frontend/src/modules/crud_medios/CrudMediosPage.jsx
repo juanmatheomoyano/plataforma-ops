@@ -284,8 +284,12 @@ export default function CrudMediosPage() {
             },
           })
           const resultMap = {}
-          for (const r of val.results) resultMap[r.seller_id] = r.estado_general
-          cols.push({ evento, resultMap })
+          const motivosMap = {}
+          for (const r of val.results) {
+            resultMap[r.seller_id] = r.estado_general
+            if (r.motivos?.length) motivosMap[r.seller_id] = r.motivos
+          }
+          cols.push({ evento, resultMap, motivosMap })
         } catch {
           // evento individual falla → skip
         }

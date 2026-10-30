@@ -75,8 +75,12 @@ export function DashboardTable({ dashboard, grupos = GRUPOS, eventoColumns = [],
       )
     : dashboard
 
-  const allMotivos = (d) =>
-    grupos.flatMap((g) => d.grupos?.[g]?.motivos || [])
+  const allMotivos = (d) => [
+    ...grupos.flatMap((g) => d.grupos?.[g]?.motivos || []),
+    ...eventoColumns.flatMap(({ evento, motivosMap = {} }) =>
+      (motivosMap[d.seller_id] || []).map((m) => `${evento.nombre}: ${m}`)
+    ),
+  ]
 
   return (
     <div className="space-y-3">
