@@ -5,6 +5,16 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [2.2.1] — 2026-10-31 — Fix: horario en fechas de Actualizar + conversión AR→UTC correcta
+
+### CRUD Medios de Pago — Fix
+- En el formulario de Actualizar, las fechas de inicio y fin ahora incluyen picker de hora (HH:MM) además de la fecha
+- Corregido bug donde se enviaba el string de fecha crudo (`"2026-11-01"`) sin convertir a ISO UTC — VTEX recibía una fecha inválida
+- La conversión es idéntica al formulario de Crear: la hora ingresada en AR (UTC-3) se convierte correctamente a UTC antes de enviar (`21:00 AR → 2026-11-02T00:00:00.000Z`)
+- Sin hora = `00:00` en inicio, `23:59` en fin (mismos defaults que Crear)
+
+---
+
 ## [2.2.0] — 2026-10-30 — Filtros por interés, interés externo, default y emisor + correcciones masivas (HU-60)
 
 ### CRUD Medios de Pago — Nuevos filtros

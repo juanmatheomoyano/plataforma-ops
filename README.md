@@ -149,13 +149,13 @@ npm run tauri build
 ```
 
 Genera dos bundles en `frontend/src-tauri/target/release/bundle/`:
-- `nsis/Provincia Ops_1.3.0_x64-setup.exe` — instalador NSIS (recomendado)
-- `msi/Provincia Ops_1.3.0_x64_en-US.msi` — instalador MSI
+- `nsis/Provincia-Ops_2.2.1_x64-setup.exe` — instalador NSIS (recomendado)
+- `msi/Provincia-Ops_2.2.1_x64_en-US.msi` — instalador MSI
 
 **Instalación silenciosa:**
 
 ```powershell
-Start-Process "Provincia Ops_1.3.0_x64-setup.exe" -ArgumentList "/S" -Wait
+Start-Process "Provincia-Ops_2.2.1_x64-setup.exe" -ArgumentList "/S" -Wait
 ```
 
 **Tiempo de build:** ~2 minutos (compila Rust en release).
