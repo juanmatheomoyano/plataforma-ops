@@ -115,4 +115,6 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add backend/release_info.json
           git commit -m "chore: release_info.json ${{ github.ref_name }} [skip ci]"
+          git fetch origin main
+          git rebase origin/main
           git push origin HEAD:main

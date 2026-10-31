@@ -1,6 +1,6 @@
 {
-  "version": "2.2.0",
-  "pub_date": "2026-10-30T23:26:53Z",
+  "version": "2.2.1",
+  "pub_date": "2026-10-31T10:53:01Z",
   "notes": "Fix: las fechas de inicio y fin en Actualizar ahora incluyen hora (HH:MM) y convierten correctamente de hora argentina a UTC. Antes se enviaba solo la fecha sin hora ni conversión.",
-  "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSYkpSZ0VHTGdRK3Y3WExKL3JuUkVUc2FQMjg0WTlVZjlOcWZQTU5hVGhHdmZ4aXJhUkQrcnhVenJ0RDJUQmRIVWZ3UldJdVRXWmdsc1NodlZ5MFNwVGlSZkptaDFsdndBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNDAyODA4CWZpbGU6UHJvdmluY2lhIE9wc18yLjIuMF94NjQtc2V0dXAuZXhlCjU5WHVRNGtXV2JaUXowa3FRVjJWTi9JQUZJMkVVMS9kVzl2OXpEUTFmM3ZEcGNZWXVFdTNLZW5SN0Y3aDg4OHlRczVjeHloZDVBSkZLd0VUWVRKdURBPT0K"
+  "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSYkpSZ0VHTGdRK3BISEFkRGt0Tkh2L1l4Nyt3NmVFU0Q5QWpJVDlwU3ZTTGMrVkc3Z2xtN3NyOFl3MG01cWZpSldXWHZVazJYQ2pTRUJJNDhoVFd5eXpLaVJla1BZMUFBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNDQzOTc1CWZpbGU6UHJvdmluY2lhIE9wc18yLjIuMV94NjQtc2V0dXAuZXhlCjlHTERhMmlNVldQMzUrQkI4VXRMeHBCamRrRlhLVzF4QzZkaGlHTnhVekNtb245SG5wQ0F0ajg4RDQyN3BYZ2ZpTElTRDM5OEtnSWFHRDVjNEdQR0JnPT0K"
 }
