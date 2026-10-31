@@ -39,7 +39,9 @@ const EMPTY_CREATE = {
 
 const EMPTY_UPDATE = {
   begin_date: "",
+  begin_time: "",
   end_date: "",
+  end_time: "",
   cuotas: "",
   enabled: undefined,
   level: "",
@@ -186,8 +188,8 @@ export default function CrudMediosPage() {
     if (opConfig.operacion === "U" && opConfig.accionUpdate) {
       const au = opConfig.accionUpdate
       const patch = {}
-      if (au.begin_date) patch.begin_date = au.begin_date
-      if (au.end_date) patch.end_date = au.end_date
+      if (au.begin_date) patch.begin_date = arToUtc(au.begin_date, au.begin_time || "00:00")
+      if (au.end_date) patch.end_date = arToUtc(au.end_date, au.end_time || "23:59")
       if (au.cuotas) {
         const parsed = au.cuotas.split(",").map((s) => parseInt(s.trim())).filter((n) => !isNaN(n))
         if (parsed.length > 0) patch.cuotas = parsed

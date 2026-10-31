@@ -371,21 +371,37 @@ export function OperacionSelector({ operacion, dryRun, accionCreate, accionUpdat
                 className="border-border bg-background text-foreground h-8 text-xs"
               />
             </FieldRow>
-            <FieldRow label="Fecha inicio">
-              <Input
-                type="date"
-                value={accionUpdate?.begin_date ?? ""}
-                onChange={(e) => setUpdate("begin_date", e.target.value || "")}
-                className="border-border bg-background text-foreground h-8 text-xs"
-              />
+            <FieldRow label="Fecha inicio (AR)">
+              <div className="flex gap-1">
+                <Input
+                  type="date"
+                  value={accionUpdate?.begin_date ?? ""}
+                  onChange={(e) => setUpdate("begin_date", e.target.value || "")}
+                  className="border-border bg-background text-foreground h-8 text-xs flex-1"
+                />
+                <Input
+                  type="time"
+                  value={accionUpdate?.begin_time ?? ""}
+                  onChange={(e) => setUpdate("begin_time", e.target.value || "")}
+                  className="border-border bg-background text-foreground h-8 text-xs w-24"
+                />
+              </div>
             </FieldRow>
-            <FieldRow label="Fecha fin">
-              <Input
-                type="date"
-                value={accionUpdate?.end_date ?? ""}
-                onChange={(e) => setUpdate("end_date", e.target.value || "")}
-                className="border-border bg-background text-foreground h-8 text-xs"
-              />
+            <FieldRow label="Fecha fin (AR)">
+              <div className="flex gap-1">
+                <Input
+                  type="date"
+                  value={accionUpdate?.end_date ?? ""}
+                  onChange={(e) => setUpdate("end_date", e.target.value || "")}
+                  className="border-border bg-background text-foreground h-8 text-xs flex-1"
+                />
+                <Input
+                  type="time"
+                  value={accionUpdate?.end_time ?? ""}
+                  onChange={(e) => setUpdate("end_time", e.target.value || "")}
+                  className="border-border bg-background text-foreground h-8 text-xs w-24"
+                />
+              </div>
             </FieldRow>
             <FieldRow label="Estado">
               <select
