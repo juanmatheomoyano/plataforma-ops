@@ -246,20 +246,6 @@ async def cleanup_history(
     return {"deleted": deleted}
 
 
-@router.post("/nuke-history")
-async def nuke_history(
-    secret: str,
-    db: AsyncSession = Depends(get_db),
-):
-    """Limpieza total de disco: TRUNCATE crud_operation_rows + crud_operations + payload de audit_log."""
-    import os
-    from sqlalchemy import text
-    if secret != os.environ.get("APP_SECRET_KEY", ""):
-        raise HTTPException(status_code=403, detail="Forbidden")
-    await db.execute(text("TRUNCATE TABLE crud_operation_rows, crud_operations"))
-    await db.execute(text("UPDATE audit_log SET payload = NULL"))
-    await db.commit()
-    return {"status": "ok", "message": "Tablas vaciadas"}
 
 
 @router.post("/export")
