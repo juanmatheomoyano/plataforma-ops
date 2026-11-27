@@ -1693,10 +1693,43 @@ async def _run_evento_core(
             motivos.append(f"Conector inválido en tarjetas del evento: {bad_names}")
 
         # ── Fecha y horario exacto de las reglas ──────────────────────────────
+        # Solo se date-checkean reglas que son candidatas al evento:
+        #   Opción A: al menos una de sus fechas está a ≤2 días del inicio/fin del evento
+        #   Opción B: sus cuotas cubren al menos el 50% de las cuotas requeridas
         if event_ini or event_fin:
+            _2d = timedelta(days=2)
+            _half_expected = max(1, len(expected) // 2)
+
+            def _is_event_candidate(r: dict) -> bool:
+                r_begin = _normalize_to_ar(r["fecha_inicio"]) if r.get("fecha_inicio") else None
+                r_end   = _normalize_to_ar(r["fecha_fin"])   if r.get("fecha_fin")   else None
+                # Opción B: ≥50% de las cuotas requeridas presentes en la regla
+                rule_cuotas = _parse_cuotas_set_str(r.get("cuotas_disponibles")) & expected
+                if len(rule_cuotas) < _half_expected:
+                    return False
+                # Opción A: al menos una fecha próxima al evento (±2 días)
+                ini_close = (event_ini and r_begin and
+                             abs((r_begin - event_ini).total_seconds()) <= _2d.total_seconds())
+                fin_close = (event_fin and r_end and
+                             abs((r_end - event_fin).total_seconds()) <= _2d.total_seconds())
+                return bool(ini_close or fin_close)
+
+            lc_candidates = [r for r in lc_active if _is_event_candidate(r)]
+
+            if not lc_candidates:
+                results.append(SellerEventoResult(
+                    seller_id=seller.seller_id,
+                    seller_name=seller.seller_name,
+                    estado_general="No configurado",
+                    motivos=[],
+                    total_rules_evento=len(lc_active),
+                ))
+                sellers_no_config += 1
+                continue
+
             wrong_ini: list[str] = []
             wrong_fin: list[str] = []
-            for r in lc_active:
+            for r in lc_candidates:
                 r_begin = _normalize_to_ar(r.get("fecha_inicio")) if r.get("fecha_inicio") else None
                 r_end   = _normalize_to_ar(r.get("fecha_fin"))   if r.get("fecha_fin")   else None
                 nombre  = r.get("nombre_regla") or r.get("id_regla") or "?"
