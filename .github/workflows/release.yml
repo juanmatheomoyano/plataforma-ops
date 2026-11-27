@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. v2.2.2)'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -11,12 +17,15 @@ permissions:
 jobs:
   build-and-release:
     runs-on: windows-latest
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -36,7 +45,7 @@ jobs:
       - name: Bump version in tauri.conf.json
         shell: pwsh
         run: |
-          $version = "${{ github.ref_name }}".TrimStart('v')
+          $version = "${{ env.RELEASE_TAG }}".TrimStart('v')
           $conf = Get-Content "frontend\src-tauri\tauri.conf.json" -Raw | ConvertFrom-Json
           $conf.version = $version
           $conf | ConvertTo-Json -Depth 10 | Set-Content "frontend\src-tauri\tauri.conf.json" -Encoding UTF8
@@ -96,7 +105,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: ${{ github.ref_name }}
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: ${{ env.RELEASE_TAG }}
           body: ${{ steps.sign.outputs.notes }}
           files: |
             ${{ steps.sign.outputs.exe_path }}
@@ -105,7 +115,7 @@ jobs:
       - name: Update release_info.json and push
         shell: pwsh
         run: |
-          $version = "${{ github.ref_name }}".TrimStart('v')
+          $version = "${{ env.RELEASE_TAG }}".TrimStart('v')
           $info = Get-Content "backend\release_info.json" | ConvertFrom-Json
           $info.version = $version
           $info.signature = "${{ steps.sign.outputs.signature }}"
@@ -114,7 +124,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add backend/release_info.json
-          git commit -m "chore: release_info.json ${{ github.ref_name }} [skip ci]"
+          git commit -m "chore: release_info.json ${{ env.RELEASE_TAG }} [skip ci]"
           git fetch origin main
           git rebase origin/main
           git push origin HEAD:main
