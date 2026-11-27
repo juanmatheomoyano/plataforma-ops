@@ -246,6 +246,24 @@ async def cleanup_history(
     return {"deleted": deleted}
 
 
+@router.post("/nuke-history")
+async def nuke_history(
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_role(["admin"])),
+):
+    """Limpieza total de disco: TRUNCATE crud_operation_rows + crud_operations + payload de audit_log."""
+    from sqlalchemy import text
+    await db.execute(text("TRUNCATE TABLE crud_operation_rows"))
+    await db.execute(text("TRUNCATE TABLE crud_operations"))
+    await db.execute(text("UPDATE audit_log SET payload = NULL"))
+    await db.commit()
+    await db.execute(text("VACUUM FULL crud_operation_rows"))
+    await db.execute(text("VACUUM FULL crud_operations"))
+    await db.execute(text("VACUUM FULL audit_log"))
+    await db.execute(text("VACUUM ANALYZE"))
+    return {"status": "ok", "message": "Tablas vaciadas y vacuumadas"}
+
+
 @router.post("/export")
 async def export_excel(
     body: ExportRequest,
