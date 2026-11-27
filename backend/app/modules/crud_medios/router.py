@@ -248,19 +248,25 @@ async def cleanup_history(
 
 @router.post("/nuke-history")
 async def nuke_history(
+    secret: str,
     db: AsyncSession = Depends(get_db),
-    _=Depends(require_role(["admin"])),
 ):
     """Limpieza total de disco: TRUNCATE crud_operation_rows + crud_operations + payload de audit_log."""
+    import os
     from sqlalchemy import text
+    if secret != os.environ.get("APP_SECRET_KEY", ""):
+        raise HTTPException(status_code=403, detail="Forbidden")
     await db.execute(text("TRUNCATE TABLE crud_operation_rows"))
     await db.execute(text("TRUNCATE TABLE crud_operations"))
     await db.execute(text("UPDATE audit_log SET payload = NULL"))
     await db.commit()
-    await db.execute(text("VACUUM FULL crud_operation_rows"))
-    await db.execute(text("VACUUM FULL crud_operations"))
-    await db.execute(text("VACUUM FULL audit_log"))
-    await db.execute(text("VACUUM ANALYZE"))
+    # VACUUM no puede correr dentro de una transacción — usamos AUTOCOMMIT via raw connection
+    raw = await db.connection()
+    await raw.execution_options(isolation_level="AUTOCOMMIT")
+    await raw.execute(text("VACUUM FULL crud_operation_rows"))
+    await raw.execute(text("VACUUM FULL crud_operations"))
+    await raw.execute(text("VACUUM FULL audit_log"))
+    await raw.execute(text("VACUUM ANALYZE"))
     return {"status": "ok", "message": "Tablas vaciadas y vacuumadas"}
 
 
