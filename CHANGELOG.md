@@ -5,6 +5,17 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [2.2.2] — 2026-11-27 — Fix: validación de eventos — No configurado exacto + matching estricto de fechas
+
+### Validación de eventos — Fixes críticos
+- **"A corregir" falso positivo eliminado**: sellers sin las cuotas requeridas del evento (9/12/18/24) se marcan correctamente como "No configurado" en lugar de "A corregir". Sellers con reglas amplias de otros eventos que coincidían en ventana de tiempo ya no se ven afectados
+- **Matching bidireccional estricto de fechas**: una regla que inicia antes O después del evento, o termina antes O después, se marca "A corregir" con detalle del desfasaje ("inicia temprano", "vence tarde", etc.). Antes solo se detectaban reglas que iniciaban tarde o terminaban antes
+- **Reglas sin fecha también son error**: si el evento tiene fecha definida y la regla no tiene fecha de inicio o fin, se indica explícitamente como incorrecto
+- **Fechas obligatorias al crear eventos**: el schema `EventoCreate` ahora requiere `fecha_ini_art` y `fecha_fin_art`. Se elimina el fallback a `datetime.now()` que expiraba los eventos inmediatamente al crearlos sin fecha
+- **Validación de fechas en "Guardar evento"**: el panel de validación ahora exige fecha de inicio y fin antes de permitir guardar un evento
+
+---
+
 ## [2.2.1] — 2026-10-31 — Fix: horario en fechas de Actualizar + conversión AR→UTC correcta
 
 ### CRUD Medios de Pago — Fix
