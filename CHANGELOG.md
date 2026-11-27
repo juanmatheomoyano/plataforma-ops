@@ -5,6 +5,15 @@ Formato: [versión] — fecha — descripción
 
 ---
 
+## [2.2.3] — 2026-11-27 — Fix: filtro A+B para date-check de eventos
+
+### Validación de eventos — Fix
+- **Opción A**: solo se date-checkean reglas cuya fecha de inicio o fin está a ≤2 días del inicio/fin del evento. Reglas de mes entero (ej: 01/11→30/11) ya no aparecen como "A corregir" por fechas incorrectas
+- **Opción B**: la regla debe cubrir al menos el 50% de las cuotas requeridas (≥2 de {9,12,18,24}). Reglas con una sola cuota (ej: solo 9 cuotas) quedan excluidas del date-check
+- Si ninguna regla del seller pasa ambos filtros → "No configurado" (no tiene reglas específicas del evento)
+
+---
+
 ## [2.2.2] — 2026-11-27 — Fix: validación de eventos — No configurado exacto + matching estricto de fechas
 
 ### Validación de eventos — Fixes críticos
