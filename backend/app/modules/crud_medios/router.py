@@ -260,14 +260,7 @@ async def nuke_history(
     await db.execute(text("TRUNCATE TABLE crud_operations"))
     await db.execute(text("UPDATE audit_log SET payload = NULL"))
     await db.commit()
-    # VACUUM no puede correr dentro de una transacción — usamos AUTOCOMMIT via raw connection
-    raw = await db.connection()
-    await raw.execution_options(isolation_level="AUTOCOMMIT")
-    await raw.execute(text("VACUUM FULL crud_operation_rows"))
-    await raw.execute(text("VACUUM FULL crud_operations"))
-    await raw.execute(text("VACUUM FULL audit_log"))
-    await raw.execute(text("VACUUM ANALYZE"))
-    return {"status": "ok", "message": "Tablas vaciadas y vacuumadas"}
+    return {"status": "ok", "message": "Tablas vaciadas"}
 
 
 @router.post("/export")
