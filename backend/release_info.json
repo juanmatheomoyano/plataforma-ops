@@ -1,6 +1,6 @@
 {
   "version": "2.2.3",
-  "pub_date": "2026-11-27T00:00:00Z",
+  "pub_date": "2026-11-27T13:53:12Z",
   "notes": "Fix validación de eventos: reglas de mes entero o de una sola cuota ya no generan falsos 'A corregir'. Solo se date-checkean reglas con ≥2 cuotas del evento y fechas a ≤2 días del evento.",
-  "signature": ""
+  "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSYkpSZ0VHTGdRK29pVHlPNk5tWWpYUEtNWmI0RTRWRjNCRW1tVi9GMFhvR0p0dUpCMG14WWZudEd6KzhHVFhIMXFxenFtRjF5VGh6U0ZuWlNja2N0Wk5KRC9JajMzandVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk1Nzg3NTg2CWZpbGU6UHJvdmluY2lhIE9wc18yLjIuM194NjQtc2V0dXAuZXhlClRyL25OWkpWUnMybUpkOU1vNDMrQm8zN09JYng0NFhzZitqbzJXWDk3MXh4dUpWVjFNaE1rZmNSei96Zy9UK2N3TW1ZN2VvcHhtTXZoYVQwV0h1VEJRPT0K"
 }
