@@ -6,8 +6,8 @@ from pydantic import BaseModel
 
 class EventoCreate(BaseModel):
     nombre: str
-    fecha_ini_art: str | None = None   # "2026-05-14T00:00:00" sin tz, se asume ART (UTC-3)
-    fecha_fin_art: str | None = None
+    fecha_ini_art: str
+    fecha_fin_art: str
     cuotas_requeridas: list[int]
     max_cuota: int
     scope_seller_ids: list[str] = []

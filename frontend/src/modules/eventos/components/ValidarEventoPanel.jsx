@@ -78,6 +78,8 @@ export function ValidarEventoPanel({ onEventoGuardado }) {
   async function handleGuardar() {
     const err = validate()
     if (err) { toast.error(err); return }
+    if (!eventoConfig.fecha_ini_date) { toast.error("Ingresá la fecha de inicio del evento"); return }
+    if (!eventoConfig.fecha_fin_date) { toast.error("Ingresá la fecha de fin del evento"); return }
     setSaving(true)
     try {
       const body = buildRequestBody()

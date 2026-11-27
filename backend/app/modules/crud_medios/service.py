@@ -1671,11 +1671,15 @@ async def _run_evento_core(
         })
         max_cuota = evento.max_cuota
         if not expected.issubset(union_cuotas):
-            missing_cuotas = sorted(expected - union_cuotas)
-            motivos.append(
-                f"Cuotas faltantes: {missing_cuotas} "
-                f"(cuotas configuradas para el evento: {sorted(union_cuotas)})"
-            )
+            results.append(SellerEventoResult(
+                seller_id=seller.seller_id,
+                seller_name=seller.seller_name,
+                estado_general="No configurado",
+                motivos=[],
+                total_rules_evento=len(lc_active),
+            ))
+            sellers_no_config += 1
+            continue
 
         over_limit = sorted(c for c in union_cuotas if c > max_cuota)
         if over_limit:
@@ -1696,10 +1700,21 @@ async def _run_evento_core(
                 r_begin = _normalize_to_ar(r.get("fecha_inicio")) if r.get("fecha_inicio") else None
                 r_end   = _normalize_to_ar(r.get("fecha_fin"))   if r.get("fecha_fin")   else None
                 nombre  = r.get("nombre_regla") or r.get("id_regla") or "?"
-                if event_ini and r_begin and r_begin > event_ini:
-                    wrong_ini.append(f"{nombre} (inicia {r_begin.strftime('%d/%m %H:%M')})")
-                if event_fin and r_end and r_end < event_fin:
-                    wrong_fin.append(f"{nombre} (vence {r_end.strftime('%d/%m %H:%M')})")
+
+                if event_ini:
+                    if r_begin is None:
+                        wrong_ini.append(f"{nombre} (sin fecha de inicio)")
+                    elif r_begin != event_ini:
+                        tag = "tarde" if r_begin > event_ini else "temprano"
+                        wrong_ini.append(f"{nombre} (inicia {tag}: {r_begin.strftime('%d/%m %H:%M')})")
+
+                if event_fin:
+                    if r_end is None:
+                        wrong_fin.append(f"{nombre} (sin fecha de fin)")
+                    elif r_end != event_fin:
+                        tag = "tarde" if r_end > event_fin else "temprano"
+                        wrong_fin.append(f"{nombre} (vence {tag}: {r_end.strftime('%d/%m %H:%M')})")
+
             if wrong_ini:
                 motivos.append(
                     f"Fecha/horario de inicio incorrecto — el evento abre "

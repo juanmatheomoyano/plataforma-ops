@@ -20,8 +20,8 @@ def _parse_art_dt(art_str: str | None) -> datetime | None:
 async def create_evento(db: AsyncSession, user_id: uuid.UUID, data: EventoCreate) -> Evento:
     evento = Evento(
         nombre=data.nombre,
-        fecha_ini=_parse_art_dt(data.fecha_ini_art) or datetime.now(timezone.utc),
-        fecha_fin=_parse_art_dt(data.fecha_fin_art) or datetime.now(timezone.utc),
+        fecha_ini=_parse_art_dt(data.fecha_ini_art),
+        fecha_fin=_parse_art_dt(data.fecha_fin_art),
         cuotas_requeridas=data.cuotas_requeridas,
         max_cuota=data.max_cuota,
         scope_seller_ids=data.scope_seller_ids,
