@@ -123,6 +123,7 @@ jobs:
           $info | ConvertTo-Json -Depth 5 | Set-Content "backend\release_info.json" -Encoding UTF8
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -- frontend/src-tauri/tauri.conf.json
           git add backend/release_info.json
           git commit -m "chore: release_info.json ${{ env.RELEASE_TAG }} [skip ci]"
           git fetch origin main

@@ -1,6 +1,6 @@
 {
   "version": "2.2.2",
-  "pub_date": "2026-11-27T00:00:00Z",
+  "pub_date": "2026-11-27T13:18:42Z",
   "notes": "Fix validación de eventos: sellers sin cuotas del evento ahora se marcan 'No configurado' (antes aparecían como 'A corregir'). Matching estricto de fechas: una regla que no coincide exactamente con el inicio o fin del evento se detecta como error. Fechas obligatorias al crear eventos.",
-  "signature": ""
+  "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSYkpSZ0VHTGdRK2lIb2dKbTAzeUhHZHkyemh5RDFYMHRhQXBIVTRxUmtCU2gzSVJJZk5LbVdkVmRFa0NRaGFISzJTSVlEYVgydm04QVZBa1g0dWVxejBvSEtFTXlRYlFZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk1Nzg1NTE3CWZpbGU6UHJvdmluY2lhIE9wc18yLjIuMl94NjQtc2V0dXAuZXhlCkg2L3R2aDBudEpVYWJISVMwN1JFSVk1Wk1GU2lTK2RvR3VleE84Rzl2Z05RdUJvWjkxUjQ3TnA2L3Erc3doVzBrV1RyekRDYjFpb01YQ3NGK0FFcEFnPT0K"
 }
